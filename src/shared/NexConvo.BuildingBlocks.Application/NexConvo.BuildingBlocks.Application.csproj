@@ -1,10 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Shared application primitives (Result, ITenantContext). No ASP.NET Core / EF here,
-       so service Application layers can reference it without pulling in web/infrastructure. -->
+  <!-- Shared application primitives (Result, ITenantContext, CQRS pipeline behaviors). No
+       ASP.NET Core / EF here, so service Application layers can reference it without pulling
+       in web/infrastructure. -->
 
   <ItemGroup>
     <ProjectReference Include="..\NexConvo.BuildingBlocks.Domain\NexConvo.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
   </ItemGroup>
 
 </Project>
