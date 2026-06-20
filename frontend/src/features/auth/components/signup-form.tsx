@@ -1,0 +1,175 @@
+'use client';
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslations } from 'next-intl';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
+import { signupSchema, type SignupValues } from '../model/signup.schema';
+import { useSignup } from '../api/use-signup';
+
+/**
+ * Signup form — creates a tenant workspace + owner account. Client validation via RHF +
+ * zod is UX only (S10); the Identity service authorizes/validates on the server via the
+ * BFF. Fully labeled, keyboard-operable, with field and form-level error states (S11, S15, S27).
+ */
+export function SignupForm() {
+  const t = useTranslations('signup');
+  const router = useRouter();
+  const signup = useSignup();
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { tenantName: '', tenantSlug: '', fullName: '', email: '', password: '' },
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    const user = await signup.mutateAsync(values).catch(() => null);
+    if (user) {
+      router.replace('/dashboard');
+      router.refresh();
+    }
+  });
+
+  const errorText = (key?: string) => (key ? t(`errors.${key}`) : undefined);
+  const busy = isSubmitting || signup.isPending;
+  const formError = signup.isError ? t(`errors.${signup.error.code}`) : undefined;
+
+  return (
+    <form onSubmit={onSubmit} noValidate className="space-y-5">
+      {formError && (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {formError}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="tenantName">{t('tenantNameLabel')}</Label>
+        <Input
+          id="tenantName"
+          autoComplete="organization"
+          placeholder={t('tenantNamePlaceholder')}
+          aria-invalid={!!errors.tenantName}
+          aria-describedby={errors.tenantName ? 'tenantName-error' : undefined}
+          {...register('tenantName')}
+        />
+        {errors.tenantName && (
+          <p id="tenantName-error" role="alert" className="text-sm text-destructive">
+            {errorText(errors.tenantName.message)}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="tenantSlug">{t('tenantSlugLabel')}</Label>
+        <div className="flex rounded-md shadow-sm">
+          <Input
+            id="tenantSlug"
+            autoComplete="off"
+            placeholder={t('tenantSlugPlaceholder')}
+            aria-invalid={!!errors.tenantSlug}
+            aria-describedby={errors.tenantSlug ? 'tenantSlug-error' : undefined}
+            className="rounded-r-none shadow-none"
+            {...register('tenantSlug')}
+          />
+          <span className="inline-flex items-center rounded-r-md border border-l-0 border-input bg-muted px-3 text-sm text-muted-foreground">
+            {t('tenantSlugHint')}
+          </span>
+        </div>
+        {errors.tenantSlug && (
+          <p id="tenantSlug-error" role="alert" className="text-sm text-destructive">
+            {errorText(errors.tenantSlug.message)}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="fullName">{t('fullNameLabel')}</Label>
+        <Input
+          id="fullName"
+          autoComplete="name"
+          placeholder={t('fullNamePlaceholder')}
+          aria-invalid={!!errors.fullName}
+          aria-describedby={errors.fullName ? 'fullName-error' : undefined}
+          {...register('fullName')}
+        />
+        {errors.fullName && (
+          <p id="fullName-error" role="alert" className="text-sm text-destructive">
+            {errorText(errors.fullName.message)}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">{t('emailLabel')}</Label>
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder={t('emailPlaceholder')}
+          aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? 'email-error' : undefined}
+          {...register('email')}
+        />
+        {errors.email && (
+          <p id="email-error" role="alert" className="text-sm text-destructive">
+            {errorText(errors.email.message)}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="password">{t('passwordLabel')}</Label>
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            placeholder={t('passwordPlaceholder')}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+            className="pr-10"
+            {...register('password')}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {errors.password && (
+          <p id="password-error" role="alert" className="text-sm text-destructive">
+            {errorText(errors.password.message)}
+          </p>
+        )}
+      </div>
+
+      <Button type="submit" size="lg" className="w-full" disabled={busy}>
+        {busy ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('submitting')}
+          </>
+        ) : (
+          t('submit')
+        )}
+      </Button>
+    </form>
+  );
+}

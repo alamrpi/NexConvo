@@ -1,0 +1,148 @@
+{
+  "common": {
+    "appName": "নেক্সকনভো",
+    "tagline": "এআই-নেটিভ সিআরএম",
+    "loading": "লোড হচ্ছে…"
+  },
+  "nav": {
+    "marketing": {
+      "features": "ফিচার",
+      "solutions": "সমাধান",
+      "pricing": "মূল্য",
+      "docs": "ডকুমেন্টেশন",
+      "login": "লগ ইন"
+    },
+    "dashboard": {
+      "overview": "সারসংক্ষেপ",
+      "inbox": "ইনবক্স",
+      "leads": "লিড",
+      "projects": "প্রজেক্ট",
+      "campaigns": "ক্যাম্পেইন",
+      "automation": "অটোমেশন",
+      "analytics": "অ্যানালিটিক্স",
+      "settings": "সেটিংস"
+    }
+  },
+  "landing": {
+    "badge": "এখন প্রাইভেট বেটায়",
+    "headlinePart1": "এআই-নেটিভ সিআরএম যা",
+    "headlineHighlight": "ক্লোজ করে, এরপর ডেলিভার করে",
+    "subheadline": "নেক্সকনভো প্রতিটি চ্যানেল — হোয়াটসঅ্যাপ, ভয়েস, ইমেইল ও সোশ্যাল — এক জায়গায় আনে, জিরো-টাচ এআই দিয়ে লিড সংগ্রহ করে, এবং ক্লোজ হওয়া ডিল স্বয়ংক্রিয়ভাবে চলমান প্রজেক্টে রূপান্তর করে।",
+    "primaryCta": "ফ্রি ট্রায়াল শুরু করুন",
+    "secondaryCta": "ডেমো বুক করুন",
+    "noCreditCard": "কোনো ক্রেডিট কার্ড লাগবে না",
+    "trustedBy": "দক্ষিণ এশিয়ার আধুনিক টিমগুলোর আস্থা",
+    "footer": {
+      "rights": "সর্বস্বত্ব সংরক্ষিত।",
+      "privacy": "প্রাইভেসি",
+      "terms": "শর্তাবলী"
+    }
+  },
+  "login": {
+    "title": "আবার স্বাগতম",
+    "subtitle": "আপনার নেক্সকনভো ওয়ার্কস্পেসে সাইন ইন করুন।",
+    "tenantLabel": "ওয়ার্কস্পেস",
+    "tenantPlaceholder": "your-company",
+    "tenantHint": ".nexconvo.app",
+    "emailLabel": "ইমেইল",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "পাসওয়ার্ড",
+    "passwordPlaceholder": "আপনার পাসওয়ার্ড দিন",
+    "showPassword": "পাসওয়ার্ড দেখান",
+    "hidePassword": "পাসওয়ার্ড লুকান",
+    "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+    "submit": "সাইন ইন",
+    "submitting": "সাইন ইন হচ্ছে…",
+    "noAccount": "অ্যাকাউন্ট নেই?",
+    "signUp": "ফ্রি শুরু করুন",
+    "errors": {
+      "tenantRequired": "ওয়ার্কস্পেস স্লাগ আবশ্যক।",
+      "tenantFormat": "শুধু ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।",
+      "emailRequired": "ইমেইল আবশ্যক।",
+      "emailInvalid": "একটি বৈধ ইমেইল ঠিকানা দিন।",
+      "passwordRequired": "পাসওয়ার্ড আবশ্যক।",
+      "passwordMin": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।",
+      "invalidCredentials": "ভুল ওয়ার্কস্পেস, ইমেইল বা পাসওয়ার্ড।",
+      "generic": "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+    },
+    "testimonial": {
+      "quote": "নেক্সকনভো তিনটি টুল আর একটি স্প্রেডশিট প্রতিস্থাপন করেছে। আমাদের রিপ্রেজেন্টেটিভরা হোয়াটসঅ্যাপে ক্লোজ করে আর প্রজেক্ট নিজে থেকেই শুরু হয়ে যায়।",
+      "author": "তাসনিম রহমান",
+      "role": "হেড অব সেলস, ঢাকা রিটেইল কো."
+    }
+  },
+  "signup": {
+    "title": "আপনার ওয়ার্কস্পেস তৈরি করুন",
+    "subtitle": "এক মিনিটেরও কম সময়ে নেক্সকনভো ওয়ার্কস্পেস শুরু করুন।",
+    "tenantNameLabel": "কোম্পানির নাম",
+    "tenantNamePlaceholder": "Acme Inc",
+    "tenantSlugLabel": "ওয়ার্কস্পেস URL",
+    "tenantSlugPlaceholder": "acme",
+    "tenantSlugHint": ".nexconvo.app",
+    "fullNameLabel": "আপনার নাম",
+    "fullNamePlaceholder": "আপনার পূর্ণ নাম",
+    "emailLabel": "কাজের ইমেইল",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "পাসওয়ার্ড",
+    "passwordPlaceholder": "কমপক্ষে ৮ অক্ষর",
+    "showPassword": "পাসওয়ার্ড দেখান",
+    "hidePassword": "পাসওয়ার্ড লুকান",
+    "submit": "ওয়ার্কস্পেস তৈরি করুন",
+    "submitting": "ওয়ার্কস্পেস তৈরি হচ্ছে…",
+    "haveAccount": "আগে থেকেই অ্যাকাউন্ট আছে?",
+    "signIn": "সাইন ইন",
+    "errors": {
+      "tenantNameRequired": "কোম্পানির নাম আবশ্যক।",
+      "tenantNameMax": "কোম্পানির নাম খুব বড়।",
+      "tenantRequired": "ওয়ার্কস্পেস URL আবশ্যক।",
+      "tenantMin": "ওয়ার্কস্পেস URL কমপক্ষে ৩ অক্ষরের হতে হবে।",
+      "tenantMax": "ওয়ার্কস্পেস URL খুব বড়।",
+      "tenantFormat": "শুধু ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।",
+      "fullNameRequired": "আপনার নাম আবশ্যক।",
+      "fullNameMax": "নাম খুব বড়।",
+      "emailRequired": "ইমেইল আবশ্যক।",
+      "emailInvalid": "একটি বৈধ ইমেইল ঠিকানা দিন।",
+      "passwordRequired": "পাসওয়ার্ড আবশ্যক।",
+      "passwordMin": "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।",
+      "passwordMax": "পাসওয়ার্ড খুব বড়।",
+      "slugTaken": "এই ওয়ার্কস্পেস URL আগেই নেওয়া হয়েছে।",
+      "generic": "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+    }
+  },
+  "dashboard": {
+    "searchPlaceholder": "সার্চ করুন বা যান…",
+    "greeting": "আপনাকে দেখে ভালো লাগল",
+    "subtitle": "আজ আপনার ওয়ার্কস্পেসে যা যা ঘটছে তা এখানে।",
+    "openMenu": "নেভিগেশন মেনু খুলুন",
+    "closeMenu": "নেভিগেশন মেনু বন্ধ করুন",
+    "stats": {
+      "openConversations": "চলমান কথোপকথন",
+      "newLeads": "নতুন লিড",
+      "activeProjects": "সক্রিয় প্রজেক্ট",
+      "revenue": "আয় (এই মাসে)",
+      "vsLastWeek": "গত সপ্তাহের তুলনায়"
+    },
+    "panels": {
+      "activity": "সাম্প্রতিক কার্যকলাপ",
+      "viewAll": "সব দেখুন"
+    },
+    "user": {
+      "name": "মো. আলম হোসেন",
+      "email": "alam@dhakaretail.co",
+      "profile": "প্রোফাইল",
+      "settings": "সেটিংস",
+      "signOut": "সাইন আউট"
+    }
+  },
+  "theme": {
+    "toggle": "থিম পরিবর্তন",
+    "light": "লাইট",
+    "dark": "ডার্ক",
+    "system": "সিস্টেম"
+  },
+  "locale": {
+    "toggle": "ভাষা পরিবর্তন",
+    "en": "English",
+    "bn": "বাংলা"
+  }
+}
