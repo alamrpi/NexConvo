@@ -1,0 +1,32 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+# Compiler (CS) warnings remain errors via Directory.Build.props — those carry real signal.
+# The following analyzer rules are well-known noise for this codebase's idioms and are
+# downgraded so the build gate stays meaningful rather than pedantic.
+
+# Result<T>.Success(...) etc. — static factory on a generic type is an intentional, idiomatic pattern.
+dotnet_diagnostic.CA1000.severity = none
+# ConfigureAwait(false) is unnecessary in ASP.NET Core; not worth enforcing repo-wide.
+dotnet_diagnostic.CA2007.severity = none
+# IFormatProvider on every string API is excessive for ids/URLs/log templates.
+dotnet_diagnostic.CA1305.severity = none
+# Public methods validating all args defensively — handled by validators/nullable, not guard spam.
+dotnet_diagnostic.CA1062.severity = none
+# Catching general Exception is sometimes correct (pipeline behaviors, top-level handlers).
+dotnet_diagnostic.CA1031.severity = none
+
+# Test projects: the Method_Scenario_Expectation naming convention uses underscores by design.
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none

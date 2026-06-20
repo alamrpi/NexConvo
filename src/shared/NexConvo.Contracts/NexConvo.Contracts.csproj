@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Contracts is the cross-service message shape. Intentionally dependency-free
+    (pure records over System.Text.Json) so any service can reference it without
+    pulling in a transport or framework. Per skill Standard 19, changes here are
+    additive-only or a new version. TFM/nullable/strictness come from Directory.Build.props.
+  -->
+
+</Project>
