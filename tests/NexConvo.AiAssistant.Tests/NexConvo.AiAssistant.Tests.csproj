@@ -15,7 +15,7 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/services/AiCommand/NexConvo.AiCommand.Application/NexConvo.AiCommand.Application.csproj" />
-    <ProjectReference Include="../../src/services/AiCommand/NexConvo.AiCommand.Domain/NexConvo.AiCommand.Domain.csproj" />
+    <ProjectReference Include="../../src/services/AiAssistant/NexConvo.AiAssistant.Application/NexConvo.AiAssistant.Application.csproj" />
+    <ProjectReference Include="../../src/services/AiAssistant/NexConvo.AiAssistant.Domain/NexConvo.AiAssistant.Domain.csproj" />
   </ItemGroup>
 </Project>

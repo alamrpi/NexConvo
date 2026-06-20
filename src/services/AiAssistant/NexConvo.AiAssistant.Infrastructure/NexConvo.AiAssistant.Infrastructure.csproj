@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="../NexConvo.AiCommand.Application/NexConvo.AiCommand.Application.csproj" />
+    <ProjectReference Include="../NexConvo.AiAssistant.Application/NexConvo.AiAssistant.Application.csproj" />
     <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Infrastructure/NexConvo.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="../../../shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
   </ItemGroup>

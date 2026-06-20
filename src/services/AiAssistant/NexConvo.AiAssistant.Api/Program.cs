@@ -6,7 +6,7 @@ using Serilog;
 // Minimal standards-aligned host (skill Standards 9, 12, 6). Endpoints, CQRS handlers,
 // the DbContext + RLS interceptor, MassTransit, and per-endpoint RBAC are added during
 // the per-service implementation pass.
-const string serviceName = "ai-command";
+const string serviceName = "ai-assistant";
 
 var builder = WebApplication.CreateBuilder(args);
 

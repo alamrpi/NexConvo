@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <ItemGroup>
-    <ProjectReference Include="../NexConvo.AiCommand.Infrastructure/NexConvo.AiCommand.Infrastructure.csproj" />
+    <ProjectReference Include="../NexConvo.AiAssistant.Infrastructure/NexConvo.AiAssistant.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
