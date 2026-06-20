@@ -1,0 +1,6 @@
+@NexConvo.AiCommand.Api_HostAddress = http://localhost:5124
+
+GET {{NexConvo.AiCommand.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

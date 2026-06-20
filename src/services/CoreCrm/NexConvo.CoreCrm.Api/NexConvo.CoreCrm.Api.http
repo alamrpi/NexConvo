@@ -1,0 +1,6 @@
+@NexConvo.CoreCrm.Api_HostAddress = http://localhost:5081
+
+GET {{NexConvo.CoreCrm.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

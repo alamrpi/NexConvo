@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure shared domain primitives. Zero infrastructure deps (skill Standard 1) — only
+       MediatR.Contracts for the INotification marker used by domain events. -->
+
+  <ItemGroup>
+    <PackageReference Include="MediatR.Contracts" />
+  </ItemGroup>
+
+</Project>

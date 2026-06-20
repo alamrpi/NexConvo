@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -13,14 +11,11 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
-
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
-
   <ItemGroup>
-    <ProjectReference Include="..\..\src\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
+    <ProjectReference Include="../../src/services/AiCommand/NexConvo.AiCommand.Application/NexConvo.AiCommand.Application.csproj" />
+    <ProjectReference Include="../../src/services/AiCommand/NexConvo.AiCommand.Domain/NexConvo.AiCommand.Domain.csproj" />
   </ItemGroup>
-
 </Project>

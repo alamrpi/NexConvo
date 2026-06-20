@@ -4,7 +4,7 @@
        come from BuildingBlocks. TFM/strictness from Directory.Build.props. -->
 
   <ItemGroup>
-    <ProjectReference Include="..\..\shared\NexConvo.BuildingBlocks\NexConvo.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
