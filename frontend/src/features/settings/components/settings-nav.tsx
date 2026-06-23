@@ -16,8 +16,8 @@ interface SettingsSection {
 // Email ships first; the rest are placeholders for upcoming settings sections.
 const sections: readonly SettingsSection[] = [
   { key: 'email', href: '/dashboard/settings/email', icon: Mail, enabled: true },
+  { key: 'members', href: '/dashboard/settings/members', icon: Users, enabled: true },
   { key: 'general', href: '/dashboard/settings/general', icon: SlidersHorizontal, enabled: false },
-  { key: 'members', href: '/dashboard/settings/members', icon: Users, enabled: false },
   { key: 'billing', href: '/dashboard/settings/billing', icon: CreditCard, enabled: false },
 ] as const;
 

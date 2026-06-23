@@ -149,6 +149,60 @@
     "en": "English",
     "bn": "বাংলা"
   },
+  "verifyEmail": {
+    "title": "Verify email",
+    "verifying": "Verifying your email…",
+    "success": "Your email is verified.",
+    "failed": "This link is invalid or has expired.",
+    "missingToken": "This verification link is missing its token.",
+    "goToDashboard": "Go to dashboard",
+    "backToLogin": "Back to sign in"
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "subtitle": "Enter your workspace and email and we’ll send a reset link.",
+    "tenantLabel": "Workspace",
+    "emailLabel": "Email",
+    "submit": "Send reset link",
+    "submitting": "Sending…",
+    "checkInbox": "If that account exists, a reset link is on its way. Check your inbox.",
+    "backToLogin": "Back to sign in",
+    "errors": {
+      "tenantRequired": "Workspace is required.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address."
+    }
+  },
+  "resetPassword": {
+    "title": "Choose a new password",
+    "subtitle": "Enter a new password for your account.",
+    "passwordLabel": "New password",
+    "confirmLabel": "Confirm password",
+    "submit": "Reset password",
+    "submitting": "Resetting…",
+    "failed": "This reset link is invalid or has expired.",
+    "missingToken": "This reset link is missing its token.",
+    "backToLogin": "Back to sign in",
+    "errors": {
+      "passwordMin": "Use at least 8 characters.",
+      "confirmRequired": "Please confirm your password.",
+      "passwordMismatch": "Passwords don’t match."
+    }
+  },
+  "acceptInvite": {
+    "title": "Accept your invitation",
+    "subtitle": "Set your name and password to join the workspace.",
+    "fullNameLabel": "Full name",
+    "passwordLabel": "Password",
+    "submit": "Join workspace",
+    "submitting": "Joining…",
+    "failed": "This invitation is invalid or has expired.",
+    "missingToken": "This invitation link is missing its token.",
+    "errors": {
+      "fullNameRequired": "Your name is required.",
+      "passwordMin": "Use at least 8 characters."
+    }
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Manage your workspace configuration.",
@@ -159,6 +213,25 @@
       "members": "Members",
       "billing": "Billing",
       "soon": "Soon"
+    },
+    "members": {
+      "title": "Members",
+      "description": "Invite teammates to this workspace and manage pending invitations.",
+      "noPermission": "You don’t have permission to invite members.",
+      "emailLabel": "Email",
+      "roleLabel": "Role",
+      "roles": { "Admin": "Admin", "Agent": "Agent" },
+      "invite": "Send invite",
+      "inviting": "Sending…",
+      "invited": "Invitation sent.",
+      "inviteFailed": "Couldn’t send the invitation.",
+      "loadError": "Couldn’t load invitations.",
+      "empty": "No pending invitations.",
+      "pendingTitle": "Pending invitations",
+      "errors": {
+        "emailRequired": "Email is required.",
+        "emailInvalid": "Enter a valid email address."
+      }
     },
     "email": {
       "title": "Email",

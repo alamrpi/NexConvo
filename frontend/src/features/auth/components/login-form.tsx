@@ -105,7 +105,7 @@ export function LoginForm() {
         <div className="flex items-center justify-between">
           <Label htmlFor="password">{t('passwordLabel')}</Label>
           <Link
-            href="#forgot"
+            href="/forgot-password"
             className="text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             {t('forgotPassword')}
