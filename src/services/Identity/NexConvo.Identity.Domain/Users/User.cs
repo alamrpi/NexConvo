@@ -19,6 +19,7 @@ public sealed class User : BaseAggregateRoot
     public string PasswordHash { get; private set; } = null!;
     public string FullName { get; private set; } = null!;
     public UserStatus Status { get; private set; }
+    public DateTimeOffset? EmailVerifiedAt { get; private set; }
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
 
     private User() { } // EF
@@ -69,4 +70,8 @@ public sealed class User : BaseAggregateRoot
     }
 
     public bool IsActive => Status == UserStatus.Active;
+
+    public bool IsEmailVerified => EmailVerifiedAt is not null;
+
+    public void MarkEmailVerified(DateTimeOffset at) => EmailVerifiedAt ??= at;
 }

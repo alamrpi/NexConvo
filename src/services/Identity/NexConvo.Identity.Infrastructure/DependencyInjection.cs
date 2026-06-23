@@ -40,6 +40,8 @@ public static class DependencyInjection
         services.AddSingleton<RsaKeyProvider>();
         services.AddSingleton<IJwtTokenIssuer, JwtTokenIssuer>();
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+        services.AddSingleton<ILinkTokenService, LinkTokenService>();
+        services.AddSingleton<IAppLinkBuilder, AppLinkBuilder>();
         services.AddScoped<IAuditWriter, AuditWriter>();
 
         // Secret-at-rest: Data Protection with a persisted key ring (filesystem in dev;

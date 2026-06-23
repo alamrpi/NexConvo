@@ -3,8 +3,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexConvo.Identity.Api.Common;
+using NexConvo.Identity.Application.Authentication.EmailVerification;
 using NexConvo.Identity.Application.Authentication.GetCurrentUser;
 using NexConvo.Identity.Application.Authentication.Login;
+using NexConvo.Identity.Application.Authentication.PasswordReset;
 using NexConvo.Identity.Application.Authentication.Refresh;
 using NexConvo.Identity.Application.Authentication.Revoke;
 using NexConvo.Identity.Application.Authentication.Signup;
@@ -53,6 +55,31 @@ public sealed class AuthController(ISender sender) : ControllerBase
             ? (await sender.Send(new GetCurrentUserQuery(userId), cancellationToken)).ToActionResult()
             : Unauthorized();
     }
+
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest body, CancellationToken cancellationToken) =>
+        (await sender.Send(new VerifyEmailCommand(body.Token), cancellationToken)).ToActionResult();
+
+    [HttpPost("resend-verification")]
+    [Authorize]
+    public async Task<IActionResult> ResendVerification(CancellationToken cancellationToken)
+    {
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(sub, out var userId)
+            ? (await sender.Send(new ResendVerificationCommand(userId), cancellationToken)).ToActionResult()
+            : Unauthorized();
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest body, CancellationToken cancellationToken) =>
+        (await sender.Send(new ForgotPasswordCommand(body.TenantSlug, body.Email), cancellationToken)).ToActionResult();
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest body, CancellationToken cancellationToken) =>
+        (await sender.Send(new ResetPasswordCommand(body.Token, body.NewPassword), cancellationToken)).ToActionResult();
 }
 
 public sealed record SignupRequest(
@@ -61,3 +88,9 @@ public sealed record SignupRequest(
 public sealed record LoginRequest(string TenantSlug, string Email, string Password);
 
 public sealed record RefreshRequest(string RefreshToken);
+
+public sealed record VerifyEmailRequest(string Token);
+
+public sealed record ForgotPasswordRequest(string TenantSlug, string Email);
+
+public sealed record ResetPasswordRequest(string Token, string NewPassword);

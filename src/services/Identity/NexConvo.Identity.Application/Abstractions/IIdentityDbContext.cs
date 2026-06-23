@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NexConvo.Identity.Domain.Authentication;
 using NexConvo.Identity.Domain.Roles;
+using NexConvo.Identity.Domain.Invitations;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
 using NexConvo.Identity.Domain.WorkspaceSettings;
@@ -15,6 +16,8 @@ public interface IIdentityDbContext
     DbSet<Role> Roles { get; }
     DbSet<UserRole> UserRoles { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<OneTimeToken> OneTimeTokens { get; }
+    DbSet<Invitation> Invitations { get; }
     DbSet<WorkspaceEmailSettings> WorkspaceEmailSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

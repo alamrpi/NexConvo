@@ -3,7 +3,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Abstractions.Mailing;
 using NexConvo.Identity.Application.Common;
+using NexConvo.Identity.Domain.Authentication;
 using NexConvo.Identity.Domain.Roles;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
@@ -38,8 +40,12 @@ public sealed class SignupCommandHandler(
     IPasswordHasher passwordHasher,
     IJwtTokenIssuer tokenIssuer,
     IRefreshTokenService refreshTokens,
+    ILinkTokenService linkTokens,
+    ITenantEmailSenderResolver senderResolver,
+    IAppLinkBuilder appLinks,
     IAmbientTenantSetter tenantSetter,
-    IAuditWriter audit) : IRequestHandler<SignupCommand, Result<AuthTokensDto>>
+    IAuditWriter audit,
+    IClock clock) : IRequestHandler<SignupCommand, Result<AuthTokensDto>>
 {
     public async Task<Result<AuthTokensDto>> Handle(SignupCommand cmd, CancellationToken cancellationToken)
     {
@@ -69,11 +75,32 @@ public sealed class SignupCommandHandler(
         db.RefreshTokens.Add(
             DomainRefreshToken.Issue(tenant.Id, user.Id, generated.TokenHash, generated.ExpiresAt));
 
+        // Email verification token (sent below, best-effort) — login is not blocked on it in v1.
+        var verification = linkTokens.Create(tenant.Id);
+        db.OneTimeTokens.Add(OneTimeToken.Issue(
+            tenant.Id, user.Id, OneTimeTokenPurpose.EmailVerification,
+            verification.TokenHash, clock.UtcNow.AddHours(24)));
+
         audit.Add("tenant.signup", tenant.Id, user.Id, $"slug={slug.Value}");
         await db.SaveChangesAsync(cancellationToken);
+
+        await TrySendVerification(email.Value, user.FullName, appLinks.VerifyEmailLink(verification.Token), cancellationToken);
 
         var (roleNames, permissions) = RoleProjection.From([ownerRole]);
         var access = tokenIssuer.Issue(user, tenant, roleNames, permissions);
         return Result.Success(new AuthTokensDto(access.Token, access.ExpiresInSeconds, generated.Token));
+    }
+
+    private async Task TrySendVerification(string email, string name, string link, CancellationToken ct)
+    {
+        try
+        {
+            var sender = await senderResolver.ResolveAsync(ct);
+            await sender.SendAsync(AuthEmails.Verification(email, name, link), ct);
+        }
+        catch
+        {
+            // Best-effort: account is created; the user can resend verification later.
+        }
     }
 }

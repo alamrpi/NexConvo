@@ -50,6 +50,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("settings:manage", policy => policy.RequireAssertion(context =>
         context.User.HasClaim("permission", "*") ||
         context.User.HasClaim("permission", "settings:manage")));
+
+    options.AddPolicy("users:invite", policy => policy.RequireAssertion(context =>
+        context.User.HasClaim("permission", "*") ||
+        context.User.HasClaim("permission", "users:invite")));
 });
 
 builder.Services.AddControllers();

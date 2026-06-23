@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NexConvo.Identity.Domain.Authentication;
+using NexConvo.Identity.Domain.Invitations;
 using NexConvo.Identity.Domain.Roles;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
@@ -44,9 +45,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired();
         b.Property(u => u.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
         b.Property(u => u.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
+        b.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
         b.Property(u => u.CreatedAt).HasColumnName("created_at");
         b.Property(u => u.UpdatedAt).HasColumnName("updated_at");
         b.Property(u => u.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.Ignore(u => u.IsEmailVerified);
         b.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Navigation(u => u.Roles).UsePropertyAccessMode(PropertyAccessMode.Field);
         b.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();
@@ -113,6 +116,48 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         b.Property(t => t.CreatedByUserId).HasColumnName("created_by_user_id");
         b.HasIndex(t => new { t.TenantId, t.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class OneTimeTokenConfiguration : IEntityTypeConfiguration<OneTimeToken>
+{
+    public void Configure(EntityTypeBuilder<OneTimeToken> b)
+    {
+        b.ToTable("one_time_tokens");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.UserId).HasColumnName("user_id");
+        b.Property(x => x.Purpose).HasColumnName("purpose").HasConversion<string>().HasMaxLength(40);
+        b.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+        b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        b.Property(x => x.ConsumedAt).HasColumnName("consumed_at");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => new { x.TenantId, x.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
+{
+    public void Configure(EntityTypeBuilder<Invitation> b)
+    {
+        b.ToTable("invitations");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Email).HasColumnName("email").HasMaxLength(320).IsRequired()
+            .HasConversion(e => e.Value, v => Email.Create(v));
+        b.Property(x => x.RoleId).HasColumnName("role_id");
+        b.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+        b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        b.Property(x => x.AcceptedAt).HasColumnName("accepted_at");
+        b.Property(x => x.InvitedByUserId).HasColumnName("invited_by_user_id");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => new { x.TenantId, x.TokenHash }).IsUnique();
     }
 }
 
