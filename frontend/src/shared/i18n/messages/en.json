@@ -148,5 +148,59 @@
     "toggle": "Change language",
     "en": "English",
     "bn": "বাংলা"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your workspace configuration.",
+    "nav": {
+      "label": "Settings sections",
+      "email": "Email",
+      "general": "General",
+      "members": "Members",
+      "billing": "Billing",
+      "soon": "Soon"
+    },
+    "email": {
+      "title": "Email",
+      "description": "Configure how this workspace sends transactional email. Until you set this up, NexConvo sends system emails for you.",
+      "noPermission": "You don’t have permission to manage email settings.",
+      "loadError": "Couldn’t load email settings. Please try again.",
+      "providerLabel": "Provider",
+      "provider": { "Smtp": "SMTP", "Resend": "Resend" },
+      "fromNameLabel": "From name",
+      "fromAddressLabel": "From email",
+      "smtpHostLabel": "SMTP host",
+      "smtpPortLabel": "Port",
+      "smtpUsernameLabel": "Username (optional)",
+      "smtpUseSslLabel": "Use SSL/TLS",
+      "smtpPasswordLabel": "SMTP password",
+      "apiKeyLabel": "API key",
+      "secretConfigured": "Secret is configured",
+      "secretPlaceholder": "Enter the secret",
+      "replace": "Replace",
+      "enabledLabel": "Enable email sending for this workspace",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn’t save settings. Please try again.",
+      "sendTest": "Send test email",
+      "testing": "Sending…",
+      "testSent": "Test email sent — check your inbox.",
+      "testFailed": "Test failed. Check your settings.",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Not enabled",
+        "lastTestPassed": "Last test passed",
+        "lastTestFailed": "Last test failed"
+      },
+      "errors": {
+        "fromNameRequired": "From name is required.",
+        "fromAddressRequired": "From email is required.",
+        "fromAddressInvalid": "Enter a valid email address.",
+        "smtpHostRequired": "SMTP host is required.",
+        "smtpPortRequired": "Port is required.",
+        "smtpPortRange": "Port must be between 1 and 65535."
+      }
+    }
   }
 }

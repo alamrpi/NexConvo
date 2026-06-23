@@ -148,5 +148,59 @@
     "toggle": "ভাষা পরিবর্তন",
     "en": "English",
     "bn": "বাংলা"
+  },
+  "settings": {
+    "title": "সেটিংস",
+    "subtitle": "আপনার ওয়ার্কস্পেসের কনফিগারেশন পরিচালনা করুন।",
+    "nav": {
+      "label": "সেটিংস বিভাগ",
+      "email": "ইমেইল",
+      "general": "সাধারণ",
+      "members": "সদস্য",
+      "billing": "বিলিং",
+      "soon": "শীঘ্রই"
+    },
+    "email": {
+      "title": "ইমেইল",
+      "description": "এই ওয়ার্কস্পেস কীভাবে ট্রানজ্যাকশনাল ইমেইল পাঠাবে তা কনফিগার করুন। সেট আপ না করা পর্যন্ত NexConvo আপনার হয়ে সিস্টেম ইমেইল পাঠাবে।",
+      "noPermission": "ইমেইল সেটিংস পরিচালনার অনুমতি আপনার নেই।",
+      "loadError": "ইমেইল সেটিংস লোড করা যায়নি। আবার চেষ্টা করুন।",
+      "providerLabel": "প্রোভাইডার",
+      "provider": { "Smtp": "SMTP", "Resend": "Resend" },
+      "fromNameLabel": "প্রেরকের নাম",
+      "fromAddressLabel": "প্রেরকের ইমেইল",
+      "smtpHostLabel": "SMTP হোস্ট",
+      "smtpPortLabel": "পোর্ট",
+      "smtpUsernameLabel": "ইউজারনেম (ঐচ্ছিক)",
+      "smtpUseSslLabel": "SSL/TLS ব্যবহার করুন",
+      "smtpPasswordLabel": "SMTP পাসওয়ার্ড",
+      "apiKeyLabel": "API কী",
+      "secretConfigured": "সিক্রেট কনফিগার করা আছে",
+      "secretPlaceholder": "সিক্রেট লিখুন",
+      "replace": "পরিবর্তন",
+      "enabledLabel": "এই ওয়ার্কস্পেসের জন্য ইমেইল পাঠানো সক্রিয় করুন",
+      "save": "সংরক্ষণ",
+      "saving": "সংরক্ষণ হচ্ছে…",
+      "saved": "সেটিংস সংরক্ষিত হয়েছে।",
+      "saveError": "সেটিংস সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+      "sendTest": "টেস্ট ইমেইল পাঠান",
+      "testing": "পাঠানো হচ্ছে…",
+      "testSent": "টেস্ট ইমেইল পাঠানো হয়েছে — আপনার ইনবক্স দেখুন।",
+      "testFailed": "টেস্ট ব্যর্থ হয়েছে। আপনার সেটিংস যাচাই করুন।",
+      "status": {
+        "enabled": "সক্রিয়",
+        "disabled": "সক্রিয় নয়",
+        "lastTestPassed": "শেষ টেস্ট সফল",
+        "lastTestFailed": "শেষ টেস্ট ব্যর্থ"
+      },
+      "errors": {
+        "fromNameRequired": "প্রেরকের নাম আবশ্যক।",
+        "fromAddressRequired": "প্রেরকের ইমেইল আবশ্যক।",
+        "fromAddressInvalid": "একটি বৈধ ইমেইল ঠিকানা লিখুন।",
+        "smtpHostRequired": "SMTP হোস্ট আবশ্যক।",
+        "smtpPortRequired": "পোর্ট আবশ্যক।",
+        "smtpPortRange": "পোর্ট ১ থেকে ৬৫৫৩৫ এর মধ্যে হতে হবে।"
+      }
+    }
   }
 }
