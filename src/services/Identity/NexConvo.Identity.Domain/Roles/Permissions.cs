@@ -9,6 +9,7 @@ public static class Permissions
     public const string All = "*";
 
     public const string TenantManage = "tenant:manage";
+    public const string SettingsManage = "settings:manage";
     public const string UsersRead = "users:read";
     public const string UsersInvite = "users:invite";
     public const string LeadsRead = "leads:read";

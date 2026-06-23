@@ -54,6 +54,19 @@ services:
     ports:
       - "5341:80"
 
+  # Local transactional-email catcher. The platform-default sender points at smtp 1025;
+  # nothing leaves the machine. View captured mail at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # ---- Application services (run with: docker compose --profile apps up -d) ----
   # All services listen on container port 8080; host ports mirror their launchSettings
   # for familiarity. Config is env-only (Standard 11/13). Each service's DB/Redis/RabbitMQ
@@ -86,12 +99,17 @@ services:
       Seq__Url: http://seq
       # Connection string is env-only; the password is interpolated from .env (Standard 13).
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      # Platform-default email sender → Mailpit (captured at http://localhost:8025).
+      Email__Default__Smtp__Host: mailpit
+      Email__Default__Smtp__Port: "1025"
     ports:
       - "5047:8080"
     depends_on:
       postgres:
         condition: service_healthy
       seq:
+        condition: service_started
+      mailpit:
         condition: service_started
 
   corecrm:

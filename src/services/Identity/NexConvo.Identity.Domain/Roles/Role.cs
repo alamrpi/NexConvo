@@ -27,8 +27,8 @@ public sealed class Role : BaseAggregateRoot
         new Role(tenantId, "Owner", [Permissions.All]),
         new Role(tenantId, "Admin",
         [
-            Permissions.TenantManage, Permissions.UsersRead, Permissions.UsersInvite,
-            Permissions.LeadsRead, Permissions.LeadsWrite,
+            Permissions.TenantManage, Permissions.SettingsManage, Permissions.UsersRead,
+            Permissions.UsersInvite, Permissions.LeadsRead, Permissions.LeadsWrite,
         ]),
         new Role(tenantId, "Agent",
         [

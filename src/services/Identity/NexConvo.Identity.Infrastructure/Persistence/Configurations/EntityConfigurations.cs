@@ -7,6 +7,7 @@ using NexConvo.Identity.Domain.Roles;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
 using NexConvo.Identity.Domain.ValueObjects;
+using NexConvo.Identity.Domain.WorkspaceSettings;
 using NexConvo.Identity.Infrastructure.Audit;
 
 namespace NexConvo.Identity.Infrastructure.Persistence.Configurations;
@@ -112,6 +113,33 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         b.Property(t => t.CreatedByUserId).HasColumnName("created_by_user_id");
         b.HasIndex(t => new { t.TenantId, t.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class WorkspaceEmailSettingsConfiguration : IEntityTypeConfiguration<WorkspaceEmailSettings>
+{
+    public void Configure(EntityTypeBuilder<WorkspaceEmailSettings> b)
+    {
+        b.ToTable("workspace_email_settings");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Ignore(x => x.HasSecret);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.FromName).HasColumnName("from_name").HasMaxLength(200);
+        b.Property(x => x.FromAddress).HasColumnName("from_address").HasMaxLength(320);
+        b.Property(x => x.IsEnabled).HasColumnName("is_enabled");
+        b.Property(x => x.SmtpHost).HasColumnName("smtp_host").HasMaxLength(255);
+        b.Property(x => x.SmtpPort).HasColumnName("smtp_port");
+        b.Property(x => x.SmtpUsername).HasColumnName("smtp_username").HasMaxLength(255);
+        b.Property(x => x.SmtpUseSsl).HasColumnName("smtp_use_ssl");
+        b.Property(x => x.EncryptedSecret).HasColumnName("encrypted_secret");
+        b.Property(x => x.LastTestedAt).HasColumnName("last_tested_at");
+        b.Property(x => x.LastTestSucceeded).HasColumnName("last_test_succeeded");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => x.TenantId).IsUnique(); // one settings row per tenant
     }
 }
 

@@ -45,6 +45,11 @@ builder.Services.AddAuthorization(options =>
 {
     // Deny-by-default (skill Standard 12): everything requires auth unless [AllowAnonymous].
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
+    // Permission policies map to the JWT 'permission' claims; '*' (Owner) satisfies any.
+    options.AddPolicy("settings:manage", policy => policy.RequireAssertion(context =>
+        context.User.HasClaim("permission", "*") ||
+        context.User.HasClaim("permission", "settings:manage")));
 });
 
 builder.Services.AddControllers();

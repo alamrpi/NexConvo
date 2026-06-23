@@ -33,6 +33,11 @@
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.4.0" />
   </ItemGroup>
 
+  <!-- Email (transactional) -->
+  <ItemGroup>
+    <PackageVersion Include="MailKit" Version="4.8.0" />
+  </ItemGroup>
+
   <!-- Observability: Serilog + OpenTelemetry -->
   <ItemGroup>
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />

@@ -10,5 +10,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" />
+    <PackageReference Include="MailKit" />
   </ItemGroup>
 </Project>

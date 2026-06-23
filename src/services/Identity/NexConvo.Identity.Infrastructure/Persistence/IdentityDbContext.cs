@@ -5,6 +5,7 @@ using NexConvo.Identity.Domain.Authentication;
 using NexConvo.Identity.Domain.Roles;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
+using NexConvo.Identity.Domain.WorkspaceSettings;
 using NexConvo.Identity.Infrastructure.Audit;
 
 namespace NexConvo.Identity.Infrastructure.Persistence;
@@ -17,6 +18,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<WorkspaceEmailSettings> WorkspaceEmailSettings => Set<WorkspaceEmailSettings>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,10 +1,15 @@
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexConvo.BuildingBlocks.Multitenancy;
+using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Abstractions.Mailing;
 using NexConvo.Identity.Infrastructure.Audit;
 using NexConvo.Identity.Infrastructure.Common;
+using NexConvo.Identity.Infrastructure.Mailing;
 using NexConvo.Identity.Infrastructure.Multitenancy;
 using NexConvo.Identity.Infrastructure.Persistence;
 using NexConvo.Identity.Infrastructure.Security;
@@ -36,6 +41,22 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenIssuer, JwtTokenIssuer>();
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+
+        // Secret-at-rest: Data Protection with a persisted key ring (filesystem in dev;
+        // Key Vault in prod — follow-up). Without persistence, encrypted secrets break on restart.
+        var keysDirectory = configuration["DataProtection:KeysDirectory"]
+            ?? Path.Combine(AppContext.BaseDirectory, "dp-keys");
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysDirectory))
+            .SetApplicationName("NexConvo.Identity");
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
+
+        // Email: platform-default options + Resend HTTP client (Polly) + per-tenant resolver.
+        services.Configure<PlatformDefaultEmailOptions>(
+            configuration.GetSection(PlatformDefaultEmailOptions.SectionName));
+        services.AddHttpClient("resend", client => client.BaseAddress = new Uri("https://api.resend.com/"))
+            .AddNexConvoResilience();
+        services.AddScoped<ITenantEmailSenderResolver, TenantEmailSenderResolver>();
 
         return services;
     }
