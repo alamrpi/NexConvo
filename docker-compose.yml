@@ -48,8 +48,16 @@ services:
     image: datalust/seq:latest
     environment:
       ACCEPT_EULA: "Y"
+      # Newer Seq requires a first-run admin password OR an explicit opt-out.
+      # Local dev has no auth so the log UI opens directly (Standard 13: not a prod secret).
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
     ports:
       - "5341:80"
+
+  # ---- Application services (run with: docker compose --profile apps up -d) ----
+  # All services listen on container port 8080; host ports mirror their launchSettings
+  # for familiarity. Config is env-only (Standard 11/13). Each service's DB/Redis/RabbitMQ
+  # depends_on is added here as that wiring lands in the service's implementation pass.
 
   gateway:
     profiles: ["apps"]
@@ -62,6 +70,122 @@ services:
     ports:
       - "8080:8080"
     depends_on:
+      seq:
+        condition: service_started
+      identity:
+        condition: service_started
+
+  identity:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Identity/NexConvo.Identity.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      # Connection string is env-only; the password is interpolated from .env (Standard 13).
+      ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+    ports:
+      - "5047:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seq:
+        condition: service_started
+
+  corecrm:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/CoreCrm/NexConvo.CoreCrm.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+    ports:
+      - "5081:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  chat:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Chat/NexConvo.Chat.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+    ports:
+      - "5132:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  voice:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Voice/NexConvo.Voice.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+    ports:
+      - "5022:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  aiassistant:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/AiAssistant/NexConvo.AiAssistant.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+    ports:
+      - "5124:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  automation:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Automation/NexConvo.Automation.Worker/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+    ports:
+      - "5228:8080"
+    depends_on:
+      identity:
+        condition: service_started
       seq:
         condition: service_started
 
