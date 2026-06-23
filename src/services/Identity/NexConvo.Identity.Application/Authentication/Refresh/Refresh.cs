@@ -26,6 +26,12 @@ public sealed class RefreshTokenCommandHandler(
     private static readonly Result<AuthTokensDto> Invalid =
         Result<AuthTokensDto>.Unauthorized("Invalid refresh token.");
 
+    // A just-rotated token reused within this window is treated as a benign concurrent refresh
+    // (the client legitimately races: page-load refresh + an in-flight data call near token
+    // expiry). Tolerating it returns a fresh token instead of a spurious logout. Tokens revoked
+    // by logout/password-reset (no replacement) are NOT graced.
+    private static readonly TimeSpan ReuseGraceWindow = TimeSpan.FromSeconds(60);
+
     public async Task<Result<AuthTokensDto>> Handle(RefreshTokenCommand cmd, CancellationToken cancellationToken)
     {
         // The opaque token embeds its tenant id so we can scope RLS without a slug parameter.
@@ -36,9 +42,10 @@ public sealed class RefreshTokenCommandHandler(
 
         tenantSetter.SetTenant(tenantId);
 
+        var now = clock.UtcNow;
         var hash = refreshTokens.Hash(cmd.RefreshToken);
         var existing = await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
-        if (existing is null || !existing.IsActive(clock.UtcNow))
+        if (existing is null || (!existing.IsActive(now) && !IsWithinReuseGrace(existing, now)))
         {
             return Invalid;
         }
@@ -54,7 +61,12 @@ public sealed class RefreshTokenCommandHandler(
         }
 
         var generated = refreshTokens.Generate(tenantId);
-        existing.Revoke(clock.UtcNow, generated.TokenHash);   // rotate: old revoked, points to replacement
+        if (existing.IsActive(now))
+        {
+            existing.Revoke(now, generated.TokenHash);   // normal rotation: old revoked → replacement
+        }
+        // else: already rotated within grace by a racing request — leave the live replacement
+        // intact and just hand this caller a fresh token too.
         db.RefreshTokens.Add(
             DomainRefreshToken.Issue(tenantId, user.Id, generated.TokenHash, generated.ExpiresAt));
 
@@ -67,4 +79,11 @@ public sealed class RefreshTokenCommandHandler(
         var access = tokenIssuer.Issue(user, tenant, roleNames, permissions);
         return Result.Success(new AuthTokensDto(access.Token, access.ExpiresInSeconds, generated.Token));
     }
+
+    /// <summary>True when the token was rotation-revoked (has a replacement) recently and isn't
+    /// naturally expired — a benign concurrent reuse, not a logout/reset revocation or a stale replay.</summary>
+    private static bool IsWithinReuseGrace(DomainRefreshToken token, DateTimeOffset now) =>
+        token is { RevokedAt: { } revokedAt, ReplacedByHash: not null }
+        && now <= revokedAt + ReuseGraceWindow
+        && now < token.ExpiresAt;
 }

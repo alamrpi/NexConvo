@@ -54,7 +54,7 @@ public sealed class AuthFlowTests(IdentityApiFactory factory) : IClassFixture<Id
     }
 
     [Fact]
-    public async Task RefreshToken_Rotates_AndOldIsRejected()
+    public async Task RefreshToken_Rotates_AndToleratesConcurrentReuseWithinGrace()
     {
         var client = factory.CreateClient();
 
@@ -66,8 +66,19 @@ public sealed class AuthFlowTests(IdentityApiFactory factory) : IClassFixture<Id
         var rotated = await refresh.Content.ReadFromJsonAsync<Tokens>();
         rotated!.RefreshToken.Should().NotBe(first.RefreshToken);
 
-        var reuseOld = await client.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = first.RefreshToken });
-        reuseOld.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        // Reusing the just-rotated token (a racing client around access-token expiry) is tolerated
+        // within the grace window: it returns a fresh, usable token instead of logging the user out.
+        var reuse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = first.RefreshToken });
+        reuse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var regraced = await reuse.Content.ReadFromJsonAsync<Tokens>();
+        regraced!.RefreshToken.Should().NotBe(first.RefreshToken);
+
+        var stillWorks = await client.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = regraced.RefreshToken });
+        stillWorks.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // A bogus / never-issued token is still rejected.
+        var bogus = await client.PostAsJsonAsync("/api/v1/auth/refresh", new { refreshToken = "Zm9v.YmFy" });
+        bogus.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

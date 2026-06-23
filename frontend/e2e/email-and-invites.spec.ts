@@ -36,9 +36,9 @@ async function tokenFromEmail(request: APIRequestContext, email: string, linkPat
       if (Array.isArray(body.messages) && body.messages.length > 0) {
         const full = await request.get(`${MAILPIT_API}/api/v1/message/${body.messages[0].ID}`);
         const html = (await full.json()).HTML as string;
-        const match = pattern.exec(html ?? '');
-        if (match) {
-          return decodeURIComponent(match[1]);
+        const captured = pattern.exec(html ?? '')?.[1];
+        if (captured) {
+          return decodeURIComponent(captured);
         }
       }
     }

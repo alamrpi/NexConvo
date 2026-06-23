@@ -43,6 +43,13 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
+  // Speculative prefetch requests must NOT drive a refresh: several fire concurrently with the
+  // same refresh token, and rotation would revoke it under the real navigation. Let prefetches
+  // pass; the actual navigation refreshes once. (The backend also tolerates a brief reuse grace.)
+  if (isPrefetch(req)) {
+    return NextResponse.next();
+  }
+
   const rotated = await tryRefresh(refreshToken);
   if (!rotated) {
     const res = redirectToLogin(req);
@@ -74,6 +81,15 @@ function redirectToLogin(req: NextRequest): NextResponse {
 function clearAuthCookies(res: NextResponse): void {
   res.cookies.set(ACCESS_COOKIE, '', { ...cookieOptions, maxAge: 0 });
   res.cookies.set(REFRESH_COOKIE, '', { ...cookieOptions, maxAge: 0 });
+}
+
+/** Next.js sends these on speculative `<Link>` prefetches — they must not mutate the session. */
+function isPrefetch(req: NextRequest): boolean {
+  return (
+    req.headers.get('next-router-prefetch') === '1' ||
+    req.headers.get('purpose') === 'prefetch' ||
+    (req.headers.get('sec-purpose')?.includes('prefetch') ?? false)
+  );
 }
 
 /** Read the JWT `exp` without verifying (edge-safe) — verification happens at the gateway. */
