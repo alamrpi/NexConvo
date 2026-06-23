@@ -63,6 +63,8 @@
       "passwordRequired": "Password is required.",
       "passwordMin": "Password must be at least 8 characters.",
       "invalidCredentials": "Incorrect workspace, email, or password.",
+      "network": "Can't reach the server — check your connection and try again.",
+      "server": "Server error. Please try again in a moment.",
       "generic": "Something went wrong. Please try again."
     },
     "testimonial": {
@@ -106,6 +108,8 @@
       "passwordMin": "Password must be at least 8 characters.",
       "passwordMax": "Password is too long.",
       "slugTaken": "That workspace URL is already taken.",
+      "network": "Can't reach the server — check your connection and try again.",
+      "server": "Server error. Please try again in a moment.",
       "generic": "Something went wrong. Please try again."
     }
   },

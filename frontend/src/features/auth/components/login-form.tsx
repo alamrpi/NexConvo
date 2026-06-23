@@ -30,14 +30,17 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
+    // Validate once a field is blurred, then live as the user fixes it (S15 — clear feedback).
+    mode: 'onTouched',
     defaultValues: { tenantSlug: '', email: '', password: '' },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     const user = await login.mutateAsync(values).catch(() => null);
     if (user) {
+      // replace() already renders the dashboard's server layout fresh (re-reading the new
+      // session cookies); a router.refresh() here races and can abort the navigation.
       router.replace('/dashboard');
-      router.refresh();
     }
   });
 

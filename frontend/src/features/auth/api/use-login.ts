@@ -1,14 +1,14 @@
 'use client';
 
-import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client/api-client';
 import { useSessionStore } from '../model/session.store';
+import { classifyAuthError } from './auth-error';
 import type { LoginValues } from '../model/login.schema';
 import type { CurrentUser } from '../model/auth.types';
 
 /** Discriminated error so the form can map gateway statuses to localized messages (S15). */
-export type LoginErrorCode = 'invalidCredentials' | 'generic';
+export type LoginErrorCode = 'invalidCredentials' | 'network' | 'server' | 'generic';
 
 export class LoginError extends Error {
   constructor(readonly code: LoginErrorCode) {
@@ -31,10 +31,8 @@ export function useLogin() {
         const { data } = await apiClient.post<CurrentUser>('/auth/login', values);
         return data;
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          throw new LoginError('invalidCredentials');
-        }
-        throw new LoginError('generic');
+        const { status, code } = classifyAuthError(error);
+        throw new LoginError(status === 401 ? 'invalidCredentials' : code);
       }
     },
     onSuccess: (user) => setUser(user),
