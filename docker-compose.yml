@@ -80,6 +80,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Seq__Url: http://seq
+      # In-container, Identity is reachable as http://identity:8080 (not localhost) — override
+      # both JWT validation authority and the proxy route from the appsettings.Development.json
+      # localhost values so token validation and routing both target the right host.
+      Jwt__Authority: http://identity:8080
+      ReverseProxy__Clusters__identity-cluster__Destinations__primary__Address: http://identity:8080
     ports:
       - "8080:8080"
     depends_on:
@@ -101,6 +106,9 @@ services:
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
       # Privileged connection used ONLY for startup auto-migration (DDL + RLS + GRANT).
       ConnectionStrings__IdentityDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      # Issuer = the in-network URL other services use to reach Identity (the discovery doc
+      # derives jwks_uri from it). Overrides the localhost value from appsettings.Development.json.
+      Jwt__Issuer: http://identity:8080
       # Platform-default email sender → Mailpit (captured at http://localhost:8025).
       Email__Default__Smtp__Host: mailpit
       Email__Default__Smtp__Port: "1025"
