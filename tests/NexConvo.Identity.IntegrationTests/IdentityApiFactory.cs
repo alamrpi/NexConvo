@@ -65,6 +65,8 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncL
                 ["ConnectionStrings:IdentityDb"] = ServiceConnectionString,
                 ["Email:Default:Smtp:Host"] = "localhost",
                 ["Email:Default:Smtp:Port"] = MailpitSmtpPort.ToString(),
+                // The factory migrates explicitly (as superuser) in InitializeAsync.
+                ["Database:AutoMigrate"] = "false",
             }));
     }
 

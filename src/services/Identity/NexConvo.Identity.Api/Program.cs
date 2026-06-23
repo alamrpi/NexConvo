@@ -5,6 +5,7 @@ using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Observability;
 using NexConvo.Identity.Application;
 using NexConvo.Identity.Infrastructure;
+using NexConvo.Identity.Infrastructure.Persistence;
 using NexConvo.Identity.Infrastructure.Security;
 using Serilog;
 
@@ -60,6 +61,10 @@ builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+// Auto-apply pending migrations on startup (Development by default) using a privileged
+// connection. No-op when the database is already up to date.
+await IdentityDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Environment, app.Logger);
 
 app.UseNexConvoExceptionHandling();
 app.UseSerilogRequestLogging();

@@ -99,6 +99,8 @@ services:
       Seq__Url: http://seq
       # Connection string is env-only; the password is interpolated from .env (Standard 13).
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      # Privileged connection used ONLY for startup auto-migration (DDL + RLS + GRANT).
+      ConnectionStrings__IdentityDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
       # Platform-default email sender → Mailpit (captured at http://localhost:8025).
       Email__Default__Smtp__Host: mailpit
       Email__Default__Smtp__Port: "1025"
