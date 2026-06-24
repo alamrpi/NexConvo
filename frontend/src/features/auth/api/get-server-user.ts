@@ -3,6 +3,7 @@ import 'server-only';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
 import { readSession } from '@/shared/api/server/session';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 import type { CurrentUser } from '../model/auth.types';
 
 /**
@@ -19,7 +20,7 @@ export async function getServerUser(): Promise<CurrentUser | null> {
   try {
     const { API_GATEWAY_URL } = serverEnv();
     const { data } = await axios.get<CurrentUser>(`${API_GATEWAY_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${session.accessToken}` },
+      headers: correlationHeaders(undefined, { Authorization: `Bearer ${session.accessToken}` }),
       timeout: 10_000,
     });
     return data;

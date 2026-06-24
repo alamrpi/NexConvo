@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 
 /** Public — consumes an email-verification link token at the gateway. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { API_GATEWAY_URL } = serverEnv();
   try {
-    await axios.post(`${API_GATEWAY_URL}/api/v1/auth/verify-email`, { token: body.token });
+    await axios.post(`${API_GATEWAY_URL}/api/v1/auth/verify-email`, { token: body.token }, { headers: correlationHeaders(req) });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     const status = axios.isAxiosError(error) ? (error.response?.status ?? 502) : 500;

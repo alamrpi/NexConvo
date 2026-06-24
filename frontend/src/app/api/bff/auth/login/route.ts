@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
 import { writeSession, writeChallenge } from '@/shared/api/server/session';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 import { loginSchema } from '@/features/auth/model/login.schema';
 import type { AuthTokens, CurrentUser } from '@/features/auth/model/auth.types';
 
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { data } = await axios.post<AuthTokens | TwoFactorChallenge>(
       `${API_GATEWAY_URL}/api/v1/auth/login`,
       parsed.data,
+      { headers: correlationHeaders(req) },
     );
 
     if (isTwoFactorChallenge(data)) {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { data: user } = await axios.get<CurrentUser>(`${API_GATEWAY_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${data.accessToken}` },
+      headers: correlationHeaders(req, { Authorization: `Bearer ${data.accessToken}` }),
     });
 
     const res = NextResponse.json(user);

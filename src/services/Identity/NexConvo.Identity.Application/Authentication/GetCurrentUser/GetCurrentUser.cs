@@ -9,11 +9,19 @@ namespace NexConvo.Identity.Application.Authentication.GetCurrentUser;
 /// <summary>The user id comes from the validated JWT 'sub' claim; tenant scope from the JWT (RLS).</summary>
 public sealed record GetCurrentUserQuery(Guid UserId) : IRequest<Result<CurrentUserDto>>;
 
-public sealed class GetCurrentUserQueryHandler(IIdentityDbContext db)
+public sealed class GetCurrentUserQueryHandler(IIdentityDbContext db, ICurrentUserCache cache)
     : IRequestHandler<GetCurrentUserQuery, Result<CurrentUserDto>>
 {
     public async Task<Result<CurrentUserDto>> Handle(GetCurrentUserQuery query, CancellationToken cancellationToken)
     {
+        // Cache-aside: /me is the hottest read (every dashboard navigation). Short-TTL cache,
+        // invalidated whenever the projection changes (profile/role/2FA/email/status).
+        var cached = await cache.GetAsync(query.UserId, cancellationToken);
+        if (cached is not null)
+        {
+            return Result.Success(cached);
+        }
+
         var user = await db.Users
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Id == query.UserId, cancellationToken);
@@ -33,8 +41,11 @@ public sealed class GetCurrentUserQueryHandler(IIdentityDbContext db)
         var roles = await db.Roles.Where(r => roleIds.Contains(r.Id)).ToListAsync(cancellationToken);
         var (roleNames, permissions) = RoleProjection.From(roles);
 
-        return Result.Success(new CurrentUserDto(
+        var dto = new CurrentUserDto(
             user.Id, tenant.Id, tenant.Slug.Value, user.Email.Value, user.FullName,
-            user.IsEmailVerified, user.TwoFactorEnabled, tenant.RequireTwoFactor, roleNames, permissions));
+            user.IsEmailVerified, user.TwoFactorEnabled, tenant.RequireTwoFactor, roleNames, permissions);
+
+        await cache.SetAsync(query.UserId, dto, cancellationToken);
+        return Result.Success(dto);
     }
 }

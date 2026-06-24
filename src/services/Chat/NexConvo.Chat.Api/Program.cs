@@ -28,9 +28,9 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseSerilogRequestLogging();
-app.UseRequestCorrelation();
+app.UseNexConvoRequestLogging();
 app.UseAuthentication();
+app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
 
 app.MapControllers();

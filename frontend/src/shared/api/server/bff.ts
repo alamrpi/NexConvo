@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import type { AxiosInstance } from 'axios';
 import { readSession, writeSession, clearSession } from './session';
 import { createServerApiClient, SessionExpiredError } from './api-server';
+import { resolveCorrelationId } from './correlation';
 import type { AuthTokens } from '@/features/auth/model/auth.types';
 
 /** Next.js route context (e.g. `{ params: Promise<{ id: string }> }` for dynamic segments). */
@@ -32,9 +33,13 @@ export function withBff(handler: BffHandler) {
     }
 
     let rotated: AuthTokens | null = null;
-    const api = createServerApiClient(session, (tokens) => {
-      rotated = tokens;
-    });
+    const api = createServerApiClient(
+      session,
+      (tokens) => {
+        rotated = tokens;
+      },
+      resolveCorrelationId(req),
+    );
 
     try {
       const res = await handler(req, { api }, routeCtx);

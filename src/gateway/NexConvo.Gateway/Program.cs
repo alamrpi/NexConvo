@@ -51,10 +51,10 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseSerilogRequestLogging();
-app.UseRequestCorrelation();
+app.UseNexConvoRequestLogging();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
 
 // Liveness = process is up; readiness = ready to route. Gateway has no own datastore.

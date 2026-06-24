@@ -12,7 +12,8 @@ namespace NexConvo.Identity.Application.Users;
 public sealed record ChangeUserRoleCommand(Guid UserId, Guid RoleId, Guid ActorUserId)
     : IRequest<Result>, IRequireVerifiedActor;
 
-public sealed class ChangeUserRoleCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
+public sealed class ChangeUserRoleCommandHandler(
+    IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit, ICurrentUserCache cache)
     : IRequestHandler<ChangeUserRoleCommand, Result>
 {
     public async Task<Result> Handle(ChangeUserRoleCommand cmd, CancellationToken cancellationToken)
@@ -47,6 +48,7 @@ public sealed class ChangeUserRoleCommandHandler(IIdentityDbContext db, ITenantC
 
         audit.Add("user.role_changed", tenant.TenantId, cmd.ActorUserId, $"user={cmd.UserId};role={role.Name}");
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(cmd.UserId, cancellationToken); // the user whose role changed
 
         return Result.Success();
     }

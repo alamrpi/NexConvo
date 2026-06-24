@@ -16,7 +16,8 @@ public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProf
         RuleFor(x => x.FullName).NotEmpty().MaximumLength(200);
 }
 
-public sealed class UpdateProfileCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
+public sealed class UpdateProfileCommandHandler(
+    IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit, ICurrentUserCache cache)
     : IRequestHandler<UpdateProfileCommand, Result>
 {
     public async Task<Result> Handle(UpdateProfileCommand cmd, CancellationToken cancellationToken)
@@ -30,6 +31,7 @@ public sealed class UpdateProfileCommandHandler(IIdentityDbContext db, ITenantCo
         user.UpdateProfile(cmd.FullName);
         audit.Add("profile.updated", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(cmd.UserId, cancellationToken);
 
         return Result.Success();
     }

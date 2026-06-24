@@ -14,7 +14,7 @@ namespace NexConvo.Identity.Application.Settings.WorkspaceSecurity;
 public sealed record UpdateSecuritySettingsCommand(bool RequireTwoFactor, Guid ActorUserId) : IRequest<Result>;
 
 public sealed class UpdateSecuritySettingsCommandHandler(
-    IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
+    IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit, ICurrentUserCache cache)
     : IRequestHandler<UpdateSecuritySettingsCommand, Result>
 {
     public async Task<Result> Handle(UpdateSecuritySettingsCommand cmd, CancellationToken cancellationToken)
@@ -28,6 +28,9 @@ public sealed class UpdateSecuritySettingsCommandHandler(
         current.SetRequireTwoFactor(cmd.RequireTwoFactor);
         audit.Add("workspace.2fa_required_changed", tenant.TenantId, cmd.ActorUserId, $"required={cmd.RequireTwoFactor}");
         await db.SaveChangesAsync(cancellationToken);
+        // The flag shows in /me for everyone; invalidate the acting user for immediate feedback.
+        // Other members pick it up within the cache TTL (enforcement itself is live, not cached).
+        await cache.InvalidateAsync(cmd.ActorUserId, cancellationToken);
         return Result.Success();
     }
 }

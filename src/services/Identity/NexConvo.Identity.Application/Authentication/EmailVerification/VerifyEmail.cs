@@ -20,7 +20,8 @@ public sealed class VerifyEmailCommandHandler(
     ILinkTokenService linkTokens,
     IAmbientTenantSetter tenantSetter,
     IAuditWriter audit,
-    IClock clock) : IRequestHandler<VerifyEmailCommand, Result>
+    IClock clock,
+    ICurrentUserCache cache) : IRequestHandler<VerifyEmailCommand, Result>
 {
     private static readonly Result Invalid = Result.Invalid("This verification link is invalid or has expired.");
 
@@ -51,6 +52,7 @@ public sealed class VerifyEmailCommandHandler(
         token.Consume(clock.UtcNow);
         audit.Add("email.verified", tenantId, user.Id, null);
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(user.Id, cancellationToken);
         return Result.Success();
     }
 }

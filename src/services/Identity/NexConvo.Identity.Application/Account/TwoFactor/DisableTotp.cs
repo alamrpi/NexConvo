@@ -21,7 +21,8 @@ public sealed class DisableTotpCommandHandler(
     IPasswordHasher passwordHasher,
     ITenantContext tenant,
     IClock clock,
-    IAuditWriter audit) : IRequestHandler<DisableTotpCommand, Result>
+    IAuditWriter audit,
+    ICurrentUserCache cache) : IRequestHandler<DisableTotpCommand, Result>
 {
     public async Task<Result> Handle(DisableTotpCommand cmd, CancellationToken cancellationToken)
     {
@@ -46,6 +47,7 @@ public sealed class DisableTotpCommandHandler(
         await SessionRevocation.RevokeAllAsync(db, cmd.UserId, clock.UtcNow, cancellationToken);
         audit.Add("twofactor.disabled", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(cmd.UserId, cancellationToken);
 
         return Result.Success();
     }

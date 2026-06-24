@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 import { forgotPasswordSchema } from '@/features/auth/model/password-reset.schema';
 
 /** Public — always succeeds (no account enumeration); the backend decides whether to send. */
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { API_GATEWAY_URL } = serverEnv();
   try {
-    await axios.post(`${API_GATEWAY_URL}/api/v1/auth/forgot-password`, parsed.data);
+    await axios.post(`${API_GATEWAY_URL}/api/v1/auth/forgot-password`, parsed.data, { headers: correlationHeaders(req) });
   } catch {
     // Swallow — never reveal whether the account exists.
   }

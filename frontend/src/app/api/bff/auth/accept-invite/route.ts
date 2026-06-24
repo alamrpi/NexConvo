@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
 import { writeSession } from '@/shared/api/server/session';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 import type { AuthTokens, CurrentUser } from '@/features/auth/model/auth.types';
 
 /**
@@ -25,9 +26,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { data: tokens } = await axios.post<AuthTokens>(
       `${API_GATEWAY_URL}/api/v1/invitations/accept`,
       { token: body.token, fullName: body.fullName, password: body.password },
+      { headers: correlationHeaders(req) },
     );
     const { data: user } = await axios.get<CurrentUser>(`${API_GATEWAY_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      headers: correlationHeaders(req, { Authorization: `Bearer ${tokens.accessToken}` }),
     });
 
     const res = NextResponse.json(user);

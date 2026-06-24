@@ -106,6 +106,8 @@ services:
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
       # Privileged connection used ONLY for startup auto-migration (DDL + RLS + GRANT).
       ConnectionStrings__IdentityDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      # Redis backs the distributed /me cache (in-network host; overrides the localhost dev value).
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
       # Issuer = the in-network URL other services use to reach Identity (the discovery doc
       # derives jwks_uri from it). Overrides the localhost value from appsettings.Development.json.
       Jwt__Issuer: http://identity:8080

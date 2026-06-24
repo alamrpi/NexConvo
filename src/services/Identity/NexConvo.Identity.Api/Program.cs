@@ -64,14 +64,21 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Surface which distributed-cache backend is active (Redis in prod/docker, in-memory in dev when
+// ConnectionStrings:Redis is unset) — ops signal + makes a misconfigured cache obvious at boot.
+app.Logger.LogInformation(
+    "Distributed cache backend: {Cache} (ConnectionStrings:Redis present: {Present})",
+    app.Services.GetRequiredService<Microsoft.Extensions.Caching.Distributed.IDistributedCache>().GetType().Name,
+    !string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Redis")));
+
 // Auto-apply pending migrations on startup (Development by default) using a privileged
 // connection. No-op when the database is already up to date.
 await IdentityDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Environment, app.Logger);
 
 app.UseNexConvoExceptionHandling();
-app.UseSerilogRequestLogging();
-app.UseRequestCorrelation();
+app.UseNexConvoRequestLogging();
 app.UseAuthentication();
+app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
 
 app.MapControllers();

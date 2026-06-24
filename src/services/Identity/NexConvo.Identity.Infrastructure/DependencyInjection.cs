@@ -9,6 +9,7 @@ using NexConvo.Identity.Application.Abstractions;
 using NexConvo.Identity.Application.Abstractions.Mailing;
 using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Infrastructure.Audit;
+using NexConvo.Identity.Infrastructure.Caching;
 using NexConvo.Identity.Infrastructure.Common;
 using NexConvo.Identity.Infrastructure.Mailing;
 using NexConvo.Identity.Infrastructure.Multitenancy;
@@ -37,6 +38,24 @@ public static class DependencyInjection
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<IdentityDbContext>());
 
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+
+        // Distributed cache: Redis when configured (prod / docker), in-memory fallback otherwise
+        // (dev) — the code always depends on IDistributedCache, so it swaps without changes.
+        var redis = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redis))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redis;
+                options.InstanceName = "nexconvo-identity:";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
+
+        services.AddScoped<ICurrentUserCache, CurrentUserCache>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();

@@ -25,7 +25,8 @@ public sealed class ConfirmTotpEnrollmentCommandHandler(
     ISecretProtector secretProtector,
     ITenantContext tenant,
     IClock clock,
-    IAuditWriter audit) : IRequestHandler<ConfirmTotpEnrollmentCommand, Result<BackupCodesDto>>
+    IAuditWriter audit,
+    ICurrentUserCache cache) : IRequestHandler<ConfirmTotpEnrollmentCommand, Result<BackupCodesDto>>
 {
     public async Task<Result<BackupCodesDto>> Handle(ConfirmTotpEnrollmentCommand cmd, CancellationToken cancellationToken)
     {
@@ -52,6 +53,7 @@ public sealed class ConfirmTotpEnrollmentCommandHandler(
         await SessionRevocation.RevokeAllAsync(db, cmd.UserId, clock.UtcNow, cancellationToken);
         audit.Add("twofactor.enabled", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(cmd.UserId, cancellationToken);
 
         return Result.Success(new BackupCodesDto(plaintext));
     }

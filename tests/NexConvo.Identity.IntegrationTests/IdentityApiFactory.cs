@@ -63,6 +63,8 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncL
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:IdentityDb"] = ServiceConnectionString,
+                // No Redis in the test rig — fall back to the in-memory distributed cache.
+                ["ConnectionStrings:Redis"] = "",
                 ["Email:Default:Smtp:Host"] = "localhost",
                 ["Email:Default:Smtp:Port"] = MailpitSmtpPort.ToString(),
                 // The factory migrates explicitly (as superuser) in InitializeAsync.

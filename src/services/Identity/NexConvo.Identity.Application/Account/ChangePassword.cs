@@ -25,7 +25,8 @@ public sealed class ChangePasswordCommandHandler(
     IPasswordHasher passwordHasher,
     IClock clock,
     ITenantContext tenant,
-    IAuditWriter audit) : IRequestHandler<ChangePasswordCommand, Result>
+    IAuditWriter audit,
+    ICurrentUserCache cache) : IRequestHandler<ChangePasswordCommand, Result>
 {
     public async Task<Result> Handle(ChangePasswordCommand cmd, CancellationToken cancellationToken)
     {
@@ -49,6 +50,7 @@ public sealed class ChangePasswordCommandHandler(
 
         audit.Add("password.changed", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(cmd.UserId, cancellationToken);
 
         return Result.Success();
     }

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
 import { CHALLENGE_COOKIE, clearChallenge, writeSession } from '@/shared/api/server/session';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 import type { AuthTokens, CurrentUser } from '@/features/auth/model/auth.types';
 
 /** Lenient on the wire — the backend decides TOTP vs. backup code and normalizes it. */
@@ -32,10 +33,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { data: tokens } = await axios.post<AuthTokens>(
       `${API_GATEWAY_URL}/api/v1/auth/2fa/verify`,
       { challengeToken, code: parsed.data.code },
+      { headers: correlationHeaders(req) },
     );
 
     const { data: user } = await axios.get<CurrentUser>(`${API_GATEWAY_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      headers: correlationHeaders(req, { Authorization: `Bearer ${tokens.accessToken}` }),
     });
 
     const res = NextResponse.json(user);

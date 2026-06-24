@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { serverEnv } from '@/shared/lib/env';
+import { correlationHeaders } from '@/shared/api/server/correlation';
 
 /** Public — consumes a reset link token + sets a new password at the gateway. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -11,10 +12,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { API_GATEWAY_URL } = serverEnv();
   try {
-    await axios.post(`${API_GATEWAY_URL}/api/v1/auth/reset-password`, {
-      token: body.token,
-      newPassword: body.newPassword,
-    });
+    await axios.post(
+      `${API_GATEWAY_URL}/api/v1/auth/reset-password`,
+      { token: body.token, newPassword: body.newPassword },
+      { headers: correlationHeaders(req) },
+    );
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     const status = axios.isAxiosError(error) ? (error.response?.status ?? 502) : 500;
