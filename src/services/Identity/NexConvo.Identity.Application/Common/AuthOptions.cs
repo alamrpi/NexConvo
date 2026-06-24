@@ -17,4 +17,8 @@ public sealed class AuthOptions
     /// <summary>Window in which a just-rotated refresh token may be reused without penalty
     /// (tolerates benign client races). Reuse after this window is treated as token theft.</summary>
     public int RefreshReuseGraceSeconds { get; set; } = 60;
+
+    /// <summary>When true (default), sensitive writes (invite, role/user admin, settings) are
+    /// blocked until the acting user has verified their email (soft enforcement).</summary>
+    public bool RequireVerifiedEmailForWrites { get; set; } = true;
 }

@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Domain.Roles;
 
 namespace NexConvo.Identity.Application.Roles;
 
 /// <summary>Creates a tenant custom role. Authenticated (roles:manage).</summary>
 public sealed record CreateRoleCommand(string Name, IReadOnlyList<string> Permissions, Guid ActorUserId)
-    : IRequest<Result<Guid>>;
+    : IRequest<Result<Guid>>, IRequireVerifiedActor;
 
 public sealed class CreateRoleCommandValidator : AbstractValidator<CreateRoleCommand>
 {

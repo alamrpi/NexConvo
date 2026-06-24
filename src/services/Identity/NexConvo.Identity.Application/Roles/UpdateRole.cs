@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Domain.Roles;
 
 namespace NexConvo.Identity.Application.Roles;
 
 /// <summary>Renames a custom role and replaces its permissions. Authenticated (roles:manage).</summary>
 public sealed record UpdateRoleCommand(Guid RoleId, string Name, IReadOnlyList<string> Permissions, Guid ActorUserId)
-    : IRequest<Result>;
+    : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class UpdateRoleCommandValidator : AbstractValidator<UpdateRoleCommand>
 {

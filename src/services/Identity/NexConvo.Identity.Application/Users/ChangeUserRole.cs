@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Domain.Users;
 
 namespace NexConvo.Identity.Application.Users;
 
 /// <summary>Sets a user's single role. Authenticated (users:manage).</summary>
-public sealed record ChangeUserRoleCommand(Guid UserId, Guid RoleId, Guid ActorUserId) : IRequest<Result>;
+public sealed record ChangeUserRoleCommand(Guid UserId, Guid RoleId, Guid ActorUserId)
+    : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class ChangeUserRoleCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
     : IRequestHandler<ChangeUserRoleCommand, Result>

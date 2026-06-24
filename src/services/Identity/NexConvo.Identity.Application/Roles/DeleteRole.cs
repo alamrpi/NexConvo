@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 
 namespace NexConvo.Identity.Application.Roles;
 
 /// <summary>Deletes a custom role. Authenticated (roles:manage). Blocked while members hold it.</summary>
-public sealed record DeleteRoleCommand(Guid RoleId, Guid ActorUserId) : IRequest<Result>;
+public sealed record DeleteRoleCommand(Guid RoleId, Guid ActorUserId) : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class DeleteRoleCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
     : IRequestHandler<DeleteRoleCommand, Result>

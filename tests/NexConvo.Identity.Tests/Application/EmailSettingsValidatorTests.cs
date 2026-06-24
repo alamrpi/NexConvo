@@ -11,7 +11,7 @@ public sealed class EmailSettingsValidatorTests
         string fromAddress = "no-reply@acme.com",
         string? smtpHost = "smtp.acme.com",
         int? smtpPort = 587) =>
-        new(provider, fromName, fromAddress, true, smtpHost, smtpPort, null, true, null);
+        new(provider, fromName, fromAddress, true, smtpHost, smtpPort, null, true, null, Guid.NewGuid());
 
     [Fact]
     public void Valid_Smtp_Passes() =>

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,13 @@ public sealed class SettingsController(ISender sender) : ControllerBase
 
     [HttpPut("email")]
     public async Task<IActionResult> UpdateEmail([FromBody] UpdateEmailRequest body, CancellationToken cancellationToken) =>
-        (await sender.Send(
-            new UpdateEmailSettingsCommand(
-                body.Provider, body.FromName, body.FromAddress, body.IsEnabled,
-                body.SmtpHost, body.SmtpPort, body.SmtpUsername, body.SmtpUseSsl, body.Secret),
-            cancellationToken)).ToActionResult();
+        TryGetUserId(out var actor)
+            ? (await sender.Send(
+                new UpdateEmailSettingsCommand(
+                    body.Provider, body.FromName, body.FromAddress, body.IsEnabled,
+                    body.SmtpHost, body.SmtpPort, body.SmtpUsername, body.SmtpUseSsl, body.Secret, actor),
+                cancellationToken)).ToActionResult()
+            : Unauthorized();
 
     [HttpPost("email/test")]
     public async Task<IActionResult> SendTest(CancellationToken cancellationToken)
@@ -30,6 +33,12 @@ public sealed class SettingsController(ISender sender) : ControllerBase
         return string.IsNullOrEmpty(email)
             ? Unauthorized()
             : (await sender.Send(new SendTestEmailCommand(email), cancellationToken)).ToActionResult();
+    }
+
+    private bool TryGetUserId(out Guid id)
+    {
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(sub, out id);
     }
 }
 

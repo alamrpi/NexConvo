@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 
 namespace NexConvo.Identity.Application.Users;
 
 /// <summary>Disables a user (they can no longer log in). Authenticated (users:manage).</summary>
-public sealed record DeactivateUserCommand(Guid UserId, Guid ActorUserId) : IRequest<Result>;
+public sealed record DeactivateUserCommand(Guid UserId, Guid ActorUserId) : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class DeactivateUserCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
     : IRequestHandler<DeactivateUserCommand, Result>
@@ -39,7 +40,7 @@ public sealed class DeactivateUserCommandHandler(IIdentityDbContext db, ITenantC
 }
 
 /// <summary>Re-enables a disabled user. Authenticated (users:manage).</summary>
-public sealed record ReactivateUserCommand(Guid UserId, Guid ActorUserId) : IRequest<Result>;
+public sealed record ReactivateUserCommand(Guid UserId, Guid ActorUserId) : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class ReactivateUserCommandHandler(IIdentityDbContext db, ITenantContext tenant, IAuditWriter audit)
     : IRequestHandler<ReactivateUserCommand, Result>

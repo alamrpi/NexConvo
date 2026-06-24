@@ -34,6 +34,7 @@ public sealed class GetCurrentUserQueryHandler(IIdentityDbContext db)
         var (roleNames, permissions) = RoleProjection.From(roles);
 
         return Result.Success(new CurrentUserDto(
-            user.Id, tenant.Id, tenant.Slug.Value, user.Email.Value, user.FullName, roleNames, permissions));
+            user.Id, tenant.Id, tenant.Slug.Value, user.Email.Value, user.FullName,
+            user.IsEmailVerified, roleNames, permissions));
     }
 }

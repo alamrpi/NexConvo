@@ -10,5 +10,6 @@ public sealed record CurrentUserDto(
     string TenantSlug,
     string Email,
     string FullName,
+    bool EmailVerified,
     IReadOnlyCollection<string> Roles,
     IReadOnlyCollection<string> Permissions);

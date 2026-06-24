@@ -6,6 +6,7 @@ using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
 using NexConvo.Identity.Application.Abstractions.Mailing;
 using NexConvo.Identity.Application.Authentication;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Domain.Invitations;
 using NexConvo.Identity.Domain.ValueObjects;
 
@@ -13,7 +14,10 @@ namespace NexConvo.Identity.Application.Invitations;
 
 /// <summary>Invites an email to join the current tenant with a role. Authenticated (users:invite).</summary>
 public sealed record InviteUserCommand(string Email, string RoleName, Guid InvitedByUserId, string InvitedByName)
-    : IRequest<Result>;
+    : IRequest<Result>, IRequireVerifiedActor
+{
+    public Guid ActorUserId => InvitedByUserId;
+}
 
 public sealed class InviteUserCommandValidator : AbstractValidator<InviteUserCommand>
 {

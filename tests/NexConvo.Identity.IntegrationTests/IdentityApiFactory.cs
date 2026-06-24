@@ -67,6 +67,9 @@ public sealed class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncL
                 ["Email:Default:Smtp:Port"] = MailpitSmtpPort.ToString(),
                 // The factory migrates explicitly (as superuser) in InitializeAsync.
                 ["Database:AutoMigrate"] = "false",
+                // Most tests signup-then-write without verifying; the dedicated guard test
+                // re-enables this via WithWebHostBuilder.
+                ["Auth:RequireVerifiedEmailForWrites"] = "false",
             }));
     }
 

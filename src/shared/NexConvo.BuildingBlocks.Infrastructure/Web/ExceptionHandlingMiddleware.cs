@@ -25,6 +25,10 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
             await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "Validation failed",
                 ex.Errors.Select(e => e.ErrorMessage).Distinct().ToArray());
         }
+        catch (EmailNotVerifiedException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message);
+        }
         catch (DomainException ex)
         {
             await WriteAsync(context, StatusCodes.Status400BadRequest, ex.Message);

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Domain.WorkspaceSettings;
 
 namespace NexConvo.Identity.Application.Settings.WorkspaceEmail;
@@ -18,7 +19,8 @@ public sealed record UpdateEmailSettingsCommand(
     int? SmtpPort,
     string? SmtpUsername,
     bool? SmtpUseSsl,
-    string? Secret) : IRequest<Result>;
+    string? Secret,
+    Guid ActorUserId) : IRequest<Result>, IRequireVerifiedActor;
 
 public sealed class UpdateEmailSettingsCommandValidator : AbstractValidator<UpdateEmailSettingsCommand>
 {

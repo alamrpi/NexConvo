@@ -75,6 +75,16 @@ public sealed class User : BaseAggregateRoot
         PasswordHash = passwordHash;
     }
 
+    public void UpdateProfile(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            throw new DomainException("Full name is required.");
+        }
+
+        FullName = fullName.Trim();
+    }
+
     public bool IsActive => Status == UserStatus.Active;
 
     public bool IsEmailVerified => EmailVerifiedAt is not null;
