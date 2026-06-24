@@ -176,6 +176,39 @@
     "en": "English",
     "bn": "বাংলা"
   },
+  "auth": {
+    "twoFactor": {
+      "title": "Two-step verification",
+      "subtitle": "Enter the 6-digit code from your authenticator app.",
+      "backupSubtitle": "Enter one of your backup codes.",
+      "codeLabel": "Authenticator code",
+      "backupLabel": "Backup code",
+      "verify": "Verify",
+      "verifying": "Verifying…",
+      "useBackup": "Use a backup code",
+      "useAuthenticator": "Use authenticator app",
+      "back": "Back to sign in",
+      "errors": {
+        "codeInvalid": "Enter the 6-digit code.",
+        "backupCodeInvalid": "Enter a valid backup code.",
+        "invalidCode": "That code is incorrect. Try again.",
+        "network": "Can't reach the server — check your connection and try again.",
+        "server": "Server error. Please try again in a moment.",
+        "generic": "Something went wrong. Please try again."
+      }
+    }
+  },
+  "verifyBanner": {
+    "message": "Verify your email to unlock inviting teammates and changing settings.",
+    "resend": "Resend email",
+    "sending": "Sending…",
+    "sent": "Verification email sent — check your inbox.",
+    "dismiss": "Dismiss"
+  },
+  "twoFactorBanner": {
+    "message": "Your workspace requires two-factor authentication. Set it up to keep managing your workspace.",
+    "action": "Set up 2FA"
+  },
   "verifyEmail": {
     "title": "Verify email",
     "verifying": "Verifying your email…",
@@ -238,20 +271,121 @@
       "email": "Email",
       "general": "General",
       "members": "Members",
+      "roles": "Roles",
       "billing": "Billing",
+      "account": "Profile",
+      "password": "Password",
+      "security": "Security",
       "soon": "Soon",
       "groups": {
+        "account": "Account",
         "workspace": "Workspace",
         "communication": "Communication"
       }
     },
+    "account": {
+      "title": "Profile",
+      "description": "Update your name and review your account email.",
+      "fullNameLabel": "Full name",
+      "emailLabel": "Email",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile updated.",
+      "saveError": "Couldn’t save your profile. Please try again.",
+      "errors": {
+        "fullNameRequired": "Your name is required.",
+        "fullNameMax": "Name is too long."
+      }
+    },
+    "password": {
+      "title": "Password",
+      "description": "Change the password you use to sign in.",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "rotateNote": "Changing your password signs you out on all devices.",
+      "save": "Update password",
+      "saving": "Updating…",
+      "changed": "Password updated. Signing you out — please sign in again.",
+      "errors": {
+        "currentPasswordRequired": "Enter your current password.",
+        "passwordMin": "Use at least 8 characters.",
+        "passwordMax": "Password is too long.",
+        "confirmRequired": "Please confirm your new password.",
+        "passwordMismatch": "Passwords don’t match.",
+        "invalidCurrent": "Your current password is incorrect.",
+        "network": "Can't reach the server — check your connection and try again.",
+        "server": "Server error. Please try again in a moment.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Add a second step to your sign-in with an authenticator app.",
+      "totpTitle": "Two-factor authentication",
+      "totpDescription": "Require a 6-digit code from your authenticator app each time you sign in.",
+      "enable": "Set up",
+      "disable": "Disable",
+      "status": {
+        "on": "On",
+        "off": "Off"
+      },
+      "workspacePolicy": {
+        "title": "Require two-factor for everyone",
+        "description": "When on, members must enable 2FA before they can invite teammates or change roles, users, or settings.",
+        "loadError": "Couldn’t load the security policy.",
+        "error": "Couldn’t update the policy. Please try again.",
+        "confirm": {
+          "title": "Require 2FA for the whole workspace?",
+          "description": "Every member must set up two-factor authentication before they can make changes. You can turn this off later.",
+          "cancel": "Cancel",
+          "enable": "Require 2FA"
+        }
+      },
+      "enroll": {
+        "title": "Set up two-factor authentication",
+        "scanSubtitle": "Scan the QR code with your authenticator app, then enter the 6-digit code.",
+        "codesSubtitle": "Save these backup codes somewhere safe — each works once if you lose your device.",
+        "qrAlt": "QR code for your authenticator app",
+        "secretHint": "Can’t scan? Enter this key manually:",
+        "codeLabel": "6-digit code",
+        "verify": "Verify & enable",
+        "verifying": "Verifying…",
+        "startError": "Couldn’t start setup. Please try again.",
+        "retry": "Try again",
+        "codesHeading": "Your backup codes",
+        "copyCodes": "Copy codes",
+        "acknowledge": "I’ve saved my backup codes.",
+        "done": "Done",
+        "errors": {
+          "codeInvalid": "That code is incorrect. Try again.",
+          "network": "Can't reach the server — check your connection and try again.",
+          "server": "Server error. Please try again in a moment.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "disableDialog": {
+        "title": "Disable two-factor authentication?",
+        "description": "Enter your password to turn off 2FA. Your account will be less protected.",
+        "passwordLabel": "Password",
+        "cancel": "Cancel",
+        "confirm": "Disable 2FA",
+        "disabling": "Disabling…",
+        "errors": {
+          "passwordRequired": "Enter your password.",
+          "invalidPassword": "That password is incorrect.",
+          "network": "Can't reach the server — check your connection and try again.",
+          "server": "Server error. Please try again in a moment.",
+          "generic": "Something went wrong. Please try again."
+        }
+      }
+    },
     "members": {
       "title": "Members",
-      "description": "Invite teammates to this workspace and manage pending invitations.",
-      "noPermission": "You don’t have permission to invite members.",
+      "description": "Manage workspace users and invite teammates.",
+      "noPermission": "You don’t have permission to view members.",
       "emailLabel": "Email",
       "roleLabel": "Role",
-      "roles": { "Admin": "Admin", "Agent": "Agent" },
       "invite": "Send invite",
       "inviting": "Sending…",
       "invited": "Invitation sent.",
@@ -261,7 +395,120 @@
       "pendingTitle": "Pending invitations",
       "errors": {
         "emailRequired": "Email is required.",
-        "emailInvalid": "Enter a valid email address."
+        "emailInvalid": "Enter a valid email address.",
+        "roleRequired": "Choose a role."
+      }
+    },
+    "users": {
+      "noPermission": "You don’t have permission to view users.",
+      "loadError": "Couldn’t load users. Please try again.",
+      "total": "{count} {count, plural, one {member} other {members}}",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "pageOf": "Page {page} of {totalPages}",
+      "noRole": "No role",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "columns": {
+        "name": "Member",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
+      },
+      "errors": {
+        "conflict": "Couldn’t complete — the workspace must keep an active Owner.",
+        "unverified": "Verify your email before managing users.",
+        "twoFactorRequired": "Enable two-factor authentication to manage users.",
+        "forbidden": "You don’t have permission to manage users.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "deactivateDialog": {
+        "title": "Deactivate {name}?",
+        "description": "They will be signed out and can no longer access this workspace until reactivated.",
+        "cancel": "Cancel",
+        "confirm": "Deactivate"
+      }
+    },
+    "roles": {
+      "title": "Workspace Permissions",
+      "subtitle": "Select a role on the left to configure what its members can do.",
+      "rolesHeading": "Roles",
+      "sync": "Sync",
+      "fullAccess": "Full access",
+      "system": "SYSTEM",
+      "newRole": "New role",
+      "delete": "Delete role",
+      "roleNameLabel": "Role name",
+      "setAll": "Set all:",
+      "searchPlaceholder": "Search permissions…",
+      "permissionsGranted": "{count} of {total} permissions granted",
+      "saved": "Permissions saved.",
+      "loadError": "Couldn’t load roles. Please try again.",
+      "noPermission": "You don’t have permission to view roles.",
+      "selectPrompt": "Select a role to view its permissions.",
+      "presets": {
+        "none": "None",
+        "read-only": "Read-only",
+        "standard": "Standard",
+        "full": "Full"
+      },
+      "categories": {
+        "Access": "Access",
+        "Manage": "Manage",
+        "Operations": "Operations"
+      },
+      "modules": {
+        "leads": "Leads",
+        "users": "Users",
+        "roles": "Roles",
+        "workspace": "Workspace"
+      },
+      "permissions": {
+        "leads_read": "View leads",
+        "leads_write": "Edit leads",
+        "users_read": "View members",
+        "users_manage": "Manage members",
+        "users_invite": "Invite members",
+        "roles_manage": "Manage roles",
+        "settings_manage": "Manage settings",
+        "tenant_manage": "Danger zone"
+      },
+      "errors": {
+        "nameTaken": "A role with that name already exists.",
+        "unverified": "Verify your email before managing roles.",
+        "twoFactorRequired": "Enable two-factor authentication to manage roles.",
+        "forbidden": "You don’t have permission to manage roles.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "newRoleDialog": {
+        "title": "Create a role",
+        "description": "Name the role — you can set its permissions next.",
+        "nameLabel": "Role name",
+        "cancel": "Cancel",
+        "create": "Create",
+        "creating": "Creating…",
+        "errors": {
+          "nameTaken": "A role with that name already exists.",
+          "unverified": "Verify your email before creating roles.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete {name}?",
+        "description": "This permanently removes the role. Members must be reassigned first.",
+        "cancel": "Cancel",
+        "confirm": "Delete role",
+        "errors": {
+          "membersAssigned": "Reassign its members before deleting this role.",
+          "unverified": "Verify your email before deleting roles.",
+          "generic": "Something went wrong. Please try again."
+        }
       }
     },
     "email": {

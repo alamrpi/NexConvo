@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getServerUser } from '@/features/auth/api/get-server-user';
 import { SessionProvider } from '@/features/auth/components/session-provider';
+import { EmailVerificationBanner } from '@/features/account/components/email-verification-banner';
+import { TwoFactorRequiredBanner } from '@/features/account/components/two-factor-required-banner';
 import { AppSidebar } from '@/features/dashboard/components/app-sidebar';
 import { AppTopbar } from '@/features/dashboard/components/app-topbar';
 
@@ -24,6 +26,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <AppTopbar />
+          <EmailVerificationBanner />
+          <TwoFactorRequiredBanner />
           <main className="flex-1 bg-muted/40 p-4 dark:bg-background sm:p-6">{children}</main>
         </div>
       </div>

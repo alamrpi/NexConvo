@@ -6,7 +6,13 @@ import { readSession, writeSession, clearSession } from './session';
 import { createServerApiClient, SessionExpiredError } from './api-server';
 import type { AuthTokens } from '@/features/auth/model/auth.types';
 
-type BffHandler = (req: NextRequest, ctx: { api: AxiosInstance }) => Promise<NextResponse>;
+/** Next.js route context (e.g. `{ params: Promise<{ id: string }> }` for dynamic segments). */
+type RouteContext = { params: Promise<Record<string, string>> };
+type BffHandler = (
+  req: NextRequest,
+  ctx: { api: AxiosInstance },
+  routeCtx: RouteContext,
+) => Promise<NextResponse>;
 
 /**
  * Wraps an authenticated BFF route handler (frontend standard S4). It:
@@ -15,10 +21,11 @@ type BffHandler = (req: NextRequest, ctx: { api: AxiosInstance }) => Promise<Nex
  *  - flushes any silently-rotated tokens back onto the response cookies,
  *  - maps a dead refresh token to 401 + cleared cookies.
  *
- * The handler receives a ready-to-use `api` client and must never touch cookies itself.
+ * The handler receives a ready-to-use `api` client and the Next route context (for dynamic
+ * `[id]` segments), and must never touch cookies itself.
  */
 export function withBff(handler: BffHandler) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+  return async (req: NextRequest, routeCtx: RouteContext): Promise<NextResponse> => {
     const session = await readSession();
     if (!session) {
       return NextResponse.json({ title: 'Unauthorized' }, { status: 401 });
@@ -30,7 +37,7 @@ export function withBff(handler: BffHandler) {
     });
 
     try {
-      const res = await handler(req, { api });
+      const res = await handler(req, { api }, routeCtx);
       if (rotated) {
         writeSession(res, rotated);
       }

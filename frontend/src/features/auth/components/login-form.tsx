@@ -13,17 +13,20 @@ import { Label } from '@/shared/ui/label';
 import { cn } from '@/shared/lib/cn';
 import { loginSchema, type LoginValues } from '../model/login.schema';
 import { useLogin } from '../api/use-login';
+import { LoginTwoFactorStep } from './login-two-factor-step';
 
 /**
  * Login form. Client validation via RHF + zod is UX only (S10) — the Identity service
  * authorizes on the server via the BFF. Fully labeled, keyboard-operable, with visible
- * field and form-level error/focus states (S11, S15, S27).
+ * field and form-level error/focus states (S11, S15, S27). When the account has 2FA, login
+ * pauses on a second step for the authenticator code.
  */
 export function LoginForm() {
   const t = useTranslations('login');
   const router = useRouter();
   const login = useLogin();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [twoFactor, setTwoFactor] = React.useState(false);
 
   const {
     register,
@@ -36,14 +39,25 @@ export function LoginForm() {
     defaultValues: { tenantSlug: '', email: '', password: '' },
   });
 
+  const goToDashboard = () => {
+    // replace() renders the dashboard's server layout fresh (re-reading the new session
+    // cookies); a router.refresh() here races and can abort the navigation.
+    router.replace('/dashboard');
+  };
+
   const onSubmit = handleSubmit(async (values) => {
-    const user = await login.mutateAsync(values).catch(() => null);
-    if (user) {
-      // replace() already renders the dashboard's server layout fresh (re-reading the new
-      // session cookies); a router.refresh() here races and can abort the navigation.
-      router.replace('/dashboard');
+    const outcome = await login.mutateAsync(values).catch(() => null);
+    if (!outcome) return;
+    if (outcome.kind === 'twoFactorRequired') {
+      setTwoFactor(true);
+    } else {
+      goToDashboard();
     }
   });
+
+  if (twoFactor) {
+    return <LoginTwoFactorStep onVerified={goToDashboard} onRestart={() => setTwoFactor(false)} />;
+  }
 
   /** Resolve a field's error-key into a localized message. */
   const errorText = (key?: string) => (key ? t(`errors.${key}`) : undefined);

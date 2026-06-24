@@ -18,6 +18,12 @@ export interface CurrentUser {
   tenantSlug: string;
   email: string;
   fullName: string;
+  /** Soft email-verification flag — drives the dashboard verification banner. */
+  emailVerified: boolean;
+  /** Whether TOTP two-factor is currently active — drives the Security page state. */
+  twoFactorEnabled: boolean;
+  /** Whether this workspace requires 2FA — drives the "enroll now" banner + write-gating. */
+  workspaceRequiresTwoFactor: boolean;
   roles: string[];
   permissions: string[];
 }

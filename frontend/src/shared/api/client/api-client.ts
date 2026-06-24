@@ -15,7 +15,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      const isAuthEndpoint = error.config?.url?.includes('/auth/') ?? false;
+      const isAuthEndpoint = error.config?.url?.startsWith('/auth/') ?? false;
       if (error.response?.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
         window.location.assign('/login');
       }

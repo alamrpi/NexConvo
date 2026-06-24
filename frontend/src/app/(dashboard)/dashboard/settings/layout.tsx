@@ -10,8 +10,8 @@ export default async function SettingsLayout({ children }: { children: ReactNode
   const t = await getTranslations('settings');
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-x-8 gap-y-4 md:grid-cols-[200px_minmax(0,1fr)]">
-      <aside className="md:space-y-4">
+    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-[200px_minmax(0,1fr)]">
+      <aside className="min-w-0 md:space-y-4">
         <div className="mb-3 md:mb-0">
           <h1 className="text-base font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-xs text-muted-foreground">{t('subtitle')}</p>

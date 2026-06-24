@@ -1,5 +1,7 @@
+import axios from 'axios';
 import { NextResponse } from 'next/server';
 import { withBff } from '@/shared/api/server/bff';
+import { gatedWriteCode } from '@/shared/api/server/gated-write';
 import { inviteMemberSchema, type PendingInvitation } from '@/features/settings/model/members';
 
 export const GET = withBff(async (_req, { api }) => {
@@ -13,6 +15,15 @@ export const POST = withBff(async (req, { api }) => {
     return NextResponse.json({ title: 'Invalid input' }, { status: 422 });
   }
 
-  await api.post('/api/v1/invitations', parsed.data);
-  return new NextResponse(null, { status: 204 });
+  try {
+    await api.post('/api/v1/invitations', parsed.data);
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    // A soft-gated invite (403 email-not-verified | two-factor-required) surfaces as a code,
+    // not a 500. The dashboard banner is the primary nudge to enroll/verify.
+    if (axios.isAxiosError(error) && error.response) {
+      return NextResponse.json({ code: gatedWriteCode(error) }, { status: error.response.status });
+    }
+    throw error;
+  }
 });

@@ -3,7 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Mail, SlidersHorizontal, Users, CreditCard, type LucideIcon } from 'lucide-react';
+import {
+  CreditCard,
+  KeyRound,
+  Mail,
+  Shield,
+  ShieldCheck,
+  SlidersHorizontal,
+  User,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
 interface SettingsSection {
@@ -25,10 +35,19 @@ interface SettingsGroup {
  */
 const groups: readonly SettingsGroup[] = [
   {
+    key: 'account',
+    items: [
+      { key: 'account', href: '/dashboard/settings/account', icon: User, enabled: true },
+      { key: 'password', href: '/dashboard/settings/password', icon: KeyRound, enabled: true },
+      { key: 'security', href: '/dashboard/settings/security', icon: Shield, enabled: true },
+    ],
+  },
+  {
     key: 'workspace',
     items: [
       { key: 'general', href: '/dashboard/settings/general', icon: SlidersHorizontal, enabled: false },
       { key: 'members', href: '/dashboard/settings/members', icon: Users, enabled: true },
+      { key: 'roles', href: '/dashboard/settings/roles', icon: ShieldCheck, enabled: true },
       { key: 'billing', href: '/dashboard/settings/billing', icon: CreditCard, enabled: false },
     ],
   },

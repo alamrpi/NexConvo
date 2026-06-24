@@ -13,12 +13,15 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { useSessionStore } from '@/features/auth/model/session.store';
 import { inviteMemberSchema, type InviteMemberValues } from '../model/members';
 import { usePendingInvitations, useInviteMember } from '../api/use-members';
+import { useRoles } from '../api/use-roles';
+import { UsersSection } from './users-section';
 
 export function MembersSection() {
   const t = useTranslations('settings.members');
+  const canRead = useSessionStore((s) => s.hasPermission('users:read'));
   const canInvite = useSessionStore((s) => s.hasPermission('users:invite'));
 
-  if (!canInvite) {
+  if (!canRead) {
     return (
       <p role="status" className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
         {t('noPermission')}
@@ -28,8 +31,13 @@ export function MembersSection() {
 
   return (
     <div className="space-y-6">
-      <InviteForm />
-      <PendingList />
+      <UsersSection />
+      {canInvite && (
+        <div className="space-y-6">
+          <InviteForm />
+          <PendingList />
+        </div>
+      )}
     </div>
   );
 }
@@ -37,6 +45,11 @@ export function MembersSection() {
 function InviteForm() {
   const t = useTranslations('settings.members');
   const invite = useInviteMember();
+  // Real roles (Owner is not invitable) populate the dropdown — no hardcoded role names.
+  const { data: roles } = useRoles();
+  const invitableRoles = (roles ?? []).filter((r) => !r.grantsAll);
+  const defaultRole = invitableRoles.some((r) => r.name === 'Member') ? 'Member' : invitableRoles[0]?.name ?? '';
+
   const {
     register,
     handleSubmit,
@@ -45,13 +58,13 @@ function InviteForm() {
   } = useForm<InviteMemberValues>({
     resolver: zodResolver(inviteMemberSchema),
     mode: 'onTouched',
-    defaultValues: { email: '', roleName: 'Agent' },
+    values: { email: '', roleName: defaultRole },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     const ok = await invite.mutateAsync(values).then(() => true).catch(() => false);
     if (ok) {
-      reset({ email: '', roleName: 'Agent' });
+      reset({ email: '', roleName: defaultRole });
     }
   });
   const errorText = (key?: string) => (key ? t(`errors.${key}`) : undefined);
@@ -63,7 +76,7 @@ function InviteForm() {
         <form onSubmit={onSubmit} noValidate className="space-y-4">
           {invite.isSuccess && <p role="status" className="text-sm text-muted-foreground">{t('invited')}</p>}
           {invite.isError && <p role="alert" className="text-sm text-destructive">{t('inviteFailed')}</p>}
-          <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_160px]">
             <div className="space-y-2">
               <Label htmlFor="invite-email">{t('emailLabel')}</Label>
               <Input id="invite-email" type="email" aria-invalid={!!errors.email} {...register('email')} />
@@ -76,8 +89,11 @@ function InviteForm() {
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:border-ring/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 {...register('roleName')}
               >
-                <option value="Admin">{t('roles.Admin')}</option>
-                <option value="Agent">{t('roles.Agent')}</option>
+                {invitableRoles.map((role) => (
+                  <option key={role.id} value={role.name}>
+                    {role.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
