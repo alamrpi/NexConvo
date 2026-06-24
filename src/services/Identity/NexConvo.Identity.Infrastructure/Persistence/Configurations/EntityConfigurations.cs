@@ -48,10 +48,27 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
         b.Property(u => u.FailedLoginCount).HasColumnName("failed_login_count").HasDefaultValue(0);
         b.Property(u => u.LockoutEndsAt).HasColumnName("lockout_ends_at");
+        b.Property(u => u.TwoFactorEnabled).HasColumnName("two_factor_enabled").HasDefaultValue(false);
+        b.Property(u => u.EncryptedTotpSecret).HasColumnName("encrypted_totp_secret");
         b.Property(u => u.CreatedAt).HasColumnName("created_at");
         b.Property(u => u.UpdatedAt).HasColumnName("updated_at");
         b.Property(u => u.CreatedByUserId).HasColumnName("created_by_user_id");
         b.Ignore(u => u.IsEmailVerified);
+        b.Ignore(u => u.TwoFactorPending);
+        b.Ignore(u => u.BackupCodes);
+
+        // Recovery codes stored as JSONB (skill Standard 7) via the private backing field.
+        var backupCodes = b.Property<List<BackupCode>>("_backupCodes")
+            .HasColumnName("two_factor_backup_codes")
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<List<BackupCode>>(v, (JsonSerializerOptions?)null) ?? new List<BackupCode>());
+        backupCodes.Metadata.SetValueComparer(new ValueComparer<List<BackupCode>>(
+            (a, c) => (a ?? new List<BackupCode>()).SequenceEqual(c ?? new List<BackupCode>()),
+            v => v.Aggregate(0, (h, x) => HashCode.Combine(h, x.GetHashCode())),
+            v => v.ToList()));
+
         b.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Navigation(u => u.Roles).UsePropertyAccessMode(PropertyAccessMode.Field);
         b.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();

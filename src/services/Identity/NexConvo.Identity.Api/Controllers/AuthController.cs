@@ -10,6 +10,7 @@ using NexConvo.Identity.Application.Authentication.PasswordReset;
 using NexConvo.Identity.Application.Authentication.Refresh;
 using NexConvo.Identity.Application.Authentication.Revoke;
 using NexConvo.Identity.Application.Authentication.Signup;
+using NexConvo.Identity.Application.Authentication.TwoFactor;
 
 namespace NexConvo.Identity.Api.Controllers;
 
@@ -32,9 +33,25 @@ public sealed class AuthController(ISender sender) : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken cancellationToken) =>
-        (await sender.Send(new LoginCommand(body.TenantSlug, body.Email, body.Password), cancellationToken))
-            .ToActionResult();
+    public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new LoginCommand(body.TenantSlug, body.Email, body.Password), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return result.ToActionResult();
+        }
+
+        // Flatten the union so a normal login still returns the tokens object directly.
+        var outcome = result.Value!;
+        return outcome.TwoFactorRequired
+            ? Ok(new { twoFactorRequired = true, challengeToken = outcome.ChallengeToken })
+            : Ok(outcome.Tokens);
+    }
+
+    [HttpPost("2fa/verify")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest body, CancellationToken cancellationToken) =>
+        (await sender.Send(new VerifyTwoFactorCommand(body.ChallengeToken, body.Code), cancellationToken)).ToActionResult();
 
     [HttpPost("refresh")]
     [AllowAnonymous]
@@ -90,6 +107,8 @@ public sealed record LoginRequest(string TenantSlug, string Email, string Passwo
 public sealed record RefreshRequest(string RefreshToken);
 
 public sealed record VerifyEmailRequest(string Token);
+
+public sealed record VerifyTwoFactorRequest(string ChallengeToken, string Code);
 
 public sealed record ForgotPasswordRequest(string TenantSlug, string Email);
 

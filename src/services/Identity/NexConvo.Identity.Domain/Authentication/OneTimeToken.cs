@@ -6,6 +6,7 @@ public enum OneTimeTokenPurpose
 {
     EmailVerification = 0,
     PasswordReset = 1,
+    TwoFactorChallenge = 2,
 }
 
 /// <summary>

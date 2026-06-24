@@ -5,6 +5,10 @@
     <ProjectReference Include="../../../shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="NexConvo.Identity.Tests" />
+    <InternalsVisibleTo Include="NexConvo.Identity.IntegrationTests" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />

@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenIssuer, JwtTokenIssuer>();
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
         services.AddSingleton<ILinkTokenService, LinkTokenService>();
+        services.AddSingleton<ITotpService, TotpService>();
         services.AddSingleton<IAppLinkBuilder, AppLinkBuilder>();
         services.AddScoped<IAuditWriter, AuditWriter>();
 

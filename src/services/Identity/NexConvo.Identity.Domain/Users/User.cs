@@ -14,6 +14,7 @@ public enum UserStatus
 public sealed class User : BaseAggregateRoot
 {
     private readonly List<UserRole> _roles = [];
+    private readonly List<BackupCode> _backupCodes = [];
 
     public Email Email { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
@@ -22,7 +23,10 @@ public sealed class User : BaseAggregateRoot
     public DateTimeOffset? EmailVerifiedAt { get; private set; }
     public int FailedLoginCount { get; private set; }
     public DateTimeOffset? LockoutEndsAt { get; private set; }
+    public bool TwoFactorEnabled { get; private set; }
+    public string? EncryptedTotpSecret { get; private set; }
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
+    public IReadOnlyCollection<BackupCode> BackupCodes => _backupCodes.AsReadOnly();
 
     private User() { } // EF
 
@@ -118,5 +122,54 @@ public sealed class User : BaseAggregateRoot
     {
         FailedLoginCount = 0;
         LockoutEndsAt = null;
+    }
+
+    /// <summary>2FA enrollment was started (secret stored) but not yet confirmed.</summary>
+    public bool TwoFactorPending => !TwoFactorEnabled && EncryptedTotpSecret is not null;
+
+    /// <summary>Stores the encrypted TOTP secret pending confirmation; 2FA is not yet active.</summary>
+    public void SetPendingTotpSecret(string encryptedSecret)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedSecret))
+        {
+            throw new DomainException("TOTP secret is required.");
+        }
+
+        EncryptedTotpSecret = encryptedSecret;
+        TwoFactorEnabled = false;
+        _backupCodes.Clear();
+    }
+
+    /// <summary>Activates 2FA after the user proves a valid code, replacing the recovery codes.</summary>
+    public void EnableTotp(IEnumerable<string> backupCodeHashes)
+    {
+        if (string.IsNullOrWhiteSpace(EncryptedTotpSecret))
+        {
+            throw new DomainException("Begin TOTP enrollment before enabling two-factor auth.");
+        }
+
+        TwoFactorEnabled = true;
+        _backupCodes.Clear();
+        _backupCodes.AddRange(backupCodeHashes.Select(h => new BackupCode(h)));
+    }
+
+    public void DisableTotp()
+    {
+        TwoFactorEnabled = false;
+        EncryptedTotpSecret = null;
+        _backupCodes.Clear();
+    }
+
+    /// <summary>Consumes one unused recovery code by hash; returns false when none match.</summary>
+    public bool ConsumeBackupCode(string hash, DateTimeOffset now)
+    {
+        var index = _backupCodes.FindIndex(c => c.UsedAt is null && c.Hash == hash);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        _backupCodes[index] = _backupCodes[index] with { UsedAt = now };
+        return true;
     }
 }
