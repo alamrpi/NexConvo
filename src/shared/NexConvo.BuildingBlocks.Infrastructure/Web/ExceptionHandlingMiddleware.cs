@@ -27,7 +27,11 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         }
         catch (EmailNotVerifiedException ex)
         {
-            await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message);
+            await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message, code: "email-not-verified");
+        }
+        catch (TwoFactorRequiredException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message, code: "two-factor-required");
         }
         catch (DomainException ex)
         {
@@ -40,7 +44,8 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         }
     }
 
-    private static async Task WriteAsync(HttpContext context, int status, string title, string[]? errors = null)
+    private static async Task WriteAsync(
+        HttpContext context, int status, string title, string[]? errors = null, string? code = null)
     {
         if (context.Response.HasStarted)
         {
@@ -51,11 +56,14 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         context.Response.StatusCode = status;
         context.Response.ContentType = "application/problem+json";
 
+        // `code` is a stable machine-readable discriminator (e.g. distinguishing the two soft-
+        // enforcement 403s) the clients map to localized messages; omitted when null.
         var payload = JsonSerializer.Serialize(new
         {
             type = $"https://httpstatuses.io/{status}",
             title,
             status,
+            code,
             errors,
         });
 

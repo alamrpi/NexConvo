@@ -16,6 +16,7 @@ public static class DependencyInjection
             cfg.RegisterServicesFromAssembly(assembly);
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
             cfg.AddOpenBehavior(typeof(VerifiedActorBehavior<,>));
+            cfg.AddOpenBehavior(typeof(RequiredTwoFactorActorBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(assembly);

@@ -13,7 +13,7 @@ public sealed class AccountTests(IdentityApiFactory factory) : IClassFixture<Ide
     private sealed record Tokens(string AccessToken, int ExpiresInSeconds, string RefreshToken);
     private sealed record Me(
         Guid UserId, Guid TenantId, string TenantSlug, string Email, string FullName,
-        bool EmailVerified, string[] Roles, string[] Permissions);
+        bool EmailVerified, bool TwoFactorEnabled, string[] Roles, string[] Permissions);
 
     private async Task<(HttpClient Client, Tokens Tokens)> SignupOwner(string slug, string email)
     {
@@ -34,6 +34,7 @@ public sealed class AccountTests(IdentityApiFactory factory) : IClassFixture<Ide
         var (client, _) = await SignupOwner("acct-me", "o@acct-me.test");
         var me = await client.GetFromJsonAsync<Me>("/api/v1/auth/me");
         me!.EmailVerified.Should().BeFalse();
+        me.TwoFactorEnabled.Should().BeFalse();
     }
 
     [Fact]

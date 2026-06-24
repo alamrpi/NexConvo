@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexConvo.Identity.Api.Common;
 using NexConvo.Identity.Application.Settings.WorkspaceEmail;
+using NexConvo.Identity.Application.Settings.WorkspaceSecurity;
 
 namespace NexConvo.Identity.Api.Controllers;
 
@@ -35,6 +36,16 @@ public sealed class SettingsController(ISender sender) : ControllerBase
             : (await sender.Send(new SendTestEmailCommand(email), cancellationToken)).ToActionResult();
     }
 
+    [HttpGet("security")]
+    public async Task<IActionResult> GetSecurity(CancellationToken cancellationToken) =>
+        (await sender.Send(new GetSecuritySettingsQuery(), cancellationToken)).ToActionResult();
+
+    [HttpPut("security")]
+    public async Task<IActionResult> UpdateSecurity([FromBody] UpdateSecurityRequest body, CancellationToken cancellationToken) =>
+        TryGetUserId(out var actor)
+            ? (await sender.Send(new UpdateSecuritySettingsCommand(body.RequireTwoFactor, actor), cancellationToken)).ToActionResult()
+            : Unauthorized();
+
     private bool TryGetUserId(out Guid id)
     {
         var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -52,3 +63,5 @@ public sealed record UpdateEmailRequest(
     string? SmtpUsername,
     bool? SmtpUseSsl,
     string? Secret);
+
+public sealed record UpdateSecurityRequest(bool RequireTwoFactor);

@@ -24,6 +24,7 @@ public sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         b.Property(t => t.Slug).HasColumnName("slug").HasMaxLength(40).IsRequired()
             .HasConversion(s => s.Value, v => TenantSlug.Create(v));
         b.Property(t => t.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
+        b.Property(t => t.RequireTwoFactor).HasColumnName("require_two_factor").HasDefaultValue(false);
         b.Property(t => t.CreatedAt).HasColumnName("created_at");
         b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         b.Property(t => t.CreatedByUserId).HasColumnName("created_by_user_id");

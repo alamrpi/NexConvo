@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 
 namespace NexConvo.Identity.Application.Account.TwoFactor;
 
@@ -19,6 +20,7 @@ public sealed class DisableTotpCommandHandler(
     IIdentityDbContext db,
     IPasswordHasher passwordHasher,
     ITenantContext tenant,
+    IClock clock,
     IAuditWriter audit) : IRequestHandler<DisableTotpCommand, Result>
 {
     public async Task<Result> Handle(DisableTotpCommand cmd, CancellationToken cancellationToken)
@@ -40,6 +42,8 @@ public sealed class DisableTotpCommandHandler(
         }
 
         user.DisableTotp();
+        // Removing a second factor is a security downgrade — evict every existing session.
+        await SessionRevocation.RevokeAllAsync(db, cmd.UserId, clock.UtcNow, cancellationToken);
         audit.Add("twofactor.disabled", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
 

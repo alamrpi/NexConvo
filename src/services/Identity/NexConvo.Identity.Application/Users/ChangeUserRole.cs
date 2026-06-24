@@ -30,7 +30,7 @@ public sealed class ChangeUserRoleCommandHandler(IIdentityDbContext db, ITenantC
         }
 
         // Don't let the workspace's last Owner be demoted out of the Owner role.
-        var ownerRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Owner", cancellationToken);
+        var ownerRole = await db.Roles.FirstOrDefaultAsync(r => r.IsSystem && r.Name == "Owner", cancellationToken);
         if (ownerRole is not null && cmd.RoleId != ownerRole.Id
             && await OwnerGuard.IsOnlyActiveOwnerAsync(db, cmd.UserId, cancellationToken))
         {

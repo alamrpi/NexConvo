@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 
 namespace NexConvo.Identity.Application.Account.TwoFactor;
 
@@ -23,6 +24,7 @@ public sealed class ConfirmTotpEnrollmentCommandHandler(
     ITotpService totp,
     ISecretProtector secretProtector,
     ITenantContext tenant,
+    IClock clock,
     IAuditWriter audit) : IRequestHandler<ConfirmTotpEnrollmentCommand, Result<BackupCodesDto>>
 {
     public async Task<Result<BackupCodesDto>> Handle(ConfirmTotpEnrollmentCommand cmd, CancellationToken cancellationToken)
@@ -46,6 +48,8 @@ public sealed class ConfirmTotpEnrollmentCommandHandler(
 
         var (plaintext, hashes) = BackupCodes.Generate(10);
         user.EnableTotp(hashes);
+        // Evict any pre-existing (password-only) sessions so they can't bypass the new 2FA.
+        await SessionRevocation.RevokeAllAsync(db, cmd.UserId, clock.UtcNow, cancellationToken);
         audit.Add("twofactor.enabled", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
 

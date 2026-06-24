@@ -35,6 +35,6 @@ public sealed class GetCurrentUserQueryHandler(IIdentityDbContext db)
 
         return Result.Success(new CurrentUserDto(
             user.Id, tenant.Id, tenant.Slug.Value, user.Email.Value, user.FullName,
-            user.IsEmailVerified, roleNames, permissions));
+            user.IsEmailVerified, user.TwoFactorEnabled, tenant.RequireTwoFactor, roleNames, permissions));
     }
 }

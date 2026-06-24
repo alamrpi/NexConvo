@@ -14,5 +14,7 @@ public sealed record CurrentUserDto(
     string Email,
     string FullName,
     bool EmailVerified,
+    bool TwoFactorEnabled,
+    bool WorkspaceRequiresTwoFactor,
     IReadOnlyCollection<string> Roles,
     IReadOnlyCollection<string> Permissions);

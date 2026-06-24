@@ -10,7 +10,8 @@ internal static class OwnerGuard
     public static async Task<bool> IsOnlyActiveOwnerAsync(
         IIdentityDbContext db, Guid userId, CancellationToken cancellationToken)
     {
-        var ownerRole = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Owner", cancellationToken);
+        // Pin to the seeded system role — a tenant could rename/recreate a custom role "Owner".
+        var ownerRole = await db.Roles.FirstOrDefaultAsync(r => r.IsSystem && r.Name == "Owner", cancellationToken);
         if (ownerRole is null)
         {
             return false;

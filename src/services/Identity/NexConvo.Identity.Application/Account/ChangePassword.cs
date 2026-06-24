@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Common;
 
 namespace NexConvo.Identity.Application.Account;
 
@@ -41,15 +42,10 @@ public sealed class ChangePasswordCommandHandler(
 
         user.SetPasswordHash(passwordHasher.Hash(cmd.NewPassword));
 
-        // Changing the password ends all other sessions: revoke every active refresh token.
-        var now = clock.UtcNow;
-        var active = await db.RefreshTokens
-            .Where(t => t.UserId == cmd.UserId && t.RevokedAt == null)
-            .ToListAsync(cancellationToken);
-        foreach (var token in active)
-        {
-            token.Revoke(now);
-        }
+        // Changing the password ends EVERY session (including the current device) plus any pending
+        // 2FA challenge — the client is redirected to sign in again. This is intentional: a password
+        // change should force re-authentication everywhere.
+        await SessionRevocation.RevokeAllAsync(db, cmd.UserId, clock.UtcNow, cancellationToken);
 
         audit.Add("password.changed", tenant.TenantId, cmd.UserId, null);
         await db.SaveChangesAsync(cancellationToken);
