@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -63,7 +63,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
             {t('submitting')}
           </>
         ) : (
-          t('submit')
+          <>
+            <KeyRound aria-hidden="true" />
+            {t('submit')}
+          </>
         )}
       </Button>
       <p className="text-center text-sm text-muted-foreground">

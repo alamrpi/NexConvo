@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -36,7 +36,10 @@ export function ForgotPasswordForm() {
       <div role="status" className="space-y-4 text-sm">
         <p>{t('checkInbox')}</p>
         <Button asChild variant="outline">
-          <Link href="/login">{t('backToLogin')}</Link>
+          <Link href="/login">
+            <ArrowLeft aria-hidden="true" />
+            {t('backToLogin')}
+          </Link>
         </Button>
       </div>
     );
@@ -61,7 +64,10 @@ export function ForgotPasswordForm() {
             {t('submitting')}
           </>
         ) : (
-          t('submit')
+          <>
+            <Send aria-hidden="true" />
+            {t('submit')}
+          </>
         )}
       </Button>
       <p className="text-center text-sm text-muted-foreground">

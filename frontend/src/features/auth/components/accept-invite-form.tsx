@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -62,7 +62,10 @@ export function AcceptInviteForm({ token }: { token: string }) {
             {t('submitting')}
           </>
         ) : (
-          t('submit')
+          <>
+            <Check aria-hidden="true" />
+            {t('submit')}
+          </>
         )}
       </Button>
     </form>

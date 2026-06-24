@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { useVerifyEmail } from '../api/use-password-reset';
 
@@ -31,7 +31,10 @@ export function VerifyEmailStatus({ token }: { token: string }) {
     return (
       <Status icon="error" title={t('failed')}>
         <Button asChild variant="outline">
-          <Link href="/login">{t('backToLogin')}</Link>
+          <Link href="/login">
+            <ArrowLeft aria-hidden="true" />
+            {t('backToLogin')}
+          </Link>
         </Button>
       </Status>
     );
@@ -39,7 +42,10 @@ export function VerifyEmailStatus({ token }: { token: string }) {
   return (
     <Status icon="success" title={t('success')}>
       <Button asChild>
-        <Link href="/dashboard">{t('goToDashboard')}</Link>
+        <Link href="/dashboard">
+          {t('goToDashboard')}
+          <ArrowRight aria-hidden="true" />
+        </Link>
       </Button>
     </Status>
   );

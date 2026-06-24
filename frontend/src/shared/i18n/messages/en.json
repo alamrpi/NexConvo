@@ -20,7 +20,13 @@
       "campaigns": "Campaigns",
       "automation": "Automation",
       "analytics": "Analytics",
-      "settings": "Settings"
+      "settings": "Settings",
+      "sections": {
+        "workspace": "Workspace",
+        "engage": "Engage",
+        "insights": "Insights",
+        "account": "Account"
+      }
     }
   },
   "landing": {
@@ -119,6 +125,14 @@
     "subtitle": "Here's what's happening across your workspace today.",
     "openMenu": "Open navigation menu",
     "closeMenu": "Close navigation menu",
+    "newAction": "New",
+    "notifications": "Notifications",
+    "period": {
+      "label": "Select period",
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days"
+    },
     "stats": {
       "openConversations": "Open conversations",
       "newLeads": "New leads",
@@ -126,9 +140,22 @@
       "revenue": "Revenue (MTD)",
       "vsLastWeek": "vs last week"
     },
+    "trend": {
+      "title": "Performance",
+      "conversations": "Conversations",
+      "revenue": "Revenue"
+    },
     "panels": {
       "activity": "Recent activity",
-      "viewAll": "View all"
+      "viewAll": "View all",
+      "channelMix": "Channel mix",
+      "pipeline": "Pipeline"
+    },
+    "pipeline": {
+      "new": "New",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "won": "Won"
     },
     "user": {
       "name": "Md. Alam Hossain",
@@ -212,7 +239,11 @@
       "general": "General",
       "members": "Members",
       "billing": "Billing",
-      "soon": "Soon"
+      "soon": "Soon",
+      "groups": {
+        "workspace": "Workspace",
+        "communication": "Communication"
+      }
     },
     "members": {
       "title": "Members",

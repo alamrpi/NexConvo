@@ -20,7 +20,13 @@
       "campaigns": "ক্যাম্পেইন",
       "automation": "অটোমেশন",
       "analytics": "অ্যানালিটিক্স",
-      "settings": "সেটিংস"
+      "settings": "সেটিংস",
+      "sections": {
+        "workspace": "ওয়ার্কস্পেস",
+        "engage": "এনগেজ",
+        "insights": "ইনসাইট",
+        "account": "অ্যাকাউন্ট"
+      }
     }
   },
   "landing": {
@@ -119,6 +125,14 @@
     "subtitle": "আজ আপনার ওয়ার্কস্পেসে যা যা ঘটছে তা এখানে।",
     "openMenu": "নেভিগেশন মেনু খুলুন",
     "closeMenu": "নেভিগেশন মেনু বন্ধ করুন",
+    "newAction": "নতুন",
+    "notifications": "নোটিফিকেশন",
+    "period": {
+      "label": "সময়সীমা নির্বাচন করুন",
+      "7d": "৭ দিন",
+      "30d": "৩০ দিন",
+      "90d": "৯০ দিন"
+    },
     "stats": {
       "openConversations": "চলমান কথোপকথন",
       "newLeads": "নতুন লিড",
@@ -126,9 +140,22 @@
       "revenue": "আয় (এই মাসে)",
       "vsLastWeek": "গত সপ্তাহের তুলনায়"
     },
+    "trend": {
+      "title": "পারফরম্যান্স",
+      "conversations": "কথোপকথন",
+      "revenue": "আয়"
+    },
     "panels": {
       "activity": "সাম্প্রতিক কার্যকলাপ",
-      "viewAll": "সব দেখুন"
+      "viewAll": "সব দেখুন",
+      "channelMix": "চ্যানেল মিক্স",
+      "pipeline": "পাইপলাইন"
+    },
+    "pipeline": {
+      "new": "নতুন",
+      "qualified": "কোয়ালিফাইড",
+      "proposal": "প্রপোজাল",
+      "won": "ক্লোজড-ওয়ান"
     },
     "user": {
       "name": "মো. আলম হোসেন",
@@ -212,7 +239,11 @@
       "general": "সাধারণ",
       "members": "সদস্য",
       "billing": "বিলিং",
-      "soon": "শীঘ্রই"
+      "soon": "শীঘ্রই",
+      "groups": {
+        "workspace": "ওয়ার্কস্পেস",
+        "communication": "যোগাযোগ"
+      }
     },
     "members": {
       "title": "সদস্য",

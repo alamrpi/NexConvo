@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, RefreshCw, Save, Send, XCircle } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -54,14 +54,14 @@ export function EmailSettingsForm() {
 function FormSkeleton() {
   return (
     <Card>
-      <CardContent className="space-y-6 pt-6">
+      <CardContent className="space-y-5 p-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
+          <div key={i} className="space-y-1.5">
+            <Skeleton className="h-3.5 w-32" />
+            <Skeleton className="h-9 w-full" />
           </div>
         ))}
-        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-9 w-32" />
       </CardContent>
     </Card>
   );
@@ -107,8 +107,8 @@ function EmailSettingsFields({ settings }: { settings: EmailSettings }) {
       <StatusBar settings={settings} />
 
       <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={onSubmit} noValidate className="space-y-6">
+        <CardContent className="p-5">
+          <form onSubmit={onSubmit} noValidate className="space-y-5">
             {update.isSuccess && (
               <p role="status" className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
                 {t('saved')}
@@ -122,7 +122,7 @@ function EmailSettingsFields({ settings }: { settings: EmailSettings }) {
 
             {/* Provider */}
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">{t('providerLabel')}</legend>
+              <legend className="text-xs font-medium">{t('providerLabel')}</legend>
               <div className="flex gap-4">
                 {(['Smtp', 'Resend'] as const).map((value) => (
                   <label key={value} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -176,7 +176,8 @@ function EmailSettingsFields({ settings }: { settings: EmailSettings }) {
               {settings.hasSecret && !replacingSecret ? (
                 <div className="flex gap-2">
                   <Input id="secret" value="•••••••• configured" disabled readOnly aria-label={t('secretConfigured')} />
-                  <Button type="button" variant="outline" onClick={() => setReplacingSecret(true)}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setReplacingSecret(true)}>
+                    <RefreshCw aria-hidden="true" />
                     {t('replace')}
                   </Button>
                 </div>
@@ -199,14 +200,17 @@ function EmailSettingsFields({ settings }: { settings: EmailSettings }) {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <TestEmail sendTest={sendTest} />
-              <Button type="submit" disabled={busy}>
+              <Button type="submit" size="sm" disabled={busy}>
                 {busy ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     {t('saving')}
                   </>
                 ) : (
-                  t('save')
+                  <>
+                    <Save aria-hidden="true" />
+                    {t('save')}
+                  </>
                 )}
               </Button>
             </div>
@@ -247,6 +251,7 @@ function TestEmail({ sendTest }: { sendTest: ReturnType<typeof useSendTestEmail>
       <Button
         type="button"
         variant="outline"
+        size="sm"
         disabled={sendTest.isPending}
         onClick={() => void sendTest.mutateAsync().catch(() => null)}
       >
@@ -256,7 +261,10 @@ function TestEmail({ sendTest }: { sendTest: ReturnType<typeof useSendTestEmail>
             {t('testing')}
           </>
         ) : (
-          t('sendTest')
+          <>
+            <Send aria-hidden="true" />
+            {t('sendTest')}
+          </>
         )}
       </Button>
       {sendTest.isSuccess && <span role="status" className="text-sm text-muted-foreground">{t('testSent')}</span>}
@@ -277,11 +285,11 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs">{label}</Label>
       {children}
       {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
+        <p id={`${id}-error`} role="alert" className="text-xs text-destructive">
           {error}
         </p>
       )}

@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { DollarSign, FolderKanban, MessageSquare, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
+import { Card } from '@/shared/ui/card';
 import { StatCard } from '@/features/dashboard/components/stat-card';
+import { PeriodToggle } from '@/features/dashboard/components/period-toggle';
+import { TrendChart } from '@/features/dashboard/components/trend-chart';
+import { RecentActivity, type ActivityItem } from '@/features/dashboard/components/recent-activity';
+import { ChannelMix, type ChannelStat } from '@/features/dashboard/components/channel-mix';
+import { PipelineOverview, type PipelineStage } from '@/features/dashboard/components/pipeline-overview';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('nav.dashboard');
@@ -13,32 +16,56 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Static demo data (S7: real values arrive via React Query when CRM data is wired).
 const stats = [
-  { key: 'openConversations', value: '128', delta: '+12%', trend: 'up', icon: MessageSquare },
-  { key: 'newLeads', value: '342', delta: '+8%', trend: 'up', icon: Users },
-  { key: 'activeProjects', value: '27', delta: '+3%', trend: 'up', icon: FolderKanban },
-  { key: 'revenue', value: '৳ 8.4L', delta: '-2%', trend: 'down', icon: DollarSign },
+  { key: 'openConversations', value: '128', delta: '+12%', trend: 'up', icon: MessageSquare, series: [88, 96, 92, 110, 104, 120, 128] },
+  { key: 'newLeads', value: '342', delta: '+8%', trend: 'up', icon: Users, series: [280, 300, 290, 312, 330, 321, 342] },
+  { key: 'activeProjects', value: '27', delta: '+3%', trend: 'up', icon: FolderKanban, series: [22, 23, 24, 24, 25, 26, 27] },
+  { key: 'revenue', value: '৳ 8.4L', delta: '-2%', trend: 'down', icon: DollarSign, series: [91, 89, 90, 87, 86, 85, 84] },
 ] as const;
 
-const activity = [
-  { name: 'Rafiul Islam', handle: '+8801712 345678', channel: 'WhatsApp' },
-  { name: 'Sadia Karim', handle: 'sadia@northwind.co', channel: 'Email' },
-  { name: 'Tanvir Ahmed', handle: '@tanvir_ah', channel: 'Instagram' },
-  { name: 'Nabila Haque', handle: '+8801912 998877', channel: 'Voice' },
-  { name: 'Imran Chowdhury', handle: 'imran@globex.io', channel: 'Email' },
-] as const;
+const conversationsSeries = [88, 96, 92, 110, 104, 120, 128];
+const revenueSeries = [62, 68, 65, 74, 71, 80, 84];
+
+const activity: readonly ActivityItem[] = [
+  { name: 'Rafiul Islam', handle: '+8801712 345678', channel: 'WhatsApp', time: '2m' },
+  { name: 'Sadia Karim', handle: 'sadia@northwind.co', channel: 'Email', time: '14m' },
+  { name: 'Tanvir Ahmed', handle: '@tanvir_ah', channel: 'Instagram', time: '38m' },
+  { name: 'Nabila Haque', handle: '+8801912 998877', channel: 'Voice', time: '1h' },
+  { name: 'Imran Chowdhury', handle: 'imran@globex.io', channel: 'Email', time: '2h' },
+];
+
+const channelStats: readonly ChannelStat[] = [
+  { channel: 'WhatsApp', count: 412 },
+  { channel: 'Email', count: 236 },
+  { channel: 'Instagram', count: 184 },
+  { channel: 'Voice', count: 96 },
+];
+
+const pipelineStages: readonly PipelineStage[] = [
+  { key: 'new', count: 64 },
+  { key: 'qualified', count: 38 },
+  { key: 'proposal', count: 21 },
+  { key: 'won', count: 12 },
+];
 
 export default async function DashboardPage() {
-  const [t, ts, tp] = await Promise.all([
+  const [t, ts, locale] = await Promise.all([
     getTranslations('dashboard'),
     getTranslations('dashboard.stats'),
-    getTranslations('dashboard.panels'),
+    getLocale(),
   ]);
 
+  // Locale-aware weekday labels for the trend chart x-axis (S12).
+  const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+  const categories = Array.from({ length: 7 }, (_, i) => weekday.format(new Date(2024, 0, i + 1)));
+
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">{t('greeting')}</h1>
-        <p className="text-muted-foreground">{t('subtitle')}</p>
+    <div className="mx-auto max-w-7xl space-y-5">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('greeting')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+        </div>
+        <PeriodToggle />
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -51,39 +78,28 @@ export default async function DashboardPage() {
             deltaLabel={ts('vsLastWeek')}
             trend={s.trend}
             icon={s.icon}
+            series={[...s.series]}
           />
         ))}
       </section>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle>{tp('activity')}</CardTitle>
-          <a
-            href="#activity"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            {tp('viewAll')}
-          </a>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ul className="divide-y divide-border">
-            {activity.map((item) => (
-              <li key={item.handle} className="flex items-center gap-3 px-6 py-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs">
-                    {item.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{item.handle}</p>
-                </div>
-                <Badge variant="outline">{item.channel}</Badge>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <TrendChart
+            conversations={conversationsSeries}
+            revenue={revenueSeries}
+            categories={categories}
+          />
+        </Card>
+        <div className="lg:col-span-1">
+          <RecentActivity items={activity} />
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChannelMix items={channelStats} />
+        <PipelineOverview stages={pipelineStages} />
+      </section>
     </div>
   );
 }

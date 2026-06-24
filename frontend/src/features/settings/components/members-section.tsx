@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, UserPlus } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -59,7 +59,7 @@ function InviteForm() {
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="p-5">
         <form onSubmit={onSubmit} noValidate className="space-y-4">
           {invite.isSuccess && <p role="status" className="text-sm text-muted-foreground">{t('invited')}</p>}
           {invite.isError && <p role="alert" className="text-sm text-destructive">{t('inviteFailed')}</p>}
@@ -73,7 +73,7 @@ function InviteForm() {
               <Label htmlFor="invite-role">{t('roleLabel')}</Label>
               <select
                 id="invite-role"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors hover:border-ring/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 {...register('roleName')}
               >
                 <option value="Admin">{t('roles.Admin')}</option>
@@ -81,8 +81,18 @@ function InviteForm() {
               </select>
             </div>
           </div>
-          <Button type="submit" disabled={busy}>
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" />{t('inviting')}</> : t('invite')}
+          <Button type="submit" size="sm" disabled={busy}>
+            {busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t('inviting')}
+              </>
+            ) : (
+              <>
+                <UserPlus aria-hidden="true" />
+                {t('invite')}
+              </>
+            )}
           </Button>
         </form>
       </CardContent>
