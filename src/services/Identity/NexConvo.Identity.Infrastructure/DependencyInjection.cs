@@ -7,6 +7,7 @@ using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Identity.Application.Abstractions;
 using NexConvo.Identity.Application.Abstractions.Mailing;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Infrastructure.Audit;
 using NexConvo.Identity.Infrastructure.Common;
 using NexConvo.Identity.Infrastructure.Mailing;
@@ -34,6 +35,8 @@ public static class DependencyInjection
             options.UseNpgsql(configuration.GetConnectionString("IdentityDb"))
                    .AddInterceptors(sp.GetRequiredService<RlsConnectionInterceptor>()));
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<IdentityDbContext>());
+
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();

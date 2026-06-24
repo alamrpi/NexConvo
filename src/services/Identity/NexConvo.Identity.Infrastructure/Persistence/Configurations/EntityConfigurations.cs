@@ -46,6 +46,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
         b.Property(u => u.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
         b.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
+        b.Property(u => u.FailedLoginCount).HasColumnName("failed_login_count").HasDefaultValue(0);
+        b.Property(u => u.LockoutEndsAt).HasColumnName("lockout_ends_at");
         b.Property(u => u.CreatedAt).HasColumnName("created_at");
         b.Property(u => u.UpdatedAt).HasColumnName("updated_at");
         b.Property(u => u.CreatedByUserId).HasColumnName("created_by_user_id");
@@ -77,8 +79,10 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         b.HasKey(r => r.Id);
         b.Ignore(r => r.DomainEvents);
         b.Ignore(r => r.PermissionKeys);
+        b.Ignore(r => r.GrantsAll);
         b.Property(r => r.TenantId).HasColumnName("tenant_id");
         b.Property(r => r.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+        b.Property(r => r.IsSystem).HasColumnName("is_system").HasDefaultValue(false);
         b.Property(r => r.CreatedAt).HasColumnName("created_at");
         b.Property(r => r.UpdatedAt).HasColumnName("updated_at");
         b.Property(r => r.CreatedByUserId).HasColumnName("created_by_user_id");

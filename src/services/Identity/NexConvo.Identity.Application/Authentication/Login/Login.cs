@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NexConvo.BuildingBlocks.Results;
 using NexConvo.Identity.Application.Abstractions;
 using NexConvo.Identity.Application.Common;
@@ -28,11 +29,15 @@ public sealed class LoginCommandHandler(
     IJwtTokenIssuer tokenIssuer,
     IRefreshTokenService refreshTokens,
     IAmbientTenantSetter tenantSetter,
-    IAuditWriter audit) : IRequestHandler<LoginCommand, Result<AuthTokensDto>>
+    IAuditWriter audit,
+    IClock clock,
+    IOptions<AuthOptions> authOptions) : IRequestHandler<LoginCommand, Result<AuthTokensDto>>
 {
     // One generic message for every failure mode — no account/tenant enumeration (skill Standard 15).
     private static readonly Result<AuthTokensDto> InvalidCredentials =
         Result<AuthTokensDto>.Unauthorized("Invalid credentials.");
+
+    private readonly AuthOptions _auth = authOptions.Value;
 
     public async Task<Result<AuthTokensDto>> Handle(LoginCommand cmd, CancellationToken cancellationToken)
     {
@@ -45,16 +50,27 @@ public sealed class LoginCommandHandler(
 
         tenantSetter.SetTenant(tenant.Id);
 
+        var now = clock.UtcNow;
         var email = Email.Create(cmd.Email);
         var user = await db.Users
             .Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
+        // A locked account is refused regardless of password (brute-force defense), with the same
+        // generic response so it can't be used to probe which accounts exist.
+        if (user is not null && user.IsLockedOut(now))
+        {
+            audit.Add("login.locked", tenant.Id, user.Id, null);
+            await db.SaveChangesAsync(cancellationToken);
+            return InvalidCredentials;
+        }
+
         if (user is null || !passwordHasher.Verify(user.PasswordHash, cmd.Password))
         {
             if (user is not null)
             {
-                audit.Add("login.failed", tenant.Id, user.Id, "bad-password");
+                user.RegisterFailedLogin(now, _auth.LockoutMaxAttempts, TimeSpan.FromMinutes(_auth.LockoutWindowMinutes));
+                audit.Add(user.IsLockedOut(now) ? "login.locked" : "login.failed", tenant.Id, user.Id, "bad-password");
                 await db.SaveChangesAsync(cancellationToken);
             }
 
@@ -69,6 +85,7 @@ public sealed class LoginCommandHandler(
         var roleIds = user.Roles.Select(r => r.RoleId).ToList();
         var roles = await db.Roles.Where(r => roleIds.Contains(r.Id)).ToListAsync(cancellationToken);
 
+        user.ResetFailedLogins(); // successful auth clears any accrued failures
         var generated = refreshTokens.Generate(tenant.Id);
         db.RefreshTokens.Add(
             DomainRefreshToken.Issue(tenant.Id, user.Id, generated.TokenHash, generated.ExpiresAt));

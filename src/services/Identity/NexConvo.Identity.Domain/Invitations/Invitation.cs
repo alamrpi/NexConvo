@@ -40,4 +40,16 @@ public sealed class Invitation : BaseAggregateRoot
     public bool IsPending(DateTimeOffset now) => AcceptedAt is null && now < ExpiresAt;
 
     public void Accept(DateTimeOffset now) => AcceptedAt ??= now;
+
+    /// <summary>Issues a fresh token + expiry when an invitation is resent.</summary>
+    public void Reissue(string tokenHash, DateTimeOffset expiresAt)
+    {
+        if (string.IsNullOrWhiteSpace(tokenHash))
+        {
+            throw new DomainException("Token hash is required.");
+        }
+
+        TokenHash = tokenHash;
+        ExpiresAt = expiresAt;
+    }
 }

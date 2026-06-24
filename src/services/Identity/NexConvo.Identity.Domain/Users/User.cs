@@ -20,6 +20,8 @@ public sealed class User : BaseAggregateRoot
     public string FullName { get; private set; } = null!;
     public UserStatus Status { get; private set; }
     public DateTimeOffset? EmailVerifiedAt { get; private set; }
+    public int FailedLoginCount { get; private set; }
+    public DateTimeOffset? LockoutEndsAt { get; private set; }
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
 
     private User() { } // EF
@@ -59,6 +61,10 @@ public sealed class User : BaseAggregateRoot
         _roles.Add(new UserRole(TenantId, Id, roleId));
     }
 
+    public void Deactivate() => Status = UserStatus.Disabled;
+
+    public void Reactivate() => Status = UserStatus.Active;
+
     public void SetPasswordHash(string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
@@ -74,4 +80,33 @@ public sealed class User : BaseAggregateRoot
     public bool IsEmailVerified => EmailVerifiedAt is not null;
 
     public void MarkEmailVerified(DateTimeOffset at) => EmailVerifiedAt ??= at;
+
+    /// <summary>True while a brute-force lockout is in effect — logins are refused even with the
+    /// correct password until <see cref="LockoutEndsAt"/> passes.</summary>
+    public bool IsLockedOut(DateTimeOffset now) => LockoutEndsAt is { } until && now < until;
+
+    /// <summary>Records a failed login. Once <paramref name="maxAttempts"/> consecutive failures
+    /// accrue, the account is locked for <paramref name="lockoutWindow"/> and the counter resets
+    /// (the lock itself, not the counter, blocks further attempts).</summary>
+    public void RegisterFailedLogin(DateTimeOffset now, int maxAttempts, TimeSpan lockoutWindow)
+    {
+        if (IsLockedOut(now))
+        {
+            return;
+        }
+
+        FailedLoginCount++;
+        if (FailedLoginCount >= maxAttempts)
+        {
+            LockoutEndsAt = now + lockoutWindow;
+            FailedLoginCount = 0;
+        }
+    }
+
+    /// <summary>Clears the failure counter and any lockout — call on a successful authentication.</summary>
+    public void ResetFailedLogins()
+    {
+        FailedLoginCount = 0;
+        LockoutEndsAt = null;
+    }
 }

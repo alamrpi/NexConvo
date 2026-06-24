@@ -72,7 +72,7 @@ public sealed partial class AuthEmailFlowTests(IdentityApiFactory factory) : ICl
         owner.DefaultRequestHeaders.Authorization = new("Bearer", tokens.AccessToken);
 
         var invite = await owner.PostAsJsonAsync("/api/v1/invitations",
-            new { email = "teammate@invite.com", roleName = "Agent" });
+            new { email = "teammate@invite.com", roleName = "Member" });
         invite.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var token = await ExtractToken("teammate@invite.com", "/accept-invite");

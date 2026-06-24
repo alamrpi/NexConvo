@@ -48,13 +48,15 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
 
     // Permission policies map to the JWT 'permission' claims; '*' (Owner) satisfies any.
-    options.AddPolicy("settings:manage", policy => policy.RequireAssertion(context =>
-        context.User.HasClaim("permission", "*") ||
-        context.User.HasClaim("permission", "settings:manage")));
+    static Action<AuthorizationPolicyBuilder> RequirePermission(string key) => policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim("permission", "*") || context.User.HasClaim("permission", key));
 
-    options.AddPolicy("users:invite", policy => policy.RequireAssertion(context =>
-        context.User.HasClaim("permission", "*") ||
-        context.User.HasClaim("permission", "users:invite")));
+    options.AddPolicy("settings:manage", RequirePermission("settings:manage"));
+    options.AddPolicy("users:read", RequirePermission("users:read"));
+    options.AddPolicy("users:invite", RequirePermission("users:invite"));
+    options.AddPolicy("users:manage", RequirePermission("users:manage"));
+    options.AddPolicy("roles:manage", RequirePermission("roles:manage"));
 });
 
 builder.Services.AddControllers();
