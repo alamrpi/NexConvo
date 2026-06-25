@@ -43,6 +43,7 @@ Every one of these applies to *every* change, including one-field updates and de
 | 17 | **Pagination / bounded queries** | List/collection endpoints MUST paginate with a capped page size (e.g. ≤100) and return a total. Never return an unbounded result set or an unfiltered `SELECT *` over a tenant's data. |
 | 18 | **Idempotency** | Retry-able writes (payments, SMS/email side-effects, anything a client or broker may resend) and ALL event consumers are idempotent — via idempotency key or inbox dedupe. A redelivery never double-charges or double-sends. |
 | 19 | **API versioning & contract stability** | Public endpoints are versioned (`/api/v1/...`). Never break a published request/response shape or event contract — additive changes only, or a new version. Verify cross-service contracts with Pact tests. |
+| 20 | **Solution structure mirrors disk** | When you add a new project to `NexConvo.sln` (bootstrapping a service, a layer, or a test project), nest it under the matching Solution Folder — `src/gateway`, `src/services/<Service>`, `src/shared`, or `tests` — via a `GlobalSection(NestedProjects)` mapping (add the folder's `Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = …` entry if it doesn't exist yet). Never leave a project flat at the solution root; the Solution Explorer tree must mirror the on-disk `src/…`/`tests/` layout. |
 
 ## The Logging Contract (Standard 9, in detail)
 
@@ -82,6 +83,7 @@ If you think or write any of these, stop and follow the standard instead:
 - "It's a small list, I'll just return them all" → **paginate with a capped page size (Standard 17)**
 - "The consumer will rarely get the message twice" → **make it idempotent; brokers redeliver (Standard 18)**
 - "I'll version the API later when we need to" → **version from `/v1` now; breaking a live contract is the cost (Standard 19)**
+- "Just add the project; it'll sit at the solution root for now" → **nest it under its Solution Folder in `NexConvo.sln` (Standard 20)**
 - "We can split / clean up / add tests later" → **'later' is how the distributed monolith was born; do it now**
 
 ## Rationalizations and Reality
@@ -102,6 +104,7 @@ If you think or write any of these, stop and follow the standard instead:
 | "Last-writer-wins is simpler than concurrency tokens." | On a money field two reps edit at once, last-writer-wins silently destroys one edit with no error. The `xmin` token + 409 is a few lines and turns a silent data-loss bug into a visible, retryable conflict. |
 | "It's a small list, pagination is overkill." | 'Small' today is 50k rows at a scaled tenant tomorrow. An unbounded query is a latent outage; the page-size cap costs nothing now. |
 | "Messages basically never arrive twice." | RabbitMQ guarantees at-least-once, not exactly-once. A non-idempotent consumer WILL eventually double-send an SMS or double-charge. Inbox dedupe is the standard, not an optimization. |
+| "It's fine if the new project shows at the root." | A flat root of 37+ projects is unnavigable — that's the exact mess the Solution Folders exist to prevent. One `NestedProjects` line keeps the tree mirroring disk; skipping it re-creates the mess one project at a time. |
 | "I'm following the spirit, just pragmatically." | Violating the letter IS violating the spirit. The standards are the spirit, expressed precisely. |
 
 ## Correct Pattern (the one-field update, done right)
@@ -175,4 +178,5 @@ public async Task UpdatePhone_WithValidE164_UpdatesLead()
 - A list endpoint that returns every row with no page-size cap.
 - A non-idempotent event consumer or retry-able write that double-sends on redelivery.
 - A new public endpoint with no version segment, or a breaking change to a published contract.
+- A new project left flat at the solution root instead of nested under its Solution Folder (`src/services/<Service>`, `src/shared`, `src/gateway`, `tests`).
 - Marking a feature done with no failing-test-first history.
