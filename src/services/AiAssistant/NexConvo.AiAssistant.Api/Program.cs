@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Observability;
 using Serilog;
@@ -24,6 +25,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
+builder.Services.AddNexConvoSwagger("AI Assistant API");
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -33,6 +35,7 @@ app.UseAuthentication();
 app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
 
+app.UseNexConvoSwagger();
 app.MapControllers();
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

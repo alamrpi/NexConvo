@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NexConvo.BuildingBlocks.Domain;
 
@@ -9,8 +10,9 @@ namespace NexConvo.BuildingBlocks.Infrastructure.Web;
 
 /// <summary>
 /// Maps unhandled exceptions to RFC 7807 problem responses: FluentValidation → 422,
-/// DomainException → 400, everything else → 500 (logged once, with correlation via Serilog).
-/// Never leaks internal detail on 500.
+/// DbUpdateConcurrencyException → 409, DomainException / NotSupportedException → 400,
+/// everything else → 500 (logged once, with correlation via Serilog). Never leaks internal
+/// detail on 500.
 /// </summary>
 public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
@@ -32,6 +34,15 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         catch (TwoFactorRequiredException ex)
         {
             await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message, code: "two-factor-required");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await WriteAsync(context, StatusCodes.Status409Conflict,
+                "The record was modified by someone else. Reload and try again.", code: "concurrency-conflict");
+        }
+        catch (NotSupportedException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status400BadRequest, ex.Message);
         }
         catch (DomainException ex)
         {

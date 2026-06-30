@@ -60,6 +60,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddNexConvoSwagger("Identity API");
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -76,6 +77,7 @@ app.Logger.LogInformation(
 await IdentityDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Environment, app.Logger);
 
 app.UseNexConvoExceptionHandling();
+app.UseNexConvoSwagger();
 app.UseNexConvoRequestLogging();
 app.UseAuthentication();
 app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
