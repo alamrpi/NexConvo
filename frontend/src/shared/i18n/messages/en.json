@@ -269,6 +269,7 @@
     "nav": {
       "label": "Settings sections",
       "email": "Email",
+      "ai": "AI Config",
       "general": "General",
       "members": "Members",
       "roles": "Roles",
@@ -551,6 +552,40 @@
         "smtpHostRequired": "SMTP host is required.",
         "smtpPortRequired": "Port is required.",
         "smtpPortRange": "Port must be between 1 and 65535."
+      }
+    },
+    "ai": {
+      "title": "AI Models",
+      "description": "Configure the AI providers and API keys used across your workspace.",
+      "noPermission": "You don’t have permission to manage AI settings.",
+      "loadError": "Couldn’t load AI settings. Please try again.",
+      "providerLabel": "AI Provider",
+      "defaultModelLabel": "Default Model",
+      "baseUrlLabel": "Base URL (Optional)",
+      "apiKeyLabel": "API Key",
+      "parametersLabel": "Parameters JSON (Optional)",
+      "secretConfigured": "API Key is configured",
+      "secretPlaceholder": "Enter the API Key",
+      "replace": "Replace",
+      "activeLabel": "Make this provider active",
+      "testConnection": "Test Connection",
+      "testingConnection": "Testing…",
+      "testPassed": "Connection successful.",
+      "testFailed": "Connection failed. Check the API key and model name.",
+      "testRequired": "Test the connection before saving.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn’t save settings. Please try again.",
+      "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "errors": {
+        "defaultModelRequired": "Default model is required.",
+        "baseUrlInvalid": "Enter a valid URL.",
+        "parametersInvalid": "Parameters must be a valid JSON object."
       }
     }
   }

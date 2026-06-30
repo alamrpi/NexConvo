@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
+  Bot,
   CreditCard,
   KeyRound,
   Mail,
@@ -48,6 +49,7 @@ const groups: readonly SettingsGroup[] = [
       { key: 'general', href: '/dashboard/settings/general', icon: SlidersHorizontal, enabled: false },
       { key: 'members', href: '/dashboard/settings/members', icon: Users, enabled: true },
       { key: 'roles', href: '/dashboard/settings/roles', icon: ShieldCheck, enabled: true },
+      { key: 'ai', href: '/dashboard/settings/ai', icon: Bot, enabled: true },
       { key: 'billing', href: '/dashboard/settings/billing', icon: CreditCard, enabled: false },
     ],
   },
