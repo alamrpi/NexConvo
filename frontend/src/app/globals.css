@@ -51,6 +51,21 @@
     --chart-5: 330 75% 60%;
 
     --radius: 0.65rem;
+
+    /* Chat brand colors — fixed values, same in light and dark (not semantic surfaces) */
+    --chat-state-ai: #6366f1;
+    --chat-state-pending: #f59e0b;
+    --chat-state-human: #10b981;
+    --chat-state-resolved: #94a3b8;
+    --chat-state-closed: #64748b;
+    --chat-channel-whatsapp: #25D366;
+    --chat-channel-facebook: #1877F2;
+    --chat-channel-instagram: #E1306C;
+    --chat-channel-telegram: #229ED9;
+    --chat-channel-web: #6366f1;
+    --chat-confidence-high: #10b981;
+    --chat-confidence-medium: #f59e0b;
+    --chat-confidence-low: #ef4444;
   }
 
   .dark {
@@ -103,6 +118,16 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/*
+ * Bengali-aware message font stack (S12). Applied on all chat message body text so
+ * Bengali characters fall back to Noto Sans Bengali instead of system glyphs.
+ */
+@layer utilities {
+  .font-message {
+    font-family: var(--font-sans), var(--font-bengali), sans-serif;
   }
 }
 

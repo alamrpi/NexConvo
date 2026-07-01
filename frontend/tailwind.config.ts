@@ -69,6 +69,26 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Chat-specific tokens — brand colors (not themeable, same in light/dark)
+        chatState: {
+          ai: 'var(--chat-state-ai)',
+          pending: 'var(--chat-state-pending)',
+          human: 'var(--chat-state-human)',
+          resolved: 'var(--chat-state-resolved)',
+          closed: 'var(--chat-state-closed)',
+        },
+        chatChannel: {
+          whatsapp: 'var(--chat-channel-whatsapp)',
+          facebook: 'var(--chat-channel-facebook)',
+          instagram: 'var(--chat-channel-instagram)',
+          telegram: 'var(--chat-channel-telegram)',
+          web: 'var(--chat-channel-web)',
+        },
+        chatConfidence: {
+          high: 'var(--chat-confidence-high)',
+          medium: 'var(--chat-confidence-medium)',
+          low: 'var(--chat-confidence-low)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',

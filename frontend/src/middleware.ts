@@ -33,6 +33,11 @@ interface RefreshedTokens {
 }
 
 export async function middleware(req: NextRequest): Promise<NextResponse> {
+  // E2E test bypass — only active when NEXT_PUBLIC_E2E=true (never set in production)
+  if (process.env.NEXT_PUBLIC_E2E === 'true' && req.cookies.get('nx_e2e_bypass')?.value === '1') {
+    return NextResponse.next();
+  }
+
   const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
   if (!refreshToken) {
     return redirectToLogin(req);

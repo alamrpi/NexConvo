@@ -13,7 +13,22 @@ import type { CurrentUser } from '../model/auth.types';
  * rotates the access cookie before this runs, so the token is fresh. Returns null on
  * any auth failure; the layout then redirects to /login.
  */
+const E2E_MOCK_USER: CurrentUser = {
+  userId: 'e2e-user-1',
+  tenantId: 'tenant-e2e',
+  tenantSlug: 'e2e',
+  email: 'e2e@nexconvo.test',
+  fullName: 'E2E Tester',
+  emailVerified: true,
+  twoFactorEnabled: false,
+  workspaceRequiresTwoFactor: false,
+  roles: ['admin'],
+  permissions: ['*'],
+};
+
 export async function getServerUser(): Promise<CurrentUser | null> {
+  if (process.env.NEXT_PUBLIC_E2E === 'true') return E2E_MOCK_USER;
+
   const session = await readSession();
   if (!session) return null;
 

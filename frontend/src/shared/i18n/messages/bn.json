@@ -19,11 +19,22 @@
       "projects": "প্রজেক্ট",
       "campaigns": "ক্যাম্পেইন",
       "automation": "অটোমেশন",
+      "chat": "চ্যাট",
+      "chatInbox": "ইনবক্স",
+      "chatAnalytics": "অ্যানালিটিক্স",
+      "chatPlayground": "প্লেগ্রাউন্ড",
+      "chatReports": "রিপোর্ট",
+      "chatSettings": "সেটিংস",
+      "chatChannels": "চ্যানেল",
+      "chatKnowledge": "নলেজ",
+      "chatAi": "এআই কনফিগ",
+      "chatTools": "টুলস",
       "analytics": "অ্যানালিটিক্স",
       "settings": "সেটিংস",
       "sections": {
         "workspace": "ওয়ার্কস্পেস",
         "engage": "এনগেজ",
+        "chat": "চ্যাট",
         "insights": "ইনসাইট",
         "account": "অ্যাকাউন্ট"
       }
@@ -261,6 +272,403 @@
     "errors": {
       "fullNameRequired": "আপনার নাম আবশ্যক।",
       "passwordMin": "কমপক্ষে ৮টি অক্ষর ব্যবহার করুন।"
+    }
+  },
+  "chat": {
+    "nav": {
+      "inbox": "ইনবক্স",
+      "analytics": "অ্যানালিটিক্স",
+      "playground": "প্লেগ্রাউন্ড",
+      "settings": "সেটিংস",
+      "channels": "চ্যানেল",
+      "knowledge": "জ্ঞানভান্ডার",
+      "aiConfig": "এআই কনফিগ",
+      "tools": "টুলস",
+      "openMenu": "চ্যাট নেভিগেশন খুলুন",
+      "settingsSubmenu": "সেটিংস সাবমেনু"
+    },
+    "topbar": {
+      "notifications": "নোটিফিকেশন",
+      "toggleTheme": "থিম পরিবর্তন"
+    },
+    "inbox": {
+      "title": "ইনবক্স",
+      "tabs": {
+        "all": "সব",
+        "ai": "এআই",
+        "pending": "অপেক্ষমাণ",
+        "mine": "আমার",
+        "resolved": "সমাধান"
+      },
+      "search": "কথোপকথন খুঁজুন…",
+      "filterChannel": "চ্যানেল দিয়ে ফিল্টার",
+      "empty": "কোনো কথোপকথন নেই",
+      "emptyHint": "শুরু করতে একটি কথোপকথন নির্বাচন করুন",
+      "selectPrompt": "একটি কথোপকথন নির্বাচন করুন",
+      "noConversation": "কোনো কথোপকথন নির্বাচিত নয়"
+    },
+    "conversation": {
+      "resolve": "সমাধান করুন",
+      "reopen": "পুনরায় খুলুন",
+      "takeOver": "দায়িত্ব নিন",
+      "accept": "গ্রহণ করুন",
+      "toggleSidebar": "সাইডবার টগল",
+      "contactInfo": "যোগাযোগের তথ্য",
+      "metadata": "কথোপকথনের মেটাডেটা",
+      "escalationLog": "এস্কালেশন লগ",
+      "addTag": "ট্যাগ যোগ করুন",
+      "addNote": "নোট যোগ করুন",
+      "export": "রপ্তানি",
+      "back": "ইনবক্সে ফিরুন",
+      "aiHandling": "এআই এই কথোপকথন পরিচালনা করছে",
+      "pendingHuman": "এজেন্টের অপেক্ষায়",
+      "humanHandlingOther": "{name}-কে বরাদ্দ",
+      "resolved": "সমাধান হয়েছে",
+      "closed": "বন্ধ",
+      "streamingPlaceholder": "এআই টাইপ করছে…",
+      "sendMessage": "বার্তা পাঠান",
+      "messagePlaceholder": "বার্তা লিখুন…"
+    },
+    "state": {
+      "AiHandling": "এআই পরিচালনা",
+      "PendingHuman": "অপেক্ষমাণ",
+      "HumanHandling": "মানব",
+      "Resolved": "সমাধান",
+      "Closed": "বন্ধ"
+    },
+    "channel": {
+      "whatsapp": "হোয়াটসঅ্যাপ",
+      "facebook": "ফেসবুক",
+      "instagram": "ইনস্টাগ্রাম",
+      "telegram": "টেলিগ্রাম",
+      "web": "ওয়েব"
+    },
+    "delivery": {
+      "Sent": "পাঠানো হয়েছে",
+      "Delivered": "ডেলিভারি হয়েছে",
+      "Read": "পড়া হয়েছে",
+      "Failed": "ডেলিভারি ব্যর্থ",
+      "PermanentlyFailed": "স্থায়ীভাবে ব্যর্থ"
+    },
+    "confidence": {
+      "label": "এআই আস্থা",
+      "high": "উচ্চ",
+      "medium": "মাঝারি",
+      "low": "কম"
+    },
+    "sla": {
+      "label": "এসএলএ",
+      "expired": "এসএলএ মেয়াদ শেষ"
+    },
+    "analytics": {
+      "title": "অ্যানালিটিক্স",
+      "dateRange": {
+        "label": "তারিখ সীমা",
+        "7d": "শেষ ৭ দিন",
+        "30d": "শেষ ৩০ দিন",
+        "90d": "শেষ ৯০ দিন",
+        "custom": "কাস্টম"
+      },
+      "kpi": {
+        "totalConversations": "মোট কথোপকথন",
+        "containmentRate": "কনটেইনমেন্ট রেট",
+        "handoffRate": "হ্যান্ডঅফ রেট",
+        "avgResponseTime": "গড় প্রতিক্রিয়া সময়",
+        "csat": "সিএস্যাট",
+        "tokenCost": "টোকেন খরচ"
+      },
+      "charts": {
+        "volumeByChannel": "চ্যানেল অনুযায়ী ভলিউম",
+        "handoffReasons": "হ্যান্ডঅফ কারণ",
+        "confidenceBands": "আস্থার বিতরণ",
+        "dailyTokenCost": "দৈনিক টোকেন খরচ ($)"
+      },
+      "agentPerf": {
+        "title": "এজেন্ট পারফরম্যান্স",
+        "exportCsv": "সিএসভি রপ্তানি",
+        "columns": {
+          "name": "এজেন্ট",
+          "handled": "পরিচালিত",
+          "resolved": "সমাধান",
+          "avgTime": "গড় সময়",
+          "csat": "সিএস্যাট"
+        }
+      },
+      "lowConfidence": {
+        "title": "কম আস্থার কথোপকথন",
+        "viewConversation": "কথোপকথন দেখুন",
+        "findGap": "জ্ঞানের ফাঁক খুঁজুন →"
+      }
+    },
+    "playground": {
+      "title": "টেস্ট প্লেগ্রাউন্ড",
+      "badge": "স্যান্ডবক্স",
+      "newSession": "নতুন সেশন",
+      "shareSession": "সেশন শেয়ার",
+      "sessionCopied": "সেশন URL কপি হয়েছে",
+      "clearConversation": "কথোপকথন মুছুন",
+      "compareMode": "তুলনা মোড",
+      "controls": {
+        "title": "নিয়ন্ত্রণ",
+        "promptOverride": "সিস্টেম প্রম্পট ওভাররাইড",
+        "confidenceOverride": "আস্থা থ্রেশহোল্ড ওভাররাইড",
+        "knowledgeVersion": "জ্ঞানভান্ডার সংস্করণ",
+        "mcpDryRun": "এমসিপি ড্রাই-রান",
+        "current": "বর্তমান",
+        "loadScenario": "একটি পরিস্থিতি লোড করুন →"
+      },
+      "scenarios": {
+        "angryRefund": "রিফান্ড চাওয়া রাগান্বিত গ্রাহক",
+        "bengaliInquiry": "বাংলায় পণ্য জিজ্ঞাসা",
+        "outOfScope": "বিষয়বহির্ভূত প্রশ্ন",
+        "appointment": "এমসিপি টুল দিয়ে অ্যাপয়েন্টমেন্ট বুকিং",
+        "multiTurn": "বহু-পর্যায়ের কথোপকথন"
+      },
+      "debug": {
+        "title": "ডিবাগ প্যানেল",
+        "toggle": "ডিবাগ প্যানেল টগল",
+        "tabs": {
+          "chunks": "চাংক",
+          "confidence": "আস্থা",
+          "prompt": "প্রম্পট",
+          "response": "প্রতিক্রিয়া",
+          "pii": "পিআইআই",
+          "performance": "পারফরম্যান্স"
+        },
+        "chunks": {
+          "rank": "র‍্যাংক",
+          "document": "ডকুমেন্ট",
+          "preview": "প্রিভিউ",
+          "score": "স্কোর",
+          "expand": "চাংক বড় করুন",
+          "noChunks": "কোনো চাংক পাওয়া যায়নি"
+        },
+        "confidence": {
+          "band": "ব্যান্ড",
+          "formula": "স্কোর = retrieval_score × ০.৬ + groundedness × ০.৪"
+        },
+        "pii": {
+          "noneDetected": "কোনো পিআইআই শনাক্ত হয়নি",
+          "masked": "{count}টি টোকেন মাস্ক করা হয়েছে"
+        },
+        "performance": {
+          "embed": "এম্বেডিং",
+          "retrieval": "রিট্রিভাল",
+          "llm": "এলএলএম",
+          "total": "মোট"
+        }
+      },
+      "testUser": "আপনি (পরীক্ষা)"
+    },
+    "knowledge": {
+      "title": "জ্ঞানভান্ডার",
+      "addKnowledge": "জ্ঞান যোগ করুন",
+      "columns": {
+        "title": "শিরোনাম",
+        "type": "ধরন",
+        "status": "অবস্থা",
+        "chunks": "চাংক",
+        "updatedAt": "সর্বশেষ হালনাগাদ",
+        "actions": "ক্রিয়া"
+      },
+      "actions": {
+        "view": "দেখুন",
+        "reEmbed": "পুনরায় এম্বেড",
+        "delete": "মুছুন",
+        "restore": "পুনরুদ্ধার"
+      },
+      "reEmbedding": "পুনরায় এম্বেড হচ্ছে…",
+      "deleteConfirm": "এই ডকুমেন্ট মুছবেন?",
+      "deleteDescription": "এটি ডকুমেন্ট এবং সমস্ত চাংক স্থায়ীভাবে মুছে ফেলবে।",
+      "cancel": "বাতিল",
+      "confirm": "মুছুন",
+      "addDialog": {
+        "title": "জ্ঞান যোগ করুন",
+        "tabs": {
+          "upload": "ফাইল আপলোড",
+          "url": "URL থেকে",
+          "text": "টেক্সট লিখুন",
+          "chat": "পুরনো চ্যাট আমদানি"
+        },
+        "upload": {
+          "hint": "ড্র্যাগ ও ড্রপ বা ক্লিক করে আপলোড করুন",
+          "types": "PDF, DOCX, TXT, MD সর্বোচ্চ ৫০ MB",
+          "uploading": "আপলোড হচ্ছে…",
+          "progress": "{percent}%"
+        },
+        "url": {
+          "label": "URL",
+          "placeholder": "https://…",
+          "fetch": "ফেচ"
+        },
+        "text": {
+          "label": "বিষয়বস্তু",
+          "titleLabel": "শিরোনাম",
+          "freeText": "মুক্ত টেক্সট",
+          "qaBuilder": "প্রশ্নোত্তর জুটি",
+          "addPair": "জুটি যোগ করুন",
+          "question": "প্রশ্ন",
+          "answer": "উত্তর"
+        }
+      },
+      "detail": {
+        "tabs": {
+          "chunks": "চাংক",
+          "history": "সংস্করণ ইতিহাস"
+        },
+        "status": {
+          "Processing": "প্রক্রিয়াকরণ",
+          "Ready": "প্রস্তুত",
+          "Failed": "ব্যর্থ"
+        },
+        "processingSteps": {
+          "upload": "আপলোড",
+          "extract": "এক্সট্র্যাক্ট",
+          "chunk": "চাংক",
+          "embed": "এম্বেড",
+          "index": "ইন্ডেক্স"
+        },
+        "chunksTable": {
+          "index": "#",
+          "preview": "প্রিভিউ",
+          "tokens": "টোকেন",
+          "score": "স্কোর"
+        },
+        "historyTable": {
+          "version": "সংস্করণ",
+          "createdAt": "তৈরি",
+          "model": "মডেল",
+          "actions": "ক্রিয়া"
+        }
+      }
+    },
+    "channels": {
+      "title": "চ্যানেল সংযোগ",
+      "subtitle": "কথোপকথন পেতে আপনার মেসেজিং চ্যানেলগুলো সংযুক্ত করুন।",
+      "status": {
+        "connected": "সংযুক্ত",
+        "notConnected": "সংযুক্ত নয়",
+        "error": "সংযোগ ত্রুটি"
+      },
+      "connect": "সংযুক্ত করুন",
+      "configure": "কনফিগার করুন",
+      "disconnect": "সংযোগ বিচ্ছিন্ন করুন",
+      "drawer": {
+        "steps": {
+          "credentials": "ক্রেডেনশিয়াল",
+          "verify": "যাচাই",
+          "webhook": "ওয়েবহুক",
+          "test": "পরীক্ষা",
+          "done": "সম্পন্ন"
+        },
+        "verifyCredentials": "ক্রেডেনশিয়াল যাচাই",
+        "verifying": "যাচাই হচ্ছে…",
+        "copyWebhook": "URL কপি",
+        "copied": "কপি হয়েছে!",
+        "sendTest": "টেস্ট বার্তা পাঠান",
+        "sending": "পাঠানো হচ্ছে…",
+        "testSuccess": "টেস্ট বার্তা পাঠানো হয়েছে!",
+        "close": "বন্ধ করুন",
+        "success": "সফলভাবে সংযুক্ত হয়েছে!"
+      },
+      "widget": {
+        "title": "উইজেট চেহারা",
+        "color": "রং",
+        "welcomeMessage": "স্বাগত বার্তা",
+        "position": "অবস্থান",
+        "positionBottomRight": "নিচে ডানে",
+        "positionBottomLeft": "নিচে বামে",
+        "preview": "প্রিভিউ"
+      }
+    },
+    "aiSettings": {
+      "title": "এআই কনফিগারেশন",
+      "sections": {
+        "provider": "প্রোভাইডার ও মডেল",
+        "systemPrompt": "সিস্টেম প্রম্পট",
+        "handoff": "হ্যান্ডঅফ থ্রেশহোল্ড",
+        "pii": "পিআইআই মাস্কিং",
+        "retention": "ডেটা সংরক্ষণ"
+      },
+      "provider": {
+        "providerLabel": "প্রোভাইডার",
+        "modelLabel": "মডেল আইডি",
+        "apiKeyLabel": "এপিআই কী",
+        "testConnection": "কানেকশন পরীক্ষা",
+        "testing": "পরীক্ষা হচ্ছে…",
+        "testPassed": "✓ কানেকশন সফল",
+        "testFailed": "✗ কানেকশন ব্যর্থ",
+        "fallbackLabel": "ফলব্যাক প্রোভাইডার",
+        "moveUp": "উপরে নিন",
+        "moveDown": "নিচে নিন"
+      },
+      "systemPrompt": {
+        "label": "সিস্টেম প্রম্পট",
+        "tokenEstimate": "~{count} টোকেন",
+        "templateLabel": "টেমপ্লেট লোড করুন",
+        "testLink": "এই প্রম্পট পরীক্ষা করুন →"
+      },
+      "handoff": {
+        "confidenceLabel": "এআই আস্থা এর নিচে হলে এস্কালেট করুন",
+        "sentimentLabel": "নেতিবাচক অনুভূতিতে এস্কালেট",
+        "sentimentSensitivity": "সংবেদনশীলতা",
+        "low": "কম",
+        "medium": "মাঝারি",
+        "high": "বেশি",
+        "triggerPhrasesLabel": "ট্রিগার বাক্যাংশ",
+        "triggerPlaceholder": "বাক্যাংশ লিখুন এবং Enter চাপুন",
+        "maxUnansweredLabel": "এস্কালেশনের আগে সর্বোচ্চ অনুত্তরিত বার্তা"
+      },
+      "pii": {
+        "label": "পিআইআই মাস্কিং স্তর",
+        "none": "কিছু না — এলএলএম-এ কাঁচা টেক্সট পাঠান",
+        "pseudonymise": "ছদ্মনামকরণ — নাম/আইডি টোকেন দিয়ে প্রতিস্থাপন",
+        "redact": "রিড্যাক্ট — পিআইআই সম্পূর্ণ সরান"
+      },
+      "retention": {
+        "label": "কথোপকথনের ডেটা সংরক্ষণের সময়কাল (দিন)"
+      },
+      "save": "সংরক্ষণ",
+      "saving": "সংরক্ষণ হচ্ছে…",
+      "saved": "সেটিংস সংরক্ষিত।"
+    },
+    "tools": {
+      "title": "এমসিপি টুলস",
+      "tabs": {
+        "builtIn": "বিল্ট-ইন",
+        "custom": "কাস্টম সার্ভার"
+      },
+      "builtIn": {
+        "enabled": "সক্রিয়",
+        "configure": "কনফিগার",
+        "requiresConfirmation": "নিশ্চিতকরণ প্রয়োজন",
+        "columns": {
+          "tool": "টুল",
+          "description": "বিবরণ",
+          "confirmation": "নিশ্চিতকরণ"
+        }
+      },
+      "custom": {
+        "addServer": "এমসিপি সার্ভার যোগ করুন",
+        "dialog": {
+          "title": "এমসিপি সার্ভার যোগ করুন",
+          "nameLabel": "সার্ভার নাম",
+          "transportLabel": "ট্রান্সপোর্ট",
+          "stdio": "stdio",
+          "sse": "SSE",
+          "urlLabel": "সার্ভার URL",
+          "commandLabel": "কমান্ড",
+          "oauthLabel": "OAuth",
+          "testConnection": "কানেকশন পরীক্ষা",
+          "testing": "পরীক্ষা হচ্ছে…",
+          "add": "সার্ভার যোগ করুন",
+          "cancel": "বাতিল"
+        },
+        "status": {
+          "connected": "সংযুক্ত",
+          "error": "ত্রুটি"
+        }
+      }
     }
   },
   "settings": {

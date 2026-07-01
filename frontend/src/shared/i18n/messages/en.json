@@ -19,11 +19,22 @@
       "projects": "Projects",
       "campaigns": "Campaigns",
       "automation": "Automation",
+      "chat": "Chat",
+      "chatInbox": "Inbox",
+      "chatAnalytics": "Analytics",
+      "chatPlayground": "Playground",
+      "chatReports": "Reports",
+      "chatSettings": "Settings",
+      "chatChannels": "Channels",
+      "chatKnowledge": "Knowledge",
+      "chatAi": "AI Config",
+      "chatTools": "Tools",
       "analytics": "Analytics",
       "settings": "Settings",
       "sections": {
         "workspace": "Workspace",
         "engage": "Engage",
+        "chat": "Chat",
         "insights": "Insights",
         "account": "Account"
       }
@@ -261,6 +272,456 @@
     "errors": {
       "fullNameRequired": "Your name is required.",
       "passwordMin": "Use at least 8 characters."
+    }
+  },
+  "chat": {
+    "nav": {
+      "inbox": "Inbox",
+      "analytics": "Analytics",
+      "playground": "Playground",
+      "settings": "Settings",
+      "channels": "Channels",
+      "knowledge": "Knowledge",
+      "aiConfig": "AI Config",
+      "tools": "Tools",
+      "openMenu": "Open chat navigation",
+      "settingsSubmenu": "Settings submenu"
+    },
+    "settings": {
+      "title": "Chat Settings",
+      "subtitle": "Manage channels, AI, and knowledge sources.",
+      "nav": {
+        "label": "Chat settings navigation",
+        "channels": "Channels",
+        "knowledge": "Knowledge",
+        "ai": "AI Config",
+        "tools": "Tools"
+      }
+    },
+    "topbar": {
+      "notifications": "Notifications",
+      "toggleTheme": "Toggle theme"
+    },
+    "inbox": {
+      "title": "Inbox",
+      "tabs": {
+        "all": "All",
+        "ai": "AI",
+        "pending": "Pending",
+        "mine": "Mine",
+        "resolved": "Resolved"
+      },
+      "search": "Search conversations…",
+      "filterChannel": "Filter by channel",
+      "empty": "No conversations",
+      "emptyHint": "Select a conversation to get started",
+      "selectPrompt": "Select a conversation",
+      "noConversation": "No conversation selected"
+    },
+    "conversation": {
+      "resolve": "Resolve",
+      "reopen": "Reopen",
+      "takeOver": "Take Over",
+      "accept": "Accept",
+      "toggleSidebar": "Toggle sidebar",
+      "contactInfo": "Contact info",
+      "metadata": "Conversation metadata",
+      "escalationLog": "Escalation log",
+      "addTag": "Add tag",
+      "addNote": "Add note",
+      "export": "Export",
+      "back": "Back to inbox",
+      "aiHandling": "AI is handling this conversation",
+      "pendingHuman": "Waiting for an agent",
+      "humanHandlingOther": "Assigned to {name}",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "streamingPlaceholder": "AI is typing…",
+      "sendMessage": "Send message",
+      "messagePlaceholder": "Type a message…"
+    },
+    "state": {
+      "AiHandling": "AI Handling",
+      "PendingHuman": "Pending",
+      "HumanHandling": "Human",
+      "Resolved": "Resolved",
+      "Closed": "Closed"
+    },
+    "channel": {
+      "whatsapp": "WhatsApp",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "telegram": "Telegram",
+      "web": "Web"
+    },
+    "delivery": {
+      "Sent": "Sent",
+      "Delivered": "Delivered",
+      "Read": "Read",
+      "Failed": "Delivery failed",
+      "PermanentlyFailed": "Permanently failed"
+    },
+    "confidence": {
+      "label": "AI confidence",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "sla": {
+      "label": "SLA",
+      "expired": "SLA expired"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "dateRange": {
+        "label": "Date range",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "custom": "Custom"
+      },
+      "kpi": {
+        "totalConversations": "Total conversations",
+        "containmentRate": "Containment rate",
+        "handoffRate": "Handoff rate",
+        "avgResponseTime": "Avg. response time",
+        "csat": "CSAT",
+        "tokenCost": "Token cost"
+      },
+      "charts": {
+        "volumeByChannel": "Volume by channel",
+        "handoffReasons": "Handoff reasons",
+        "confidenceBands": "Confidence distribution",
+        "dailyTokenCost": "Daily token cost ($)"
+      },
+      "agentPerf": {
+        "title": "Agent performance",
+        "exportCsv": "Export CSV",
+        "columns": {
+          "name": "Agent",
+          "handled": "Handled",
+          "resolved": "Resolved",
+          "avgTime": "Avg. time",
+          "csat": "CSAT"
+        }
+      },
+      "lowConfidence": {
+        "title": "Low-confidence conversations",
+        "viewConversation": "View conversation",
+        "findGap": "Find knowledge gap →"
+      }
+    },
+    "playground": {
+      "title": "Test Playground",
+      "badge": "Sandbox",
+      "newSession": "New Session",
+      "shareSession": "Share Session",
+      "sessionCopied": "Session URL copied",
+      "clearConversation": "Clear conversation",
+      "compareMode": "Compare mode",
+      "controls": {
+        "title": "Controls",
+        "promptOverride": "System prompt override",
+        "confidenceOverride": "Confidence threshold override",
+        "knowledgeVersion": "Knowledge version",
+        "mcpDryRun": "MCP dry-run",
+        "current": "Current",
+        "loadScenario": "Load a scenario →"
+      },
+      "scenarios": {
+        "angryRefund": "Angry customer requesting refund",
+        "bengaliInquiry": "Product inquiry in Bengali",
+        "outOfScope": "Out-of-scope question",
+        "appointment": "Appointment booking via MCP tool",
+        "multiTurn": "Multi-turn conversation"
+      },
+      "debug": {
+        "title": "Debug Panel",
+        "toggle": "Toggle debug panel",
+        "tabs": {
+          "chunks": "Chunks",
+          "confidence": "Confidence",
+          "prompt": "Prompt",
+          "response": "Response",
+          "pii": "PII",
+          "performance": "Performance"
+        },
+        "chunks": {
+          "rank": "Rank",
+          "document": "Document",
+          "preview": "Preview",
+          "score": "Score",
+          "expand": "Expand chunk",
+          "noChunks": "No chunks retrieved"
+        },
+        "confidence": {
+          "band": "Band",
+          "formula": "Score = retrieval_score × 0.6 + groundedness × 0.4"
+        },
+        "pii": {
+          "noneDetected": "No PII detected",
+          "masked": "{count} token(s) masked"
+        },
+        "performance": {
+          "embed": "Embedding",
+          "retrieval": "Retrieval",
+          "llm": "LLM",
+          "total": "Total"
+        }
+      },
+      "testUser": "You (test)"
+    },
+    "knowledge": {
+      "title": "Knowledge Base",
+      "addKnowledge": "Add Knowledge",
+      "columns": {
+        "title": "Title",
+        "type": "Type",
+        "status": "Status",
+        "chunks": "Chunks",
+        "updatedAt": "Last Updated",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "reEmbed": "Re-embed",
+        "delete": "Delete",
+        "restore": "Restore"
+      },
+      "reEmbedding": "Re-embedding…",
+      "deleteConfirm": "Delete this document?",
+      "deleteDescription": "This will permanently remove the document and all its chunks.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "addDialog": {
+        "title": "Add Knowledge",
+        "tabs": {
+          "upload": "Upload File",
+          "url": "From URL",
+          "text": "Write Text",
+          "chat": "Import Past Chats"
+        },
+        "upload": {
+          "hint": "Drag & drop or click to upload",
+          "types": "PDF, DOCX, TXT, MD up to 50 MB",
+          "uploading": "Uploading…",
+          "progress": "{percent}%"
+        },
+        "url": {
+          "label": "URL",
+          "placeholder": "https://…",
+          "fetch": "Fetch"
+        },
+        "text": {
+          "label": "Content",
+          "titleLabel": "Title",
+          "freeText": "Free text",
+          "qaBuilder": "Q&A pairs",
+          "addPair": "Add pair",
+          "question": "Question",
+          "answer": "Answer"
+        }
+      },
+      "detail": {
+        "tabs": {
+          "chunks": "Chunks",
+          "history": "Version History"
+        },
+        "status": {
+          "Processing": "Processing",
+          "Ready": "Ready",
+          "Failed": "Failed"
+        },
+        "processingSteps": {
+          "upload": "Upload",
+          "extract": "Extract",
+          "chunk": "Chunk",
+          "embed": "Embed",
+          "index": "Index"
+        },
+        "chunksTable": {
+          "index": "#",
+          "preview": "Preview",
+          "tokens": "Tokens",
+          "score": "Score"
+        },
+        "historyTable": {
+          "version": "Version",
+          "createdAt": "Created",
+          "model": "Model",
+          "actions": "Actions"
+        }
+      }
+    },
+    "channels": {
+      "title": "Channel Connections",
+      "subtitle": "Connect your messaging channels to start receiving conversations.",
+      "status": {
+        "connected": "Connected",
+        "notConnected": "Not connected",
+        "error": "Connection error"
+      },
+      "connect": "Connect",
+      "configure": "Configure",
+      "disconnect": "Disconnect",
+      "drawer": {
+        "steps": {
+          "credentials": "Credentials",
+          "verify": "Verify",
+          "webhook": "Webhook",
+          "test": "Test",
+          "done": "Done"
+        },
+        "verifyCredentials": "Verify Credentials",
+        "verifying": "Verifying…",
+        "copyWebhook": "Copy URL",
+        "copied": "Copied!",
+        "sendTest": "Send Test Message",
+        "sending": "Sending…",
+        "testSuccess": "Test message sent!",
+        "close": "Close",
+        "success": "Connected successfully!"
+      },
+      "widget": {
+        "title": "Widget Appearance",
+        "color": "Color",
+        "welcomeMessage": "Welcome message",
+        "position": "Position",
+        "positionBottomRight": "Bottom right",
+        "positionBottomLeft": "Bottom left",
+        "preview": "Preview"
+      }
+    },
+    "aiSettings": {
+      "title": "AI Configuration",
+      "subtitle": "Configure how the AI assistant behaves in this workspace.",
+      "nav": {
+        "provider": "Provider & Model",
+        "systemPrompt": "System Prompt",
+        "handoff": "Human Handoff",
+        "privacy": "Privacy & Data"
+      },
+      "sections": {
+        "provider": "Provider & Model",
+        "systemPrompt": "System Prompt",
+        "handoff": "Handoff Thresholds",
+        "pii": "PII Masking",
+        "retention": "Data Retention"
+      },
+      "provider": {
+        "title": "Provider & Model",
+        "subtitle": "Select which AI provider and model powers your chatbot. API keys are managed in Workspace Settings.",
+        "primaryLabel": "Primary",
+        "primaryDescription": "Main provider used for all conversations.",
+        "fallbackLabel": "Fallback",
+        "fallbackDescription": "Used automatically if the primary provider fails or times out.",
+        "noFallback": "No fallback",
+        "modelLabel": "Model",
+        "notConfigured": "Not configured",
+        "noProvidersTitle": "No AI providers configured",
+        "noProvidersDescription": "Set up at least one provider in Workspace Settings to enable the chatbot.",
+        "goToSettings": "Go to AI Settings",
+        "manageKeys": "Manage API keys in Workspace Settings",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "systemPrompt": {
+        "title": "System Prompt",
+        "subtitle": "Instructions sent to the AI before every conversation. Defines its persona, scope, and tone.",
+        "templateLabel": "Start from a template",
+        "templatePlaceholder": "Choose a template…",
+        "templates": {
+          "retail": "Retail / E-Commerce",
+          "ecommerce": "Online Shop (warm tone)",
+          "support": "Technical Support"
+        },
+        "promptLabel": "Prompt",
+        "promptPlaceholder": "You are a helpful assistant…",
+        "tokenEstimate": "~{count} tokens",
+        "testLink": "Test in Playground",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "handoff": {
+        "title": "Human Handoff",
+        "subtitle": "Rules that trigger automatic escalation from AI to a human agent.",
+        "confidenceTitle": "Confidence threshold",
+        "confidenceDescription": "Escalate when AI confidence drops below this level",
+        "confidenceAlways": "0% — always escalate",
+        "confidenceNever": "100% — never escalate",
+        "sentimentTitle": "Negative sentiment detection",
+        "sentimentDescription": "Escalate when a frustrated or angry tone is detected",
+        "sensitivityLabel": "Sensitivity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "triggerPhrasesLabel": "Trigger phrases",
+        "triggerPhrasesDescription": "Exact phrases that immediately route to a human. Press Enter to add.",
+        "triggerPlaceholder": "e.g. speak to a manager",
+        "maxUnansweredTitle": "Max unanswered questions",
+        "maxUnansweredDescription": "Escalate after this many consecutive low-confidence replies",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "privacy": {
+        "title": "Privacy & Data",
+        "subtitle": "Control how customer data is handled before being sent to the AI and how long it is stored.",
+        "piiTitle": "PII handling",
+        "piiDescription": "How personally identifiable information is treated before being sent to the LLM.",
+        "piiNoneLabel": "None",
+        "piiNoneDescription": "Send raw text to LLM — not recommended if messages contain customer PII",
+        "piiPseudonymiseLabel": "Pseudonymise",
+        "piiPseudonymiseDescription": "Replace names, emails, and phone numbers with tokens before sending to LLM",
+        "piiRedactLabel": "Redact",
+        "piiRedactDescription": "Remove PII entirely — safest option, may reduce response quality",
+        "retentionTitle": "Message retention period",
+        "retentionDescription": "How long conversation content is stored before permanent deletion. Metadata is kept for analytics.",
+        "retentionDays": "days",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      }
+    },
+    "tools": {
+      "title": "MCP Tools",
+      "tabs": {
+        "builtIn": "Built-In",
+        "custom": "Custom Servers"
+      },
+      "builtIn": {
+        "enabled": "Enabled",
+        "configure": "Configure",
+        "requiresConfirmation": "Requires confirmation",
+        "columns": {
+          "tool": "Tool",
+          "description": "Description",
+          "confirmation": "Confirmation"
+        }
+      },
+      "custom": {
+        "addServer": "Add MCP Server",
+        "dialog": {
+          "title": "Add MCP Server",
+          "nameLabel": "Server name",
+          "transportLabel": "Transport",
+          "stdio": "stdio",
+          "sse": "SSE",
+          "urlLabel": "Server URL",
+          "commandLabel": "Command",
+          "oauthLabel": "OAuth",
+          "testConnection": "Test Connection",
+          "testing": "Testing…",
+          "add": "Add Server",
+          "cancel": "Cancel"
+        },
+        "status": {
+          "connected": "Connected",
+          "error": "Error"
+        }
+      }
     }
   },
   "settings": {

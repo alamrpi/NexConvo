@@ -59,7 +59,8 @@ export default async function DashboardPage() {
   const categories = Array.from({ length: 7 }, (_, i) => weekday.format(new Date(2024, 0, i + 1)));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-7xl space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('greeting')}</h1>
@@ -100,6 +101,7 @@ export default async function DashboardPage() {
         <ChannelMix items={channelStats} />
         <PipelineOverview stages={pipelineStages} />
       </section>
+    </div>
     </div>
   );
 }

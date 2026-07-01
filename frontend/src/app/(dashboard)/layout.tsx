@@ -22,13 +22,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SessionProvider initialUser={user}>
-      <div className="flex min-h-dvh bg-background">
+      <div className="flex h-dvh overflow-hidden bg-background">
         <AppSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <AppTopbar />
           <EmailVerificationBanner />
           <TwoFactorRequiredBanner />
-          <main className="flex-1 bg-muted/40 p-4 dark:bg-background sm:p-6">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/40 dark:bg-background">{children}</main>
         </div>
       </div>
     </SessionProvider>

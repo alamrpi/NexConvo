@@ -10,7 +10,8 @@ export default async function SettingsLayout({ children }: { children: ReactNode
   const t = await getTranslations('settings');
 
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-[200px_minmax(0,1fr)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6">
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-[200px_minmax(0,1fr)]">
       <aside className="min-w-0 md:space-y-4">
         <div className="mb-3 md:mb-0">
           <h1 className="text-base font-semibold tracking-tight">{t('title')}</h1>
@@ -19,6 +20,7 @@ export default async function SettingsLayout({ children }: { children: ReactNode
         <SettingsNav />
       </aside>
       <div className="min-w-0">{children}</div>
+    </div>
     </div>
   );
 }

@@ -10,7 +10,6 @@ import { Input } from '@/shared/ui/input';
 import { Textarea } from '@/shared/ui/textarea';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent } from '@/shared/ui/card';
-import { Badge } from '@/shared/ui/badge';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { cn } from '@/shared/lib/cn';
 import { useSessionStore } from '@/features/auth/model/session.store';
