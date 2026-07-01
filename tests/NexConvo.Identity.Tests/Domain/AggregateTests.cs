@@ -1,4 +1,5 @@
 using FluentAssertions;
+using NexConvo.BuildingBlocks.Domain;
 using NexConvo.Identity.Domain.Authentication;
 using NexConvo.Identity.Domain.Events;
 using NexConvo.Identity.Domain.Roles;
@@ -35,14 +36,69 @@ public sealed class AggregateTests
     }
 
     [Fact]
-    public void Role_DefaultsFor_SeedsOwnerWithWildcard()
+    public void Role_DefaultsFor_SeedsOwnerAdminSystem_PlusEditableStarters()
     {
         var roles = Role.DefaultsFor(TenantA);
 
-        roles.Should().HaveCount(3);
+        roles.Select(r => r.Name).Should().BeEquivalentTo("Owner", "Admin", "Member", "Viewer");
+
         var owner = roles.Single(r => r.Name == "Owner");
         owner.GrantsAll.Should().BeTrue();
-        roles.Single(r => r.Name == "Agent").GrantsAll.Should().BeFalse();
+        owner.IsSystem.Should().BeTrue();
+
+        roles.Single(r => r.Name == "Admin").IsSystem.Should().BeTrue();
+        roles.Single(r => r.Name == "Member").IsSystem.Should().BeFalse();   // editable starter
+        roles.Single(r => r.Name == "Viewer").IsSystem.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Role_CreateCustom_RejectsWildcard()
+    {
+        var act = () => Role.CreateCustom(TenantA, "Hacker", [Permissions.All]);
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Role_SystemRole_CannotBeEdited()
+    {
+        var owner = Role.DefaultsFor(TenantA).Single(r => r.Name == "Owner");
+
+        owner.Invoking(r => r.Rename("Boss")).Should().Throw<DomainException>();
+        owner.Invoking(r => r.UpdatePermissions([Permissions.UsersRead])).Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void User_LocksOut_AfterMaxFailedAttempts_AndUnlocksAfterWindow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var window = TimeSpan.FromMinutes(15);
+        var user = User.Register(TenantA, Email.Create("a@b.com"), "hash", "A B");
+
+        user.IsLockedOut(now).Should().BeFalse();
+        for (var i = 0; i < 5; i++)
+        {
+            user.RegisterFailedLogin(now, maxAttempts: 5, lockoutWindow: window);
+        }
+
+        user.IsLockedOut(now).Should().BeTrue();                 // locked at the threshold
+        user.IsLockedOut(now + window + TimeSpan.FromSeconds(1)).Should().BeFalse(); // window elapsed
+    }
+
+    [Fact]
+    public void User_ResetFailedLogins_ClearsCounterAndLock()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var user = User.Register(TenantA, Email.Create("a@b.com"), "hash", "A B");
+        for (var i = 0; i < 5; i++)
+        {
+            user.RegisterFailedLogin(now, maxAttempts: 5, lockoutWindow: TimeSpan.FromMinutes(15));
+        }
+
+        user.IsLockedOut(now).Should().BeTrue();
+        user.ResetFailedLogins();
+
+        user.IsLockedOut(now).Should().BeFalse();
+        user.FailedLoginCount.Should().Be(0);
     }
 
     [Fact]

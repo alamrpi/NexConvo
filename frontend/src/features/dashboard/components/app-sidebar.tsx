@@ -12,15 +12,21 @@ export async function AppSidebar() {
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-card lg:flex">
-      <div className="flex h-16 items-center border-b border-border px-6">
-        <Link href="/dashboard" aria-label={t('appName')}>
+      <div className="flex h-16 items-center border-b border-border px-5">
+        <Link
+          href="/dashboard"
+          aria-label={t('appName')}
+          className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <Logo label={t('appName')} />
         </Link>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto px-3 py-5">
         <NavLinks />
       </div>
-      <div className="border-t border-border p-4 text-xs text-muted-foreground">{t('tagline')}</div>
+      <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
+        {t('tagline')}
+      </div>
     </aside>
   );
 }

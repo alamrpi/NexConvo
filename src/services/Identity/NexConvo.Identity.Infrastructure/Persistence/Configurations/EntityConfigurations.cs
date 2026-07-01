@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NexConvo.Identity.Domain.Authentication;
+using NexConvo.Identity.Domain.Invitations;
 using NexConvo.Identity.Domain.Roles;
 using NexConvo.Identity.Domain.Tenants;
 using NexConvo.Identity.Domain.Users;
 using NexConvo.Identity.Domain.ValueObjects;
+using NexConvo.Identity.Domain.WorkspaceSettings;
 using NexConvo.Identity.Infrastructure.Audit;
 
 namespace NexConvo.Identity.Infrastructure.Persistence.Configurations;
@@ -22,6 +24,7 @@ public sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         b.Property(t => t.Slug).HasColumnName("slug").HasMaxLength(40).IsRequired()
             .HasConversion(s => s.Value, v => TenantSlug.Create(v));
         b.Property(t => t.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
+        b.Property(t => t.RequireTwoFactor).HasColumnName("require_two_factor").HasDefaultValue(false);
         b.Property(t => t.CreatedAt).HasColumnName("created_at");
         b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         b.Property(t => t.CreatedByUserId).HasColumnName("created_by_user_id");
@@ -43,9 +46,30 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired();
         b.Property(u => u.FullName).HasColumnName("full_name").HasMaxLength(200).IsRequired();
         b.Property(u => u.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
+        b.Property(u => u.EmailVerifiedAt).HasColumnName("email_verified_at");
+        b.Property(u => u.FailedLoginCount).HasColumnName("failed_login_count").HasDefaultValue(0);
+        b.Property(u => u.LockoutEndsAt).HasColumnName("lockout_ends_at");
+        b.Property(u => u.TwoFactorEnabled).HasColumnName("two_factor_enabled").HasDefaultValue(false);
+        b.Property(u => u.EncryptedTotpSecret).HasColumnName("encrypted_totp_secret");
         b.Property(u => u.CreatedAt).HasColumnName("created_at");
         b.Property(u => u.UpdatedAt).HasColumnName("updated_at");
         b.Property(u => u.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.Ignore(u => u.IsEmailVerified);
+        b.Ignore(u => u.TwoFactorPending);
+        b.Ignore(u => u.BackupCodes);
+
+        // Recovery codes stored as JSONB (skill Standard 7) via the private backing field.
+        var backupCodes = b.Property<List<BackupCode>>("_backupCodes")
+            .HasColumnName("two_factor_backup_codes")
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                v => JsonSerializer.Deserialize<List<BackupCode>>(v, (JsonSerializerOptions?)null) ?? new List<BackupCode>());
+        backupCodes.Metadata.SetValueComparer(new ValueComparer<List<BackupCode>>(
+            (a, c) => (a ?? new List<BackupCode>()).SequenceEqual(c ?? new List<BackupCode>()),
+            v => v.Aggregate(0, (h, x) => HashCode.Combine(h, x.GetHashCode())),
+            v => v.ToList()));
+
         b.HasMany(u => u.Roles).WithOne().HasForeignKey(ur => ur.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Navigation(u => u.Roles).UsePropertyAccessMode(PropertyAccessMode.Field);
         b.HasIndex(u => new { u.TenantId, u.Email }).IsUnique();
@@ -73,8 +97,10 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         b.HasKey(r => r.Id);
         b.Ignore(r => r.DomainEvents);
         b.Ignore(r => r.PermissionKeys);
+        b.Ignore(r => r.GrantsAll);
         b.Property(r => r.TenantId).HasColumnName("tenant_id");
         b.Property(r => r.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+        b.Property(r => r.IsSystem).HasColumnName("is_system").HasDefaultValue(false);
         b.Property(r => r.CreatedAt).HasColumnName("created_at");
         b.Property(r => r.UpdatedAt).HasColumnName("updated_at");
         b.Property(r => r.CreatedByUserId).HasColumnName("created_by_user_id");
@@ -112,6 +138,75 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         b.Property(t => t.CreatedByUserId).HasColumnName("created_by_user_id");
         b.HasIndex(t => new { t.TenantId, t.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class OneTimeTokenConfiguration : IEntityTypeConfiguration<OneTimeToken>
+{
+    public void Configure(EntityTypeBuilder<OneTimeToken> b)
+    {
+        b.ToTable("one_time_tokens");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.UserId).HasColumnName("user_id");
+        b.Property(x => x.Purpose).HasColumnName("purpose").HasConversion<string>().HasMaxLength(40);
+        b.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+        b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        b.Property(x => x.ConsumedAt).HasColumnName("consumed_at");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => new { x.TenantId, x.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
+{
+    public void Configure(EntityTypeBuilder<Invitation> b)
+    {
+        b.ToTable("invitations");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Email).HasColumnName("email").HasMaxLength(320).IsRequired()
+            .HasConversion(e => e.Value, v => Email.Create(v));
+        b.Property(x => x.RoleId).HasColumnName("role_id");
+        b.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(128).IsRequired();
+        b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+        b.Property(x => x.AcceptedAt).HasColumnName("accepted_at");
+        b.Property(x => x.InvitedByUserId).HasColumnName("invited_by_user_id");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => new { x.TenantId, x.TokenHash }).IsUnique();
+    }
+}
+
+public sealed class WorkspaceEmailSettingsConfiguration : IEntityTypeConfiguration<WorkspaceEmailSettings>
+{
+    public void Configure(EntityTypeBuilder<WorkspaceEmailSettings> b)
+    {
+        b.ToTable("workspace_email_settings");
+        b.HasKey(x => x.Id);
+        b.Ignore(x => x.DomainEvents);
+        b.Ignore(x => x.HasSecret);
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Provider).HasColumnName("provider").HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.FromName).HasColumnName("from_name").HasMaxLength(200);
+        b.Property(x => x.FromAddress).HasColumnName("from_address").HasMaxLength(320);
+        b.Property(x => x.IsEnabled).HasColumnName("is_enabled");
+        b.Property(x => x.SmtpHost).HasColumnName("smtp_host").HasMaxLength(255);
+        b.Property(x => x.SmtpPort).HasColumnName("smtp_port");
+        b.Property(x => x.SmtpUsername).HasColumnName("smtp_username").HasMaxLength(255);
+        b.Property(x => x.SmtpUseSsl).HasColumnName("smtp_use_ssl");
+        b.Property(x => x.EncryptedSecret).HasColumnName("encrypted_secret");
+        b.Property(x => x.LastTestedAt).HasColumnName("last_tested_at");
+        b.Property(x => x.LastTestSucceeded).HasColumnName("last_test_succeeded");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");
+        b.HasIndex(x => x.TenantId).IsUnique(); // one settings row per tenant
     }
 }
 

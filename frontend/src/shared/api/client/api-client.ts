@@ -11,11 +11,18 @@ export const apiClient = axios.create({
   timeout: 15_000,
 });
 
+// Tag every request with a correlation id the BFF forwards to the gateway, so one id threads
+// browser -> BFF -> gateway -> service through the logs (frontend standard S14).
+apiClient.interceptors.request.use((config) => {
+  config.headers['x-correlation-id'] = crypto.randomUUID();
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
-      const isAuthEndpoint = error.config?.url?.includes('/auth/') ?? false;
+      const isAuthEndpoint = error.config?.url?.startsWith('/auth/') ?? false;
       if (error.response?.status === 401 && !isAuthEndpoint && typeof window !== 'undefined') {
         window.location.assign('/login');
       }

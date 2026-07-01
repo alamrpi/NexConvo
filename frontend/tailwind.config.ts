@@ -38,6 +38,21 @@ const config: Config = {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: 'hsl(var(--warning-foreground))',
+        },
+        chart: {
+          1: 'hsl(var(--chart-1))',
+          2: 'hsl(var(--chart-2))',
+          3: 'hsl(var(--chart-3))',
+          4: 'hsl(var(--chart-4))',
+          5: 'hsl(var(--chart-5))',
+        },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
@@ -54,11 +69,36 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Chat-specific tokens — brand colors (not themeable, same in light/dark)
+        chatState: {
+          ai: 'var(--chat-state-ai)',
+          pending: 'var(--chat-state-pending)',
+          human: 'var(--chat-state-human)',
+          resolved: 'var(--chat-state-resolved)',
+          closed: 'var(--chat-state-closed)',
+        },
+        chatChannel: {
+          whatsapp: 'var(--chat-channel-whatsapp)',
+          facebook: 'var(--chat-channel-facebook)',
+          instagram: 'var(--chat-channel-instagram)',
+          telegram: 'var(--chat-channel-telegram)',
+          web: 'var(--chat-channel-web)',
+        },
+        chatConfidence: {
+          high: 'var(--chat-confidence-high)',
+          medium: 'var(--chat-confidence-medium)',
+          low: 'var(--chat-confidence-low)',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      boxShadow: {
+        // Slightly richer than shadow-sm, still subtle (S22). Used for interactive
+        // cards on hover; shadow-sm remains the default elevation vocabulary.
+        card: '0 1px 2px 0 hsl(255 40% 20% / 0.04), 0 2px 8px -2px hsl(255 40% 20% / 0.08)',
       },
       keyframes: {
         'accordion-down': {

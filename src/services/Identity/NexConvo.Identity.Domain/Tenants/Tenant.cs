@@ -20,6 +20,9 @@ public sealed class Tenant : BaseEntity
     public TenantSlug Slug { get; private set; } = null!;
     public TenantStatus Status { get; private set; }
 
+    /// <summary>When true, members must have 2FA enabled to perform sensitive writes (soft gate).</summary>
+    public bool RequireTwoFactor { get; private set; }
+
     private Tenant() { } // EF
 
     private Tenant(string name, TenantSlug slug)
@@ -40,4 +43,7 @@ public sealed class Tenant : BaseEntity
         tenant.RaiseDomainEvent(new TenantProvisionedDomainEvent(tenant.Id, tenant.Name, slug.Value));
         return tenant;
     }
+
+    /// <summary>Toggle the workspace-wide 2FA requirement (Owner/settings:manage policy).</summary>
+    public void SetRequireTwoFactor(bool required) => RequireTwoFactor = required;
 }

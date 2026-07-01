@@ -5,6 +5,7 @@ using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Observability;
 using NexConvo.Identity.Application;
 using NexConvo.Identity.Infrastructure;
+using NexConvo.Identity.Infrastructure.Persistence;
 using NexConvo.Identity.Infrastructure.Security;
 using Serilog;
 
@@ -45,17 +46,41 @@ builder.Services.AddAuthorization(options =>
 {
     // Deny-by-default (skill Standard 12): everything requires auth unless [AllowAnonymous].
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+
+    // Permission policies map to the JWT 'permission' claims; '*' (Owner) satisfies any.
+    static Action<AuthorizationPolicyBuilder> RequirePermission(string key) => policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim("permission", "*") || context.User.HasClaim("permission", key));
+
+    options.AddPolicy("settings:manage", RequirePermission("settings:manage"));
+    options.AddPolicy("users:read", RequirePermission("users:read"));
+    options.AddPolicy("users:invite", RequirePermission("users:invite"));
+    options.AddPolicy("users:manage", RequirePermission("users:manage"));
+    options.AddPolicy("roles:manage", RequirePermission("roles:manage"));
 });
 
 builder.Services.AddControllers();
+builder.Services.AddNexConvoSwagger("Identity API");
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Surface which distributed-cache backend is active (Redis in prod/docker, in-memory in dev when
+// ConnectionStrings:Redis is unset) — ops signal + makes a misconfigured cache obvious at boot.
+app.Logger.LogInformation(
+    "Distributed cache backend: {Cache} (ConnectionStrings:Redis present: {Present})",
+    app.Services.GetRequiredService<Microsoft.Extensions.Caching.Distributed.IDistributedCache>().GetType().Name,
+    !string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Redis")));
+
+// Auto-apply pending migrations on startup (Development by default) using a privileged
+// connection. No-op when the database is already up to date.
+await IdentityDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Environment, app.Logger);
+
 app.UseNexConvoExceptionHandling();
-app.UseSerilogRequestLogging();
-app.UseRequestCorrelation();
+app.UseNexConvoSwagger();
+app.UseNexConvoRequestLogging();
 app.UseAuthentication();
+app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
 
 app.MapControllers();

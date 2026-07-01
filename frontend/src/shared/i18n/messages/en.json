@@ -19,8 +19,25 @@
       "projects": "Projects",
       "campaigns": "Campaigns",
       "automation": "Automation",
+      "chat": "Chat",
+      "chatInbox": "Inbox",
+      "chatAnalytics": "Analytics",
+      "chatPlayground": "Playground",
+      "chatReports": "Reports",
+      "chatSettings": "Settings",
+      "chatChannels": "Channels",
+      "chatKnowledge": "Knowledge",
+      "chatAi": "AI Config",
+      "chatTools": "Tools",
       "analytics": "Analytics",
-      "settings": "Settings"
+      "settings": "Settings",
+      "sections": {
+        "workspace": "Workspace",
+        "engage": "Engage",
+        "chat": "Chat",
+        "insights": "Insights",
+        "account": "Account"
+      }
     }
   },
   "landing": {
@@ -119,6 +136,14 @@
     "subtitle": "Here's what's happening across your workspace today.",
     "openMenu": "Open navigation menu",
     "closeMenu": "Close navigation menu",
+    "newAction": "New",
+    "notifications": "Notifications",
+    "period": {
+      "label": "Select period",
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days"
+    },
     "stats": {
       "openConversations": "Open conversations",
       "newLeads": "New leads",
@@ -126,9 +151,22 @@
       "revenue": "Revenue (MTD)",
       "vsLastWeek": "vs last week"
     },
+    "trend": {
+      "title": "Performance",
+      "conversations": "Conversations",
+      "revenue": "Revenue"
+    },
     "panels": {
       "activity": "Recent activity",
-      "viewAll": "View all"
+      "viewAll": "View all",
+      "channelMix": "Channel mix",
+      "pipeline": "Pipeline"
+    },
+    "pipeline": {
+      "new": "New",
+      "qualified": "Qualified",
+      "proposal": "Proposal",
+      "won": "Won"
     },
     "user": {
       "name": "Md. Alam Hossain",
@@ -148,5 +186,868 @@
     "toggle": "Change language",
     "en": "English",
     "bn": "বাংলা"
+  },
+  "auth": {
+    "twoFactor": {
+      "title": "Two-step verification",
+      "subtitle": "Enter the 6-digit code from your authenticator app.",
+      "backupSubtitle": "Enter one of your backup codes.",
+      "codeLabel": "Authenticator code",
+      "backupLabel": "Backup code",
+      "verify": "Verify",
+      "verifying": "Verifying…",
+      "useBackup": "Use a backup code",
+      "useAuthenticator": "Use authenticator app",
+      "back": "Back to sign in",
+      "errors": {
+        "codeInvalid": "Enter the 6-digit code.",
+        "backupCodeInvalid": "Enter a valid backup code.",
+        "invalidCode": "That code is incorrect. Try again.",
+        "network": "Can't reach the server — check your connection and try again.",
+        "server": "Server error. Please try again in a moment.",
+        "generic": "Something went wrong. Please try again."
+      }
+    }
+  },
+  "verifyBanner": {
+    "message": "Verify your email to unlock inviting teammates and changing settings.",
+    "resend": "Resend email",
+    "sending": "Sending…",
+    "sent": "Verification email sent — check your inbox.",
+    "dismiss": "Dismiss"
+  },
+  "twoFactorBanner": {
+    "message": "Your workspace requires two-factor authentication. Set it up to keep managing your workspace.",
+    "action": "Set up 2FA"
+  },
+  "verifyEmail": {
+    "title": "Verify email",
+    "verifying": "Verifying your email…",
+    "success": "Your email is verified.",
+    "failed": "This link is invalid or has expired.",
+    "missingToken": "This verification link is missing its token.",
+    "goToDashboard": "Go to dashboard",
+    "backToLogin": "Back to sign in"
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "subtitle": "Enter your workspace and email and we’ll send a reset link.",
+    "tenantLabel": "Workspace",
+    "emailLabel": "Email",
+    "submit": "Send reset link",
+    "submitting": "Sending…",
+    "checkInbox": "If that account exists, a reset link is on its way. Check your inbox.",
+    "backToLogin": "Back to sign in",
+    "errors": {
+      "tenantRequired": "Workspace is required.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address."
+    }
+  },
+  "resetPassword": {
+    "title": "Choose a new password",
+    "subtitle": "Enter a new password for your account.",
+    "passwordLabel": "New password",
+    "confirmLabel": "Confirm password",
+    "submit": "Reset password",
+    "submitting": "Resetting…",
+    "failed": "This reset link is invalid or has expired.",
+    "missingToken": "This reset link is missing its token.",
+    "backToLogin": "Back to sign in",
+    "errors": {
+      "passwordMin": "Use at least 8 characters.",
+      "confirmRequired": "Please confirm your password.",
+      "passwordMismatch": "Passwords don’t match."
+    }
+  },
+  "acceptInvite": {
+    "title": "Accept your invitation",
+    "subtitle": "Set your name and password to join the workspace.",
+    "fullNameLabel": "Full name",
+    "passwordLabel": "Password",
+    "submit": "Join workspace",
+    "submitting": "Joining…",
+    "failed": "This invitation is invalid or has expired.",
+    "missingToken": "This invitation link is missing its token.",
+    "errors": {
+      "fullNameRequired": "Your name is required.",
+      "passwordMin": "Use at least 8 characters."
+    }
+  },
+  "chat": {
+    "nav": {
+      "inbox": "Inbox",
+      "analytics": "Analytics",
+      "playground": "Playground",
+      "settings": "Settings",
+      "channels": "Channels",
+      "knowledge": "Knowledge",
+      "aiConfig": "AI Config",
+      "tools": "Tools",
+      "openMenu": "Open chat navigation",
+      "settingsSubmenu": "Settings submenu"
+    },
+    "settings": {
+      "title": "Chat Settings",
+      "subtitle": "Manage channels, AI, and knowledge sources.",
+      "nav": {
+        "label": "Chat settings navigation",
+        "channels": "Channels",
+        "knowledge": "Knowledge",
+        "ai": "AI Config",
+        "tools": "Tools"
+      }
+    },
+    "topbar": {
+      "notifications": "Notifications",
+      "toggleTheme": "Toggle theme"
+    },
+    "inbox": {
+      "title": "Inbox",
+      "tabs": {
+        "all": "All",
+        "ai": "AI",
+        "pending": "Pending",
+        "mine": "Mine",
+        "resolved": "Resolved"
+      },
+      "search": "Search conversations…",
+      "filterChannel": "Filter by channel",
+      "empty": "No conversations",
+      "emptyHint": "Select a conversation to get started",
+      "selectPrompt": "Select a conversation",
+      "noConversation": "No conversation selected"
+    },
+    "conversation": {
+      "resolve": "Resolve",
+      "reopen": "Reopen",
+      "takeOver": "Take Over",
+      "accept": "Accept",
+      "toggleSidebar": "Toggle sidebar",
+      "contactInfo": "Contact info",
+      "metadata": "Conversation metadata",
+      "escalationLog": "Escalation log",
+      "addTag": "Add tag",
+      "addNote": "Add note",
+      "export": "Export",
+      "back": "Back to inbox",
+      "aiHandling": "AI is handling this conversation",
+      "pendingHuman": "Waiting for an agent",
+      "humanHandlingOther": "Assigned to {name}",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "streamingPlaceholder": "AI is typing…",
+      "sendMessage": "Send message",
+      "messagePlaceholder": "Type a message…"
+    },
+    "state": {
+      "AiHandling": "AI Handling",
+      "PendingHuman": "Pending",
+      "HumanHandling": "Human",
+      "Resolved": "Resolved",
+      "Closed": "Closed"
+    },
+    "channel": {
+      "whatsapp": "WhatsApp",
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "telegram": "Telegram",
+      "web": "Web"
+    },
+    "delivery": {
+      "Sent": "Sent",
+      "Delivered": "Delivered",
+      "Read": "Read",
+      "Failed": "Delivery failed",
+      "PermanentlyFailed": "Permanently failed"
+    },
+    "confidence": {
+      "label": "AI confidence",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "sla": {
+      "label": "SLA",
+      "expired": "SLA expired"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "dateRange": {
+        "label": "Date range",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "custom": "Custom"
+      },
+      "kpi": {
+        "totalConversations": "Total conversations",
+        "containmentRate": "Containment rate",
+        "handoffRate": "Handoff rate",
+        "avgResponseTime": "Avg. response time",
+        "csat": "CSAT",
+        "tokenCost": "Token cost"
+      },
+      "charts": {
+        "volumeByChannel": "Volume by channel",
+        "handoffReasons": "Handoff reasons",
+        "confidenceBands": "Confidence distribution",
+        "dailyTokenCost": "Daily token cost ($)"
+      },
+      "agentPerf": {
+        "title": "Agent performance",
+        "exportCsv": "Export CSV",
+        "columns": {
+          "name": "Agent",
+          "handled": "Handled",
+          "resolved": "Resolved",
+          "avgTime": "Avg. time",
+          "csat": "CSAT"
+        }
+      },
+      "lowConfidence": {
+        "title": "Low-confidence conversations",
+        "viewConversation": "View conversation",
+        "findGap": "Find knowledge gap →"
+      }
+    },
+    "playground": {
+      "title": "Test Playground",
+      "badge": "Sandbox",
+      "newSession": "New Session",
+      "shareSession": "Share Session",
+      "sessionCopied": "Session URL copied",
+      "clearConversation": "Clear conversation",
+      "compareMode": "Compare mode",
+      "controls": {
+        "title": "Controls",
+        "promptOverride": "System prompt override",
+        "confidenceOverride": "Confidence threshold override",
+        "knowledgeVersion": "Knowledge version",
+        "mcpDryRun": "MCP dry-run",
+        "current": "Current",
+        "loadScenario": "Load a scenario →"
+      },
+      "scenarios": {
+        "angryRefund": "Angry customer requesting refund",
+        "bengaliInquiry": "Product inquiry in Bengali",
+        "outOfScope": "Out-of-scope question",
+        "appointment": "Appointment booking via MCP tool",
+        "multiTurn": "Multi-turn conversation"
+      },
+      "debug": {
+        "title": "Debug Panel",
+        "toggle": "Toggle debug panel",
+        "tabs": {
+          "chunks": "Chunks",
+          "confidence": "Confidence",
+          "prompt": "Prompt",
+          "response": "Response",
+          "pii": "PII",
+          "performance": "Performance"
+        },
+        "chunks": {
+          "rank": "Rank",
+          "document": "Document",
+          "preview": "Preview",
+          "score": "Score",
+          "expand": "Expand chunk",
+          "noChunks": "No chunks retrieved"
+        },
+        "confidence": {
+          "band": "Band",
+          "formula": "Score = retrieval_score × 0.6 + groundedness × 0.4"
+        },
+        "pii": {
+          "noneDetected": "No PII detected",
+          "masked": "{count} token(s) masked"
+        },
+        "performance": {
+          "embed": "Embedding",
+          "retrieval": "Retrieval",
+          "llm": "LLM",
+          "total": "Total"
+        }
+      },
+      "testUser": "You (test)"
+    },
+    "knowledge": {
+      "title": "Knowledge Base",
+      "addKnowledge": "Add Knowledge",
+      "columns": {
+        "title": "Title",
+        "type": "Type",
+        "status": "Status",
+        "chunks": "Chunks",
+        "updatedAt": "Last Updated",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "reEmbed": "Re-embed",
+        "delete": "Delete",
+        "restore": "Restore"
+      },
+      "reEmbedding": "Re-embedding…",
+      "deleteConfirm": "Delete this document?",
+      "deleteDescription": "This will permanently remove the document and all its chunks.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "addDialog": {
+        "title": "Add Knowledge",
+        "tabs": {
+          "upload": "Upload File",
+          "url": "From URL",
+          "text": "Write Text",
+          "chat": "Import Past Chats"
+        },
+        "upload": {
+          "hint": "Drag & drop or click to upload",
+          "types": "PDF, DOCX, TXT, MD up to 50 MB",
+          "uploading": "Uploading…",
+          "progress": "{percent}%"
+        },
+        "url": {
+          "label": "URL",
+          "placeholder": "https://…",
+          "fetch": "Fetch"
+        },
+        "text": {
+          "label": "Content",
+          "titleLabel": "Title",
+          "freeText": "Free text",
+          "qaBuilder": "Q&A pairs",
+          "addPair": "Add pair",
+          "question": "Question",
+          "answer": "Answer"
+        }
+      },
+      "detail": {
+        "tabs": {
+          "chunks": "Chunks",
+          "history": "Version History"
+        },
+        "status": {
+          "Processing": "Processing",
+          "Ready": "Ready",
+          "Failed": "Failed"
+        },
+        "processingSteps": {
+          "upload": "Upload",
+          "extract": "Extract",
+          "chunk": "Chunk",
+          "embed": "Embed",
+          "index": "Index"
+        },
+        "chunksTable": {
+          "index": "#",
+          "preview": "Preview",
+          "tokens": "Tokens",
+          "score": "Score"
+        },
+        "historyTable": {
+          "version": "Version",
+          "createdAt": "Created",
+          "model": "Model",
+          "actions": "Actions"
+        }
+      }
+    },
+    "channels": {
+      "title": "Channel Connections",
+      "subtitle": "Connect your messaging channels to start receiving conversations.",
+      "status": {
+        "connected": "Connected",
+        "notConnected": "Not connected",
+        "error": "Connection error"
+      },
+      "connect": "Connect",
+      "configure": "Configure",
+      "disconnect": "Disconnect",
+      "drawer": {
+        "steps": {
+          "credentials": "Credentials",
+          "verify": "Verify",
+          "webhook": "Webhook",
+          "test": "Test",
+          "done": "Done"
+        },
+        "verifyCredentials": "Verify Credentials",
+        "verifying": "Verifying…",
+        "copyWebhook": "Copy URL",
+        "copied": "Copied!",
+        "sendTest": "Send Test Message",
+        "sending": "Sending…",
+        "testSuccess": "Test message sent!",
+        "close": "Close",
+        "success": "Connected successfully!"
+      },
+      "widget": {
+        "title": "Widget Appearance",
+        "color": "Color",
+        "welcomeMessage": "Welcome message",
+        "position": "Position",
+        "positionBottomRight": "Bottom right",
+        "positionBottomLeft": "Bottom left",
+        "preview": "Preview"
+      }
+    },
+    "aiSettings": {
+      "title": "AI Configuration",
+      "subtitle": "Configure how the AI assistant behaves in this workspace.",
+      "nav": {
+        "provider": "Provider & Model",
+        "systemPrompt": "System Prompt",
+        "handoff": "Human Handoff",
+        "privacy": "Privacy & Data"
+      },
+      "sections": {
+        "provider": "Provider & Model",
+        "systemPrompt": "System Prompt",
+        "handoff": "Handoff Thresholds",
+        "pii": "PII Masking",
+        "retention": "Data Retention"
+      },
+      "provider": {
+        "title": "Provider & Model",
+        "subtitle": "Select which AI provider and model powers your chatbot. API keys are managed in Workspace Settings.",
+        "primaryLabel": "Primary",
+        "primaryDescription": "Main provider used for all conversations.",
+        "fallbackLabel": "Fallback",
+        "fallbackDescription": "Used automatically if the primary provider fails or times out.",
+        "noFallback": "No fallback",
+        "modelLabel": "Model",
+        "notConfigured": "Not configured",
+        "noProvidersTitle": "No AI providers configured",
+        "noProvidersDescription": "Set up at least one provider in Workspace Settings to enable the chatbot.",
+        "goToSettings": "Go to AI Settings",
+        "manageKeys": "Manage API keys in Workspace Settings",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "systemPrompt": {
+        "title": "System Prompt",
+        "subtitle": "Instructions sent to the AI before every conversation. Defines its persona, scope, and tone.",
+        "templateLabel": "Start from a template",
+        "templatePlaceholder": "Choose a template…",
+        "templates": {
+          "retail": "Retail / E-Commerce",
+          "ecommerce": "Online Shop (warm tone)",
+          "support": "Technical Support"
+        },
+        "promptLabel": "Prompt",
+        "promptPlaceholder": "You are a helpful assistant…",
+        "tokenEstimate": "~{count} tokens",
+        "testLink": "Test in Playground",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "handoff": {
+        "title": "Human Handoff",
+        "subtitle": "Rules that trigger automatic escalation from AI to a human agent.",
+        "confidenceTitle": "Confidence threshold",
+        "confidenceDescription": "Escalate when AI confidence drops below this level",
+        "confidenceAlways": "0% — always escalate",
+        "confidenceNever": "100% — never escalate",
+        "sentimentTitle": "Negative sentiment detection",
+        "sentimentDescription": "Escalate when a frustrated or angry tone is detected",
+        "sensitivityLabel": "Sensitivity",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "triggerPhrasesLabel": "Trigger phrases",
+        "triggerPhrasesDescription": "Exact phrases that immediately route to a human. Press Enter to add.",
+        "triggerPlaceholder": "e.g. speak to a manager",
+        "maxUnansweredTitle": "Max unanswered questions",
+        "maxUnansweredDescription": "Escalate after this many consecutive low-confidence replies",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      },
+      "privacy": {
+        "title": "Privacy & Data",
+        "subtitle": "Control how customer data is handled before being sent to the AI and how long it is stored.",
+        "piiTitle": "PII handling",
+        "piiDescription": "How personally identifiable information is treated before being sent to the LLM.",
+        "piiNoneLabel": "None",
+        "piiNoneDescription": "Send raw text to LLM — not recommended if messages contain customer PII",
+        "piiPseudonymiseLabel": "Pseudonymise",
+        "piiPseudonymiseDescription": "Replace names, emails, and phone numbers with tokens before sending to LLM",
+        "piiRedactLabel": "Redact",
+        "piiRedactDescription": "Remove PII entirely — safest option, may reduce response quality",
+        "retentionTitle": "Message retention period",
+        "retentionDescription": "How long conversation content is stored before permanent deletion. Metadata is kept for analytics.",
+        "retentionDays": "days",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      }
+    },
+    "tools": {
+      "title": "MCP Tools",
+      "tabs": {
+        "builtIn": "Built-In",
+        "custom": "Custom Servers"
+      },
+      "builtIn": {
+        "enabled": "Enabled",
+        "configure": "Configure",
+        "requiresConfirmation": "Requires confirmation",
+        "columns": {
+          "tool": "Tool",
+          "description": "Description",
+          "confirmation": "Confirmation"
+        }
+      },
+      "custom": {
+        "addServer": "Add MCP Server",
+        "dialog": {
+          "title": "Add MCP Server",
+          "nameLabel": "Server name",
+          "transportLabel": "Transport",
+          "stdio": "stdio",
+          "sse": "SSE",
+          "urlLabel": "Server URL",
+          "commandLabel": "Command",
+          "oauthLabel": "OAuth",
+          "testConnection": "Test Connection",
+          "testing": "Testing…",
+          "add": "Add Server",
+          "cancel": "Cancel"
+        },
+        "status": {
+          "connected": "Connected",
+          "error": "Error"
+        }
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your workspace configuration.",
+    "nav": {
+      "label": "Settings sections",
+      "email": "Email",
+      "ai": "AI Config",
+      "general": "General",
+      "members": "Members",
+      "roles": "Roles",
+      "billing": "Billing",
+      "account": "Profile",
+      "password": "Password",
+      "security": "Security",
+      "soon": "Soon",
+      "groups": {
+        "account": "Account",
+        "workspace": "Workspace",
+        "communication": "Communication"
+      }
+    },
+    "account": {
+      "title": "Profile",
+      "description": "Update your name and review your account email.",
+      "fullNameLabel": "Full name",
+      "emailLabel": "Email",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile updated.",
+      "saveError": "Couldn’t save your profile. Please try again.",
+      "errors": {
+        "fullNameRequired": "Your name is required.",
+        "fullNameMax": "Name is too long."
+      }
+    },
+    "password": {
+      "title": "Password",
+      "description": "Change the password you use to sign in.",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "rotateNote": "Changing your password signs you out on all devices.",
+      "save": "Update password",
+      "saving": "Updating…",
+      "changed": "Password updated. Signing you out — please sign in again.",
+      "errors": {
+        "currentPasswordRequired": "Enter your current password.",
+        "passwordMin": "Use at least 8 characters.",
+        "passwordMax": "Password is too long.",
+        "confirmRequired": "Please confirm your new password.",
+        "passwordMismatch": "Passwords don’t match.",
+        "invalidCurrent": "Your current password is incorrect.",
+        "network": "Can't reach the server — check your connection and try again.",
+        "server": "Server error. Please try again in a moment.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Add a second step to your sign-in with an authenticator app.",
+      "totpTitle": "Two-factor authentication",
+      "totpDescription": "Require a 6-digit code from your authenticator app each time you sign in.",
+      "enable": "Set up",
+      "disable": "Disable",
+      "status": {
+        "on": "On",
+        "off": "Off"
+      },
+      "workspacePolicy": {
+        "title": "Require two-factor for everyone",
+        "description": "When on, members must enable 2FA before they can invite teammates or change roles, users, or settings.",
+        "loadError": "Couldn’t load the security policy.",
+        "error": "Couldn’t update the policy. Please try again.",
+        "confirm": {
+          "title": "Require 2FA for the whole workspace?",
+          "description": "Every member must set up two-factor authentication before they can make changes. You can turn this off later.",
+          "cancel": "Cancel",
+          "enable": "Require 2FA"
+        }
+      },
+      "enroll": {
+        "title": "Set up two-factor authentication",
+        "scanSubtitle": "Scan the QR code with your authenticator app, then enter the 6-digit code.",
+        "codesSubtitle": "Save these backup codes somewhere safe — each works once if you lose your device.",
+        "qrAlt": "QR code for your authenticator app",
+        "secretHint": "Can’t scan? Enter this key manually:",
+        "codeLabel": "6-digit code",
+        "verify": "Verify & enable",
+        "verifying": "Verifying…",
+        "startError": "Couldn’t start setup. Please try again.",
+        "retry": "Try again",
+        "codesHeading": "Your backup codes",
+        "copyCodes": "Copy codes",
+        "acknowledge": "I’ve saved my backup codes.",
+        "done": "Done",
+        "errors": {
+          "codeInvalid": "That code is incorrect. Try again.",
+          "network": "Can't reach the server — check your connection and try again.",
+          "server": "Server error. Please try again in a moment.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "disableDialog": {
+        "title": "Disable two-factor authentication?",
+        "description": "Enter your password to turn off 2FA. Your account will be less protected.",
+        "passwordLabel": "Password",
+        "cancel": "Cancel",
+        "confirm": "Disable 2FA",
+        "disabling": "Disabling…",
+        "errors": {
+          "passwordRequired": "Enter your password.",
+          "invalidPassword": "That password is incorrect.",
+          "network": "Can't reach the server — check your connection and try again.",
+          "server": "Server error. Please try again in a moment.",
+          "generic": "Something went wrong. Please try again."
+        }
+      }
+    },
+    "members": {
+      "title": "Members",
+      "description": "Manage workspace users and invite teammates.",
+      "noPermission": "You don’t have permission to view members.",
+      "emailLabel": "Email",
+      "roleLabel": "Role",
+      "invite": "Send invite",
+      "inviting": "Sending…",
+      "invited": "Invitation sent.",
+      "inviteFailed": "Couldn’t send the invitation.",
+      "loadError": "Couldn’t load invitations.",
+      "empty": "No pending invitations.",
+      "pendingTitle": "Pending invitations",
+      "errors": {
+        "emailRequired": "Email is required.",
+        "emailInvalid": "Enter a valid email address.",
+        "roleRequired": "Choose a role."
+      }
+    },
+    "users": {
+      "noPermission": "You don’t have permission to view users.",
+      "loadError": "Couldn’t load users. Please try again.",
+      "total": "{count} {count, plural, one {member} other {members}}",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "pageOf": "Page {page} of {totalPages}",
+      "noRole": "No role",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "columns": {
+        "name": "Member",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "disabled": "Disabled"
+      },
+      "errors": {
+        "conflict": "Couldn’t complete — the workspace must keep an active Owner.",
+        "unverified": "Verify your email before managing users.",
+        "twoFactorRequired": "Enable two-factor authentication to manage users.",
+        "forbidden": "You don’t have permission to manage users.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "deactivateDialog": {
+        "title": "Deactivate {name}?",
+        "description": "They will be signed out and can no longer access this workspace until reactivated.",
+        "cancel": "Cancel",
+        "confirm": "Deactivate"
+      }
+    },
+    "roles": {
+      "title": "Workspace Permissions",
+      "subtitle": "Select a role on the left to configure what its members can do.",
+      "rolesHeading": "Roles",
+      "sync": "Sync",
+      "fullAccess": "Full access",
+      "system": "SYSTEM",
+      "newRole": "New role",
+      "delete": "Delete role",
+      "roleNameLabel": "Role name",
+      "setAll": "Set all:",
+      "searchPlaceholder": "Search permissions…",
+      "permissionsGranted": "{count} of {total} permissions granted",
+      "saved": "Permissions saved.",
+      "loadError": "Couldn’t load roles. Please try again.",
+      "noPermission": "You don’t have permission to view roles.",
+      "selectPrompt": "Select a role to view its permissions.",
+      "presets": {
+        "none": "None",
+        "read-only": "Read-only",
+        "standard": "Standard",
+        "full": "Full"
+      },
+      "categories": {
+        "Access": "Access",
+        "Manage": "Manage",
+        "Operations": "Operations"
+      },
+      "modules": {
+        "leads": "Leads",
+        "users": "Users",
+        "roles": "Roles",
+        "workspace": "Workspace"
+      },
+      "permissions": {
+        "leads_read": "View leads",
+        "leads_write": "Edit leads",
+        "users_read": "View members",
+        "users_manage": "Manage members",
+        "users_invite": "Invite members",
+        "roles_manage": "Manage roles",
+        "settings_manage": "Manage settings",
+        "tenant_manage": "Danger zone"
+      },
+      "errors": {
+        "nameTaken": "A role with that name already exists.",
+        "unverified": "Verify your email before managing roles.",
+        "twoFactorRequired": "Enable two-factor authentication to manage roles.",
+        "forbidden": "You don’t have permission to manage roles.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "newRoleDialog": {
+        "title": "Create a role",
+        "description": "Name the role — you can set its permissions next.",
+        "nameLabel": "Role name",
+        "cancel": "Cancel",
+        "create": "Create",
+        "creating": "Creating…",
+        "errors": {
+          "nameTaken": "A role with that name already exists.",
+          "unverified": "Verify your email before creating roles.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete {name}?",
+        "description": "This permanently removes the role. Members must be reassigned first.",
+        "cancel": "Cancel",
+        "confirm": "Delete role",
+        "errors": {
+          "membersAssigned": "Reassign its members before deleting this role.",
+          "unverified": "Verify your email before deleting roles.",
+          "generic": "Something went wrong. Please try again."
+        }
+      }
+    },
+    "email": {
+      "title": "Email",
+      "description": "Configure how this workspace sends transactional email. Until you set this up, NexConvo sends system emails for you.",
+      "noPermission": "You don’t have permission to manage email settings.",
+      "loadError": "Couldn’t load email settings. Please try again.",
+      "providerLabel": "Provider",
+      "provider": { "Smtp": "SMTP", "Resend": "Resend" },
+      "fromNameLabel": "From name",
+      "fromAddressLabel": "From email",
+      "smtpHostLabel": "SMTP host",
+      "smtpPortLabel": "Port",
+      "smtpUsernameLabel": "Username (optional)",
+      "smtpUseSslLabel": "Use SSL/TLS",
+      "smtpPasswordLabel": "SMTP password",
+      "apiKeyLabel": "API key",
+      "secretConfigured": "Secret is configured",
+      "secretPlaceholder": "Enter the secret",
+      "replace": "Replace",
+      "enabledLabel": "Enable email sending for this workspace",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn’t save settings. Please try again.",
+      "sendTest": "Send test email",
+      "testing": "Sending…",
+      "testSent": "Test email sent — check your inbox.",
+      "testFailed": "Test failed. Check your settings.",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Not enabled",
+        "lastTestPassed": "Last test passed",
+        "lastTestFailed": "Last test failed"
+      },
+      "errors": {
+        "fromNameRequired": "From name is required.",
+        "fromAddressRequired": "From email is required.",
+        "fromAddressInvalid": "Enter a valid email address.",
+        "smtpHostRequired": "SMTP host is required.",
+        "smtpPortRequired": "Port is required.",
+        "smtpPortRange": "Port must be between 1 and 65535."
+      }
+    },
+    "ai": {
+      "title": "AI Models",
+      "description": "Configure the AI providers and API keys used across your workspace.",
+      "noPermission": "You don’t have permission to manage AI settings.",
+      "loadError": "Couldn’t load AI settings. Please try again.",
+      "providerLabel": "AI Provider",
+      "defaultModelLabel": "Default Model",
+      "baseUrlLabel": "Base URL (Optional)",
+      "apiKeyLabel": "API Key",
+      "parametersLabel": "Parameters JSON (Optional)",
+      "secretConfigured": "API Key is configured",
+      "secretPlaceholder": "Enter the API Key",
+      "replace": "Replace",
+      "activeLabel": "Make this provider active",
+      "testConnection": "Test Connection",
+      "testingConnection": "Testing…",
+      "testPassed": "Connection successful.",
+      "testFailed": "Connection failed. Check the API key and model name.",
+      "testRequired": "Test the connection before saving.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn’t save settings. Please try again.",
+      "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "errors": {
+        "defaultModelRequired": "Default model is required.",
+        "baseUrlInvalid": "Enter a valid URL.",
+        "parametersInvalid": "Parameters must be a valid JSON object."
+      }
+    }
   }
 }

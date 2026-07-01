@@ -1,10 +1,17 @@
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NexConvo.BuildingBlocks.Multitenancy;
+using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Identity.Application.Abstractions;
+using NexConvo.Identity.Application.Abstractions.Mailing;
+using NexConvo.Identity.Application.Common;
 using NexConvo.Identity.Infrastructure.Audit;
+using NexConvo.Identity.Infrastructure.Caching;
 using NexConvo.Identity.Infrastructure.Common;
+using NexConvo.Identity.Infrastructure.Mailing;
 using NexConvo.Identity.Infrastructure.Multitenancy;
 using NexConvo.Identity.Infrastructure.Persistence;
 using NexConvo.Identity.Infrastructure.Security;
@@ -30,12 +37,51 @@ public static class DependencyInjection
                    .AddInterceptors(sp.GetRequiredService<RlsConnectionInterceptor>()));
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<IdentityDbContext>());
 
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+
+        // Distributed cache: Redis when configured (prod / docker), in-memory fallback otherwise
+        // (dev) — the code always depends on IDistributedCache, so it swaps without changes.
+        var redis = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redis))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redis;
+                options.InstanceName = "nexconvo-identity:";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
+
+        services.AddScoped<ICurrentUserCache, CurrentUserCache>();
+
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<RsaKeyProvider>();
         services.AddSingleton<IJwtTokenIssuer, JwtTokenIssuer>();
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+        services.AddSingleton<ILinkTokenService, LinkTokenService>();
+        services.AddSingleton<ITotpService, TotpService>();
+        services.AddSingleton<IAppLinkBuilder, AppLinkBuilder>();
         services.AddScoped<IAuditWriter, AuditWriter>();
+
+        // Secret-at-rest: Data Protection with a persisted key ring (filesystem in dev;
+        // Key Vault in prod — follow-up). Without persistence, encrypted secrets break on restart.
+        var keysDirectory = configuration["DataProtection:KeysDirectory"]
+            ?? Path.Combine(AppContext.BaseDirectory, "dp-keys");
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysDirectory))
+            .SetApplicationName("NexConvo.Identity");
+        services.AddSingleton<ISecretProtector, DataProtectionSecretProtector>();
+
+        // Email: platform-default options + Resend HTTP client (Polly) + per-tenant resolver.
+        services.Configure<PlatformDefaultEmailOptions>(
+            configuration.GetSection(PlatformDefaultEmailOptions.SectionName));
+        services.AddHttpClient("resend", client => client.BaseAddress = new Uri("https://api.resend.com/"))
+            .AddNexConvoResilience();
+        services.AddScoped<ITenantEmailSenderResolver, TenantEmailSenderResolver>();
 
         return services;
     }

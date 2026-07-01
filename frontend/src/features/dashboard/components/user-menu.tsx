@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
@@ -60,13 +61,17 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="h-4 w-4" />
-          {t('profile')}
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings/account">
+            <User className="h-4 w-4" />
+            {t('profile')}
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="h-4 w-4" />
-          {t('settings')}
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/settings">
+            <Settings className="h-4 w-4" />
+            {t('settings')}
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

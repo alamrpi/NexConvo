@@ -17,5 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Application/NexConvo.Identity.Application.csproj" />
     <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Domain/NexConvo.Identity.Domain.csproj" />
+    <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Infrastructure/NexConvo.Identity.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -54,6 +54,19 @@ services:
     ports:
       - "5341:80"
 
+  # Local transactional-email catcher. The platform-default sender points at smtp 1025;
+  # nothing leaves the machine. View captured mail at http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # ---- Application services (run with: docker compose --profile apps up -d) ----
   # All services listen on container port 8080; host ports mirror their launchSettings
   # for familiarity. Config is env-only (Standard 11/13). Each service's DB/Redis/RabbitMQ
@@ -67,8 +80,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Seq__Url: http://seq
+      # In-container, Identity is reachable as http://identity:8080 (not localhost) — override
+      # both JWT validation authority and the proxy route from the appsettings.Development.json
+      # localhost values so token validation and routing both target the right host.
+      Jwt__Authority: http://identity:8080
+      ReverseProxy__Clusters__identity-cluster__Destinations__primary__Address: http://identity:8080
+      ReverseProxy__Clusters__integrations-cluster__Destinations__primary__Address: http://integrations:8080
     ports:
-      - "8080:8080"
+      - "5055:8080"
     depends_on:
       seq:
         condition: service_started
@@ -86,12 +105,24 @@ services:
       Seq__Url: http://seq
       # Connection string is env-only; the password is interpolated from .env (Standard 13).
       ConnectionStrings__IdentityDb: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      # Privileged connection used ONLY for startup auto-migration (DDL + RLS + GRANT).
+      ConnectionStrings__IdentityDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_identity;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      # Redis backs the distributed /me cache (in-network host; overrides the localhost dev value).
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
+      # Issuer = the in-network URL other services use to reach Identity (the discovery doc
+      # derives jwks_uri from it). Overrides the localhost value from appsettings.Development.json.
+      Jwt__Issuer: http://identity:8080
+      # Platform-default email sender → Mailpit (captured at http://localhost:8025).
+      Email__Default__Smtp__Host: mailpit
+      Email__Default__Smtp__Port: "1025"
     ports:
       - "5047:8080"
     depends_on:
       postgres:
         condition: service_healthy
       seq:
+        condition: service_started
+      mailpit:
         condition: service_started
 
   corecrm:
@@ -183,6 +214,29 @@ services:
       Jwt__Audience: nexconvo-api
     ports:
       - "5228:8080"
+    depends_on:
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  integrations:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Integrations/NexConvo.Integrations.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      ConnectionStrings__IntegrationsDb: "Host=postgres;Port=5432;Database=nexconvo_integrations;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__IntegrationsDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_integrations;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
+    ports:
+      - "5018:8080"
     depends_on:
       identity:
         condition: service_started

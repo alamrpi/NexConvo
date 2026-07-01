@@ -52,7 +52,7 @@ public sealed class ValidatorAndProjectionTests
 
         var (names, permissions) = RoleProjection.From(nonOwner);
 
-        names.Should().BeEquivalentTo("Admin", "Agent");
+        names.Should().BeEquivalentTo("Admin", "Member", "Viewer");
         permissions.Should().NotContain(Permissions.All);
         permissions.Should().Contain(Permissions.LeadsRead);
         permissions.Should().OnlyHaveUniqueItems();

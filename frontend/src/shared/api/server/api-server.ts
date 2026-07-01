@@ -31,7 +31,11 @@ type OnRefreshed = (tokens: AuthTokens) => void;
  *   the rotated tokens via `onRefreshed` so the route handler can re-set the cookies.
  * - If refresh fails, throws `SessionExpiredError`.
  */
-export function createServerApiClient(tokens: SessionTokens, onRefreshed: OnRefreshed): AxiosInstance {
+export function createServerApiClient(
+  tokens: SessionTokens,
+  onRefreshed: OnRefreshed,
+  correlationId?: string,
+): AxiosInstance {
   const { API_GATEWAY_URL } = serverEnv();
   let accessToken = tokens.accessToken;
   let refreshToken = tokens.refreshToken;
@@ -40,6 +44,8 @@ export function createServerApiClient(tokens: SessionTokens, onRefreshed: OnRefr
   const client = axios.create({
     baseURL: API_GATEWAY_URL,
     timeout: 10_000,
+    // Forward the browser's correlation id so the trace threads through the gateway + service logs.
+    headers: correlationId ? { 'x-correlation-id': correlationId } : undefined,
   });
 
   client.interceptors.request.use((config) => {
@@ -57,7 +63,7 @@ export function createServerApiClient(tokens: SessionTokens, onRefreshed: OnRefr
       original._retried = true;
 
       // Single-flight: the first 401 starts the refresh; concurrent 401s await the same promise.
-      refreshing ??= refreshTokens(API_GATEWAY_URL, refreshToken)
+      refreshing ??= refreshTokens(API_GATEWAY_URL, refreshToken, correlationId)
         .then((rotated) => {
           accessToken = rotated.accessToken;
           refreshToken = rotated.refreshToken;
@@ -77,11 +83,17 @@ export function createServerApiClient(tokens: SessionTokens, onRefreshed: OnRefr
 }
 
 /** Bare call to the gateway refresh endpoint — must NOT go through the client interceptor. */
-async function refreshTokens(gatewayUrl: string, refreshToken: string): Promise<AuthTokens> {
+async function refreshTokens(
+  gatewayUrl: string,
+  refreshToken: string,
+  correlationId?: string,
+): Promise<AuthTokens> {
   try {
-    const { data } = await axios.post<AuthTokens>(`${gatewayUrl}/api/v1/auth/refresh`, {
-      refreshToken,
-    });
+    const { data } = await axios.post<AuthTokens>(
+      `${gatewayUrl}/api/v1/auth/refresh`,
+      { refreshToken },
+      correlationId ? { headers: { 'x-correlation-id': correlationId } } : undefined,
+    );
     return data;
   } catch {
     throw new SessionExpiredError();

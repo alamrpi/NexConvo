@@ -5,69 +5,109 @@
 /*
  * Semantic design tokens (frontend standard S25). Every surface reads these,
  * so light/dark parity is automatic and no component hardcodes a raw color.
- * Accent is indigo, neutrals are zinc.
+ * Accent is Iris Violet; neutrals are subtly violet-tinted for cohesion.
+ * Status (success/warning) and chart-1..5 are tokenized too — no raw hex anywhere.
  */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 255 22% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 255 22% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 255 22% 9%;
 
-    --primary: 243 75% 59%;
+    --primary: 255 85% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 255 30% 96%;
+    --secondary-foreground: 255 20% 14%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 255 30% 96%;
+    --muted-foreground: 255 8% 45%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 255 30% 96%;
+    --accent-foreground: 255 20% 14%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 243 75% 59%;
+    --success: 160 84% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 35 92% 48%;
+    --warning-foreground: 38 92% 12%;
+
+    --border: 255 22% 91%;
+    --input: 255 22% 91%;
+    --ring: 255 85% 62%;
+
+    --chart-1: 255 85% 62%;
+    --chart-2: 280 70% 62%;
+    --chart-3: 200 80% 50%;
+    --chart-4: 160 70% 42%;
+    --chart-5: 330 75% 60%;
 
     --radius: 0.65rem;
+
+    /* Chat brand colors — fixed values, same in light and dark (not semantic surfaces) */
+    --chat-state-ai: #6366f1;
+    --chat-state-pending: #f59e0b;
+    --chat-state-human: #10b981;
+    --chat-state-resolved: #94a3b8;
+    --chat-state-closed: #64748b;
+    --chat-channel-whatsapp: #25D366;
+    --chat-channel-facebook: #1877F2;
+    --chat-channel-instagram: #E1306C;
+    --chat-channel-telegram: #229ED9;
+    --chat-channel-web: #6366f1;
+    --chat-confidence-high: #10b981;
+    --chat-confidence-medium: #f59e0b;
+    --chat-confidence-low: #ef4444;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 255 16% 7%;
     --foreground: 0 0% 98%;
 
-    --card: 240 8% 6.5%;
+    --card: 255 14% 10%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 8% 6.5%;
+    --popover: 255 14% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 243 82% 67%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 255 88% 70%;
+    --primary-foreground: 255 60% 10%;
 
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 255 12% 16%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 255 12% 16%;
+    --muted-foreground: 255 10% 66%;
 
-    --accent: 240 3.7% 15.9%;
+    --accent: 255 12% 18%;
     --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 18%;
-    --ring: 243 82% 67%;
+    --success: 160 70% 45%;
+    --success-foreground: 160 80% 8%;
+
+    --warning: 38 92% 56%;
+    --warning-foreground: 38 92% 10%;
+
+    --border: 255 12% 18%;
+    --input: 255 12% 20%;
+    --ring: 255 88% 70%;
+
+    --chart-1: 255 88% 72%;
+    --chart-2: 280 70% 70%;
+    --chart-3: 200 80% 62%;
+    --chart-4: 160 65% 52%;
+    --chart-5: 330 75% 68%;
   }
 }
 
@@ -78,6 +118,54 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/*
+ * Bengali-aware message font stack (S12). Applied on all chat message body text so
+ * Bengali characters fall back to Noto Sans Bengali instead of system glyphs.
+ */
+@layer utilities {
+  .font-message {
+    font-family: var(--font-sans), var(--font-bengali), sans-serif;
+  }
+}
+
+/*
+ * Auto-hide scrollbars, project-wide. Thin and fully transparent at rest; the thumb
+ * is revealed only while the user is actively scrolling (the `is-scrolling` class is
+ * toggled on <html> by AutoHideScrollbar) or while hovering the bar directly. Scoped
+ * to fine pointers — touch devices already overlay/auto-hide scrollbars natively.
+ */
+@media (pointer: fine) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  html.is-scrolling * {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+    background-color: transparent;
+    transition: background-color 200ms ease;
+  }
+  html.is-scrolling ::-webkit-scrollbar-thumb,
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.6);
   }
 }
 

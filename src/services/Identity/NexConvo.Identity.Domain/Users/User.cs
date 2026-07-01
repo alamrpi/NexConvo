@@ -14,12 +14,19 @@ public enum UserStatus
 public sealed class User : BaseAggregateRoot
 {
     private readonly List<UserRole> _roles = [];
+    private readonly List<BackupCode> _backupCodes = [];
 
     public Email Email { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
     public string FullName { get; private set; } = null!;
     public UserStatus Status { get; private set; }
+    public DateTimeOffset? EmailVerifiedAt { get; private set; }
+    public int FailedLoginCount { get; private set; }
+    public DateTimeOffset? LockoutEndsAt { get; private set; }
+    public bool TwoFactorEnabled { get; private set; }
+    public string? EncryptedTotpSecret { get; private set; }
     public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
+    public IReadOnlyCollection<BackupCode> BackupCodes => _backupCodes.AsReadOnly();
 
     private User() { } // EF
 
@@ -58,6 +65,10 @@ public sealed class User : BaseAggregateRoot
         _roles.Add(new UserRole(TenantId, Id, roleId));
     }
 
+    public void Deactivate() => Status = UserStatus.Disabled;
+
+    public void Reactivate() => Status = UserStatus.Active;
+
     public void SetPasswordHash(string passwordHash)
     {
         if (string.IsNullOrWhiteSpace(passwordHash))
@@ -68,5 +79,97 @@ public sealed class User : BaseAggregateRoot
         PasswordHash = passwordHash;
     }
 
+    public void UpdateProfile(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            throw new DomainException("Full name is required.");
+        }
+
+        FullName = fullName.Trim();
+    }
+
     public bool IsActive => Status == UserStatus.Active;
+
+    public bool IsEmailVerified => EmailVerifiedAt is not null;
+
+    public void MarkEmailVerified(DateTimeOffset at) => EmailVerifiedAt ??= at;
+
+    /// <summary>True while a brute-force lockout is in effect — logins are refused even with the
+    /// correct password until <see cref="LockoutEndsAt"/> passes.</summary>
+    public bool IsLockedOut(DateTimeOffset now) => LockoutEndsAt is { } until && now < until;
+
+    /// <summary>Records a failed login. Once <paramref name="maxAttempts"/> consecutive failures
+    /// accrue, the account is locked for <paramref name="lockoutWindow"/> and the counter resets
+    /// (the lock itself, not the counter, blocks further attempts).</summary>
+    public void RegisterFailedLogin(DateTimeOffset now, int maxAttempts, TimeSpan lockoutWindow)
+    {
+        if (IsLockedOut(now))
+        {
+            return;
+        }
+
+        FailedLoginCount++;
+        if (FailedLoginCount >= maxAttempts)
+        {
+            LockoutEndsAt = now + lockoutWindow;
+            FailedLoginCount = 0;
+        }
+    }
+
+    /// <summary>Clears the failure counter and any lockout — call on a successful authentication.</summary>
+    public void ResetFailedLogins()
+    {
+        FailedLoginCount = 0;
+        LockoutEndsAt = null;
+    }
+
+    /// <summary>2FA enrollment was started (secret stored) but not yet confirmed.</summary>
+    public bool TwoFactorPending => !TwoFactorEnabled && EncryptedTotpSecret is not null;
+
+    /// <summary>Stores the encrypted TOTP secret pending confirmation; 2FA is not yet active.</summary>
+    public void SetPendingTotpSecret(string encryptedSecret)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedSecret))
+        {
+            throw new DomainException("TOTP secret is required.");
+        }
+
+        EncryptedTotpSecret = encryptedSecret;
+        TwoFactorEnabled = false;
+        _backupCodes.Clear();
+    }
+
+    /// <summary>Activates 2FA after the user proves a valid code, replacing the recovery codes.</summary>
+    public void EnableTotp(IEnumerable<string> backupCodeHashes)
+    {
+        if (string.IsNullOrWhiteSpace(EncryptedTotpSecret))
+        {
+            throw new DomainException("Begin TOTP enrollment before enabling two-factor auth.");
+        }
+
+        TwoFactorEnabled = true;
+        _backupCodes.Clear();
+        _backupCodes.AddRange(backupCodeHashes.Select(h => new BackupCode(h)));
+    }
+
+    public void DisableTotp()
+    {
+        TwoFactorEnabled = false;
+        EncryptedTotpSecret = null;
+        _backupCodes.Clear();
+    }
+
+    /// <summary>Consumes one unused recovery code by hash; returns false when none match.</summary>
+    public bool ConsumeBackupCode(string hash, DateTimeOffset now)
+    {
+        var index = _backupCodes.FindIndex(c => c.UsedAt is null && c.Hash == hash);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        _backupCodes[index] = _backupCodes[index] with { UsedAt = now };
+        return true;
+    }
 }

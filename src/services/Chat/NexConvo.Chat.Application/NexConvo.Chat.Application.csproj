@@ -2,10 +2,13 @@
   <ItemGroup>
     <ProjectReference Include="../NexConvo.Chat.Domain/NexConvo.Chat.Domain.csproj" />
     <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MassTransit" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
   </ItemGroup>
 </Project>

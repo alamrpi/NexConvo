@@ -8,6 +8,9 @@ const baseUser: CurrentUser = {
   tenantSlug: 'dhaka-retail',
   email: 'alam@dhakaretail.co',
   fullName: 'Md. Alam Hossain',
+  emailVerified: false,
+  twoFactorEnabled: false,
+  workspaceRequiresTwoFactor: false,
   roles: ['Agent'],
   permissions: ['leads:read'],
 };
@@ -40,5 +43,12 @@ describe('session store RBAC', () => {
     const { hasRole } = useSessionStore.getState();
     expect(hasRole('Agent')).toBe(true);
     expect(hasRole('Owner')).toBe(false);
+  });
+
+  it('carries the account flags from /me (emailVerified, twoFactorEnabled)', () => {
+    useSessionStore.getState().setUser({ ...baseUser, emailVerified: true, twoFactorEnabled: true });
+    const { user } = useSessionStore.getState();
+    expect(user?.emailVerified).toBe(true);
+    expect(user?.twoFactorEnabled).toBe(true);
   });
 });

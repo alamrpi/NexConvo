@@ -51,11 +51,23 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseSerilogRequestLogging();
-app.UseRequestCorrelation();
+app.UseNexConvoRequestLogging();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
+
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger-json/identity/swagger.json", "Identity API");
+    c.SwaggerEndpoint("/swagger-json/corecrm/swagger.json", "Core CRM API");
+    c.SwaggerEndpoint("/swagger-json/chat/swagger.json", "Chat API");
+    c.SwaggerEndpoint("/swagger-json/voice/swagger.json", "Voice API");
+    c.SwaggerEndpoint("/swagger-json/aiassistant/swagger.json", "AI Assistant API");
+    c.SwaggerEndpoint("/swagger-json/integrations/swagger.json", "Integrations API");
+    c.SwaggerEndpoint("/swagger-json/automation/swagger.json", "Automation API");
+    c.RoutePrefix = "swagger";
+});
 
 // Liveness = process is up; readiness = ready to route. Gateway has no own datastore.
 app.MapHealthChecks("/health/live");

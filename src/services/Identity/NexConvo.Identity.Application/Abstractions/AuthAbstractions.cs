@@ -49,6 +49,19 @@ public interface IClock
     DateTimeOffset UtcNow { get; }
 }
 
+/// <summary>Hand-rolled RFC 6238 TOTP (HMAC-SHA1, 6 digits, 30s steps) + Base32 — no external package.</summary>
+public interface ITotpService
+{
+    /// <summary>A new random Base32 secret to share with the authenticator app.</summary>
+    string GenerateSecret();
+
+    /// <summary>The <c>otpauth://</c> provisioning URI for QR rendering / manual entry.</summary>
+    string BuildOtpAuthUri(string secretBase32, string accountName);
+
+    /// <summary>True when the 6-digit code is valid for the current time (±1 step of drift).</summary>
+    bool Verify(string secretBase32, string code);
+}
+
 /// <summary>Writes a tenant-scoped audit entry (skill Standard 14). Identifiers only — never PII/passwords.</summary>
 public interface IAuditWriter
 {
