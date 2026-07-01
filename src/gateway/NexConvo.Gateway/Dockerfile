@@ -1,11 +1,20 @@
 # Multi-stage build (skill Standard 11). Build context = repo root.
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Pin the SDK to the global.json version so container builds use the same analyzers
+# as local (a floating sdk:9.0 tag drifts to a newer SDK and breaks reproducibility).
+FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS build
 WORKDIR /src
 
-# Central build/version files first for layer caching.
-COPY global.json Directory.Build.props Directory.Packages.props ./
+# Central build/version files first for layer caching (central package management).
+# .editorconfig carries the analyzer severity tuning (e.g. CA1000=none) — without it the
+# build reverts to default severities and TreatWarningsAsErrors fails the publish.
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
+
+# Project files only — restore layer is cached unless a .csproj changes.
 COPY src/gateway/NexConvo.Gateway/NexConvo.Gateway.csproj src/gateway/NexConvo.Gateway/
-COPY src/shared/NexConvo.BuildingBlocks/NexConvo.BuildingBlocks.csproj src/shared/NexConvo.BuildingBlocks/
+COPY src/shared/NexConvo.BuildingBlocks.Domain/NexConvo.BuildingBlocks.Domain.csproj src/shared/NexConvo.BuildingBlocks.Domain/
+COPY src/shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj src/shared/NexConvo.BuildingBlocks.Application/
+COPY src/shared/NexConvo.BuildingBlocks.Infrastructure/NexConvo.BuildingBlocks.Infrastructure.csproj src/shared/NexConvo.BuildingBlocks.Infrastructure/
+COPY src/shared/NexConvo.Contracts/NexConvo.Contracts.csproj src/shared/NexConvo.Contracts/
 RUN dotnet restore src/gateway/NexConvo.Gateway/NexConvo.Gateway.csproj
 
 COPY src/ src/

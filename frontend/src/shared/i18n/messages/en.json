@@ -1,0 +1,152 @@
+{
+  "common": {
+    "appName": "NexConvo",
+    "tagline": "AI-Native CRM",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "marketing": {
+      "features": "Features",
+      "solutions": "Solutions",
+      "pricing": "Pricing",
+      "docs": "Docs",
+      "login": "Log in"
+    },
+    "dashboard": {
+      "overview": "Overview",
+      "inbox": "Inbox",
+      "leads": "Leads",
+      "projects": "Projects",
+      "campaigns": "Campaigns",
+      "automation": "Automation",
+      "analytics": "Analytics",
+      "settings": "Settings"
+    }
+  },
+  "landing": {
+    "badge": "Now in private beta",
+    "headlinePart1": "The AI-native CRM that",
+    "headlineHighlight": "closes, then delivers",
+    "subheadline": "NexConvo unifies every channel — WhatsApp, Voice, Email, and Social — captures leads with zero-touch AI, and turns closed deals into running projects automatically.",
+    "primaryCta": "Start free trial",
+    "secondaryCta": "Book a demo",
+    "noCreditCard": "No credit card required",
+    "trustedBy": "Trusted by modern teams across South Asia",
+    "footer": {
+      "rights": "All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to your NexConvo workspace.",
+    "tenantLabel": "Workspace",
+    "tenantPlaceholder": "your-company",
+    "tenantHint": ".nexconvo.app",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "forgotPassword": "Forgot password?",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "noAccount": "Don't have an account?",
+    "signUp": "Start free",
+    "errors": {
+      "tenantRequired": "Workspace slug is required.",
+      "tenantFormat": "Use lowercase letters, numbers, and hyphens only.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "passwordMin": "Password must be at least 8 characters.",
+      "invalidCredentials": "Incorrect workspace, email, or password.",
+      "network": "Can't reach the server — check your connection and try again.",
+      "server": "Server error. Please try again in a moment.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "testimonial": {
+      "quote": "NexConvo replaced three tools and a spreadsheet. Our reps close on WhatsApp and the project just… starts itself.",
+      "author": "Tasnim Rahman",
+      "role": "Head of Sales, Dhaka Retail Co."
+    }
+  },
+  "signup": {
+    "title": "Create your workspace",
+    "subtitle": "Start your NexConvo workspace in under a minute.",
+    "tenantNameLabel": "Company name",
+    "tenantNamePlaceholder": "Acme Inc",
+    "tenantSlugLabel": "Workspace URL",
+    "tenantSlugPlaceholder": "acme",
+    "tenantSlugHint": ".nexconvo.app",
+    "fullNameLabel": "Your name",
+    "fullNamePlaceholder": "Jane Doe",
+    "emailLabel": "Work email",
+    "emailPlaceholder": "you@company.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "At least 8 characters",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Create workspace",
+    "submitting": "Creating workspace…",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "tenantNameRequired": "Company name is required.",
+      "tenantNameMax": "Company name is too long.",
+      "tenantRequired": "Workspace URL is required.",
+      "tenantMin": "Workspace URL must be at least 3 characters.",
+      "tenantMax": "Workspace URL is too long.",
+      "tenantFormat": "Use lowercase letters, numbers, and hyphens only.",
+      "fullNameRequired": "Your name is required.",
+      "fullNameMax": "Name is too long.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "passwordMin": "Password must be at least 8 characters.",
+      "passwordMax": "Password is too long.",
+      "slugTaken": "That workspace URL is already taken.",
+      "network": "Can't reach the server — check your connection and try again.",
+      "server": "Server error. Please try again in a moment.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "dashboard": {
+    "searchPlaceholder": "Search or jump to…",
+    "greeting": "Good to see you",
+    "subtitle": "Here's what's happening across your workspace today.",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu",
+    "stats": {
+      "openConversations": "Open conversations",
+      "newLeads": "New leads",
+      "activeProjects": "Active projects",
+      "revenue": "Revenue (MTD)",
+      "vsLastWeek": "vs last week"
+    },
+    "panels": {
+      "activity": "Recent activity",
+      "viewAll": "View all"
+    },
+    "user": {
+      "name": "Md. Alam Hossain",
+      "email": "alam@dhakaretail.co",
+      "profile": "Profile",
+      "settings": "Settings",
+      "signOut": "Sign out"
+    }
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "toggle": "Change language",
+    "en": "English",
+    "bn": "বাংলা"
+  }
+}

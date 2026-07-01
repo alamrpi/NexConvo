@@ -26,6 +26,13 @@ dotnet_diagnostic.CA1305.severity = none
 dotnet_diagnostic.CA1062.severity = none
 # Catching general Exception is sometimes correct (pipeline behaviors, top-level handlers).
 dotnet_diagnostic.CA1031.severity = none
+# Parameter names need not match interface declarations (e.g. EF IEntityTypeConfiguration 'builder').
+dotnet_diagnostic.CA1725.severity = none
+# LoggerMessage source-gen delegates are overkill for rare/startup log statements.
+dotnet_diagnostic.CA1848.severity = none
+# Micro-perf suggestions that add noise to DTO/response code without correctness value.
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1861.severity = none
 
 # Test projects: the Method_Scenario_Expectation naming convention uses underscores by design.
 [tests/**.cs]

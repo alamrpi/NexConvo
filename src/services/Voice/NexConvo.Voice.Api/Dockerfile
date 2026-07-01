@@ -1,0 +1,31 @@
+# Multi-stage build (skill Standard 11). Build context = repo root.
+# Pin the SDK to the global.json version so container builds use the same analyzers
+# as local (a floating sdk:9.0 tag drifts to a newer SDK and breaks reproducibility).
+FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS build
+WORKDIR /src
+
+# Central build/version files first for layer caching (central package management).
+# .editorconfig carries the analyzer severity tuning (e.g. CA1000=none) — without it the
+# build reverts to default severities and TreatWarningsAsErrors fails the publish.
+COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
+
+# Project files only — restore layer is cached unless a .csproj changes.
+COPY src/services/Voice/NexConvo.Voice.Api/NexConvo.Voice.Api.csproj src/services/Voice/NexConvo.Voice.Api/
+COPY src/services/Voice/NexConvo.Voice.Application/NexConvo.Voice.Application.csproj src/services/Voice/NexConvo.Voice.Application/
+COPY src/services/Voice/NexConvo.Voice.Domain/NexConvo.Voice.Domain.csproj src/services/Voice/NexConvo.Voice.Domain/
+COPY src/services/Voice/NexConvo.Voice.Infrastructure/NexConvo.Voice.Infrastructure.csproj src/services/Voice/NexConvo.Voice.Infrastructure/
+COPY src/shared/NexConvo.BuildingBlocks.Domain/NexConvo.BuildingBlocks.Domain.csproj src/shared/NexConvo.BuildingBlocks.Domain/
+COPY src/shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj src/shared/NexConvo.BuildingBlocks.Application/
+COPY src/shared/NexConvo.BuildingBlocks.Infrastructure/NexConvo.BuildingBlocks.Infrastructure.csproj src/shared/NexConvo.BuildingBlocks.Infrastructure/
+COPY src/shared/NexConvo.Contracts/NexConvo.Contracts.csproj src/shared/NexConvo.Contracts/
+RUN dotnet restore src/services/Voice/NexConvo.Voice.Api/NexConvo.Voice.Api.csproj
+
+COPY src/ src/
+RUN dotnet publish src/services/Voice/NexConvo.Voice.Api/NexConvo.Voice.Api.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "NexConvo.Voice.Api.dll"]

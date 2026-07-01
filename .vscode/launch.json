@@ -1,0 +1,82 @@
+{
+  "version": "0.2.0",
+  "comment": "Debug the service you're editing locally (F5). Start infra first via the 'infra: up' task; run the OTHER services as containers with 'docker compose --profile apps up -d <names>'.",
+  "configurations": [
+    {
+      "name": "Gateway",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/gateway/NexConvo.Gateway/bin/Debug/net9.0/NexConvo.Gateway.dll",
+      "cwd": "${workspaceFolder}/src/gateway/NexConvo.Gateway",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5055" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "Identity API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/Identity/NexConvo.Identity.Api/bin/Debug/net9.0/NexConvo.Identity.Api.dll",
+      "cwd": "${workspaceFolder}/src/services/Identity/NexConvo.Identity.Api",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5047" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "CoreCrm API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/CoreCrm/NexConvo.CoreCrm.Api/bin/Debug/net9.0/NexConvo.CoreCrm.Api.dll",
+      "cwd": "${workspaceFolder}/src/services/CoreCrm/NexConvo.CoreCrm.Api",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5081" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "Chat API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/Chat/NexConvo.Chat.Api/bin/Debug/net9.0/NexConvo.Chat.Api.dll",
+      "cwd": "${workspaceFolder}/src/services/Chat/NexConvo.Chat.Api",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5132" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "Voice API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/Voice/NexConvo.Voice.Api/bin/Debug/net9.0/NexConvo.Voice.Api.dll",
+      "cwd": "${workspaceFolder}/src/services/Voice/NexConvo.Voice.Api",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5022" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "AiAssistant API",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/AiAssistant/NexConvo.AiAssistant.Api/bin/Debug/net9.0/NexConvo.AiAssistant.Api.dll",
+      "cwd": "${workspaceFolder}/src/services/AiAssistant/NexConvo.AiAssistant.Api",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5124" },
+      "serverReadyAction": { "action": "openExternally", "pattern": "\\bNow listening on:\\s+(https?://\\S+)" }
+    },
+    {
+      "name": "Automation Worker",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/services/Automation/NexConvo.Automation.Worker/bin/Debug/net9.0/NexConvo.Automation.Worker.dll",
+      "cwd": "${workspaceFolder}/src/services/Automation/NexConvo.Automation.Worker",
+      "stopAtEntry": false,
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5228" }
+    }
+  ]
+}

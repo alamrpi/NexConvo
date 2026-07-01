@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/NexConvo.sln",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "infra: up",
+      "detail": "Start local infrastructure (Postgres, Redis, RabbitMQ, Seq) in Docker.",
+      "command": "docker",
+      "type": "process",
+      "args": ["compose", "up", "-d"],
+      "problemMatcher": []
+    },
+    {
+      "label": "infra: down",
+      "detail": "Stop local infrastructure containers.",
+      "command": "docker",
+      "type": "process",
+      "args": ["compose", "down"],
+      "problemMatcher": []
+    },
+    {
+      "label": "stack: up (all services as containers)",
+      "detail": "Build + start infra and all backend services as containers.",
+      "command": "docker",
+      "type": "process",
+      "args": ["compose", "--profile", "apps", "up", "-d", "--build"],
+      "problemMatcher": []
+    }
+  ]
+}

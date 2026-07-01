@@ -1,0 +1,28 @@
+# Build context lives at repo root (every service Dockerfile uses context: .).
+# Keep the context small & deterministic: ship only source, never build outputs,
+# the frontend, VCS metadata, or local env/secrets.
+
+**/bin/
+**/obj/
+**/out/
+
+# Frontend (built and run separately, not part of any .NET image)
+frontend/
+
+# VCS & IDE
+.git/
+.gitignore
+.vs/
+.vscode/
+**/*.user
+
+# Local env / secrets — never bake into an image (Standard 13)
+.env
+**/.env.local
+
+# Docs & plans (not needed to build a service)
+docs/
+
+# OS noise
+**/.DS_Store
+**/Thumbs.db
