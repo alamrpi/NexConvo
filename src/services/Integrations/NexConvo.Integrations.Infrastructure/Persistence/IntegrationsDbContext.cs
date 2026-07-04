@@ -12,6 +12,7 @@ public class IntegrationsDbContext : DbContext, IIntegrationsDbContext
     }
 
     public DbSet<WorkspaceAiConfig> WorkspaceAiConfigs => Set<WorkspaceAiConfig>();
+    public DbSet<WorkspaceS3Config> WorkspaceS3Configs => Set<WorkspaceS3Config>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
