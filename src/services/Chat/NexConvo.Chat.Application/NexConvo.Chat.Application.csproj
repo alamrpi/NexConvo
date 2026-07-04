@@ -1,14 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="../NexConvo.Chat.Domain/NexConvo.Chat.Domain.csproj" />
     <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="MassTransit" />
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="MassTransit.Abstractions" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
   </ItemGroup>
+
 </Project>

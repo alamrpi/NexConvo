@@ -492,7 +492,7 @@
         },
         "upload": {
           "hint": "ড্র্যাগ ও ড্রপ বা ক্লিক করে আপলোড করুন",
-          "types": "PDF, DOCX, TXT, MD সর্বোচ্চ ৫০ MB",
+          "types": "PDF, DOCX, TXT, CSV, MD সর্বোচ্চ ৫০ MB",
           "uploading": "আপলোড হচ্ছে…",
           "progress": "{percent}%"
         },
@@ -519,7 +519,12 @@
         "status": {
           "Processing": "প্রক্রিয়াকরণ",
           "Ready": "প্রস্তুত",
-          "Failed": "ব্যর্থ"
+          "Failed": "ব্যর্থ",
+          "active": "সক্রিয়",
+          "pending": "অপেক্ষমাণ",
+          "processing": "প্রক্রিয়াকরণ",
+          "failed": "ব্যর্থ",
+          "inactive": "নিষ্ক্রিয়"
         },
         "processingSteps": {
           "upload": "আপলোড",
@@ -600,13 +605,40 @@
         "testFailed": "✗ কানেকশন ব্যর্থ",
         "fallbackLabel": "ফলব্যাক প্রোভাইডার",
         "moveUp": "উপরে নিন",
-        "moveDown": "নিচে নিন"
+        "moveDown": "নিচে নিন",
+        "title": "Provider & Model",
+        "subtitle": "Select which AI provider and model powers your chatbot. API keys are managed in Workspace Settings.",
+        "primaryLabel": "Primary",
+        "primaryDescription": "Main provider used for all conversations.",
+        "fallbackDescription": "Used automatically if the primary provider fails or times out.",
+        "noFallback": "No fallback",
+        "notConfigured": "Not configured",
+        "noProvidersTitle": "No AI providers configured",
+        "noProvidersDescription": "Set up at least one provider in Workspace Settings to enable the chatbot.",
+        "goToSettings": "Go to AI Settings",
+        "manageKeys": "Manage API keys in Workspace Settings",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
       },
       "systemPrompt": {
         "label": "সিস্টেম প্রম্পট",
         "tokenEstimate": "~{count} টোকেন",
         "templateLabel": "টেমপ্লেট লোড করুন",
-        "testLink": "এই প্রম্পট পরীক্ষা করুন →"
+        "testLink": "এই প্রম্পট পরীক্ষা করুন →",
+        "title": "System Prompt",
+        "subtitle": "Instructions sent to the AI before every conversation. Defines its persona, scope, and tone.",
+        "templatePlaceholder": "Choose a template…",
+        "templates": {
+          "retail": "Retail / E-Commerce",
+          "ecommerce": "Online Shop (warm tone)",
+          "support": "Technical Support"
+        },
+        "promptLabel": "Prompt",
+        "promptPlaceholder": "You are a helpful assistant…",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
       },
       "handoff": {
         "confidenceLabel": "এআই আস্থা এর নিচে হলে এস্কালেট করুন",
@@ -617,7 +649,22 @@
         "high": "বেশি",
         "triggerPhrasesLabel": "ট্রিগার বাক্যাংশ",
         "triggerPlaceholder": "বাক্যাংশ লিখুন এবং Enter চাপুন",
-        "maxUnansweredLabel": "এস্কালেশনের আগে সর্বোচ্চ অনুত্তরিত বার্তা"
+        "maxUnansweredLabel": "এস্কালেশনের আগে সর্বোচ্চ অনুত্তরিত বার্তা",
+        "title": "Human Handoff",
+        "subtitle": "Rules that trigger automatic escalation from AI to a human agent.",
+        "confidenceTitle": "Confidence threshold",
+        "confidenceDescription": "Escalate when AI confidence drops below this level",
+        "confidenceAlways": "0% — always escalate",
+        "confidenceNever": "100% — never escalate",
+        "sentimentTitle": "Negative sentiment detection",
+        "sentimentDescription": "Escalate when a frustrated or angry tone is detected",
+        "sensitivityLabel": "Sensitivity",
+        "triggerPhrasesDescription": "Exact phrases that immediately route to a human. Press Enter to add.",
+        "maxUnansweredTitle": "Max unanswered questions",
+        "maxUnansweredDescription": "Escalate after this many consecutive low-confidence replies",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
       },
       "pii": {
         "label": "পিআইআই মাস্কিং স্তর",
@@ -630,7 +677,32 @@
       },
       "save": "সংরক্ষণ",
       "saving": "সংরক্ষণ হচ্ছে…",
-      "saved": "সেটিংস সংরক্ষিত।"
+      "saved": "সেটিংস সংরক্ষিত।",
+      "subtitle": "Configure how the AI assistant behaves in this workspace.",
+      "nav": {
+        "provider": "Provider & Model",
+        "systemPrompt": "System Prompt",
+        "handoff": "Human Handoff",
+        "privacy": "Privacy & Data"
+      },
+      "privacy": {
+        "title": "Privacy & Data",
+        "subtitle": "Control how customer data is handled before being sent to the AI and how long it is stored.",
+        "piiTitle": "PII handling",
+        "piiDescription": "How personally identifiable information is treated before being sent to the LLM.",
+        "piiNoneLabel": "None",
+        "piiNoneDescription": "Send raw text to LLM — not recommended if messages contain customer PII",
+        "piiPseudonymiseLabel": "Pseudonymise",
+        "piiPseudonymiseDescription": "Replace names, emails, and phone numbers with tokens before sending to LLM",
+        "piiRedactLabel": "Redact",
+        "piiRedactDescription": "Remove PII entirely — safest option, may reduce response quality",
+        "retentionTitle": "Message retention period",
+        "retentionDescription": "How long conversation content is stored before permanent deletion. Metadata is kept for analytics.",
+        "retentionDays": "days",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved"
+      }
     },
     "tools": {
       "title": "এমসিপি টুলস",
@@ -669,6 +741,17 @@
           "error": "ত্রুটি"
         }
       }
+    },
+    "settings": {
+      "title": "Chat Settings",
+      "subtitle": "Manage channels, AI, and knowledge sources.",
+      "nav": {
+        "label": "Chat settings navigation",
+        "channels": "Channels",
+        "knowledge": "Knowledge",
+        "ai": "AI Config",
+        "tools": "Tools"
+      }
     }
   },
   "settings": {
@@ -677,6 +760,7 @@
     "nav": {
       "label": "সেটিংস বিভাগ",
       "email": "ইমেইল",
+      "channels": "চ্যানেল",
       "ai": "এআই কনফিগ",
       "general": "সাধারণ",
       "members": "সদস্য",
@@ -926,7 +1010,10 @@
       "noPermission": "ইমেইল সেটিংস পরিচালনার অনুমতি আপনার নেই।",
       "loadError": "ইমেইল সেটিংস লোড করা যায়নি। আবার চেষ্টা করুন।",
       "providerLabel": "প্রোভাইডার",
-      "provider": { "Smtp": "SMTP", "Resend": "Resend" },
+      "provider": {
+        "Smtp": "SMTP",
+        "Resend": "Resend"
+      },
       "fromNameLabel": "প্রেরকের নাম",
       "fromAddressLabel": "প্রেরকের ইমেইল",
       "smtpHostLabel": "SMTP হোস্ট",
@@ -960,6 +1047,119 @@
         "smtpHostRequired": "SMTP হোস্ট আবশ্যক।",
         "smtpPortRequired": "পোর্ট আবশ্যক।",
         "smtpPortRange": "পোর্ট ১ থেকে ৬৫৫৩৫ এর মধ্যে হতে হবে।"
+      }
+    },
+    "channels": {
+      "title": "চ্যানেল সংযোগ",
+      "description": "আপনার ওয়ার্কস্পেসে কথোপকথন পেতে মেসেজিং চ্যানেলগুলো সংযুক্ত করুন।",
+      "noPermission": "চ্যানেল সংযোগ পরিচালনার অনুমতি আপনার নেই।",
+      "loadError": "চ্যানেল সংযোগ লোড করা যায়নি। আবার চেষ্টা করুন।",
+      "connect": "সংযুক্ত করুন",
+      "configure": "কনফিগার করুন",
+      "reconnect": "পুনরায় সংযুক্ত করুন",
+      "disconnect": "সংযোগ বিচ্ছিন্ন করুন",
+      "disconnecting": "সংযোগ বিচ্ছিন্ন হচ্ছে…",
+      "disconnectConfirmTitle": "{name} সংযোগ বিচ্ছিন্ন করবেন?",
+      "disconnectConfirmDescription": "এই চ্যানেল থেকে নতুন কথোপকথন আসা বন্ধ হয়ে যাবে।",
+      "cancel": "বাতিল",
+      "status": {
+        "connected": "সংযুক্ত",
+        "disconnected": "সংযুক্ত নয়",
+        "error": "সংযোগ ত্রুটি"
+      },
+      "channels": {
+        "whatsapp": "হোয়াটসঅ্যাপ",
+        "facebook": "ফেসবুক",
+        "instagram": "ইনস্টাগ্রাম",
+        "telegram": "টেলিগ্রাম",
+        "web": "ওয়েব উইজেট"
+      },
+      "descriptions": {
+        "whatsapp": "হোয়াটসঅ্যাপ বিজনেস এপিআইয়ের মাধ্যমে সংযুক্ত করুন",
+        "facebook": "আপনার ফেসবুক পেজ সংযুক্ত করুন",
+        "instagram": "আপনার ইনস্টাগ্রাম বিজনেস অ্যাকাউন্ট সংযুক্ত করুন",
+        "telegram": "আপনার টেলিগ্রাম বট সংযুক্ত করুন",
+        "web": "আপনার ওয়েবসাইটে চ্যাট উইজেট যোগ করুন"
+      },
+      "drawer": {
+        "connectTitle": "{name} সংযুক্ত করুন",
+        "configureTitle": "{name} কনফিগার করুন",
+        "close": "বন্ধ করুন",
+        "next": "পরবর্তী",
+        "back": "পেছনে",
+        "finish": "সম্পন্ন",
+        "stepOf": "ধাপ {current}/{total}",
+        "steps": {
+          "instructions": "নির্দেশনা",
+          "credentials": "ক্রেডেনশিয়াল",
+          "verify": "যাচাই",
+          "webhook": "ওয়েবহুক",
+          "done": "সম্পন্ন"
+        },
+        "instructions": {
+          "whatsapp": "হোয়াটসঅ্যাপ সংযুক্ত করতে আপনার মেটা বিজনেস অ্যাকাউন্টে WhatsApp Business API অ্যাক্সেস থাকতে হবে। মেটা ডেভেলপার পোর্টালে একটি WhatsApp Business App তৈরি করুন এবং আপনার Phone Number ID ও স্থায়ী অ্যাক্সেস টোকেন সংগ্রহ করুন।",
+          "facebook": "ফেসবুক ম্যাসেঞ্জার কথোপকথন পেতে আপনার পেজ সংযুক্ত করুন। Messenger পারমিশন সহ একটি Facebook App এবং Page Access Token প্রয়োজন।",
+          "instagram": "DM পেতে আপনার ইনস্টাগ্রাম বিজনেস অ্যাকাউন্ট সংযুক্ত করুন। অ্যাকাউন্টটি অবশ্যই একটি ফেসবুক পেজের সাথে যুক্ত Business বা Creator অ্যাকাউন্ট হতে হবে।",
+          "telegram": "@BotFather ব্যবহার করে একটি Telegram বট তৈরি করুন। /newbot পাঠান, নাম ও ইউজারনেম বেছে নিন এবং বট টোকেনটি কপি করুন।",
+          "web": "ওয়েব উইজেটের জন্য কোনো বাহ্যিক সেটআপ প্রয়োজন নেই। সংযুক্ত করার পরে আপনি ওয়েবসাইটে যোগ করার জন্য একটি কোড স্নিপেট পাবেন।"
+        },
+        "fields": {
+          "displayName": "প্রদর্শনের নাম",
+          "displayNamePlaceholder": "যেমন: সাপোর্ট হোয়াটসঅ্যাপ",
+          "phoneNumberId": "ফোন নম্বর আইডি",
+          "phoneNumberIdPlaceholder": "যেমন: ১২৩৪৫৬৭৮৯",
+          "pageId": "পেজ আইডি",
+          "pageIdPlaceholder": "যেমন: ৯৮৭৬৫৪৩২১",
+          "botUsername": "বট ইউজারনেম",
+          "botUsernamePlaceholder": "যেমন: mycompanybot",
+          "accessToken": "অ্যাক্সেস টোকেন",
+          "accessTokenPlaceholder": "অ্যাক্সেস টোকেন লিখুন",
+          "appSecret": "অ্যাপ সিক্রেট",
+          "appSecretPlaceholder": "অ্যাপ সিক্রেট লিখুন",
+          "botToken": "বট টোকেন",
+          "botTokenPlaceholder": "বট টোকেন লিখুন (যেমন: 123456:ABC-DEF)"
+        },
+        "verify": {
+          "title": "ক্রেডেনশিয়াল যাচাই",
+          "description": "{name}-এ আপনার ক্রেডেনশিয়াল যাচাই করতে নিচে ক্লিক করুন।",
+          "button": "ক্রেডেনশিয়াল যাচাই করুন",
+          "verifying": "যাচাই হচ্ছে…",
+          "success": "ক্রেডেনশিয়াল যাচাই হয়েছে! অ্যাকাউন্ট: {accountName}",
+          "failed": "যাচাই ব্যর্থ হয়েছে"
+        },
+        "webhook": {
+          "title": "ওয়েবহুক কনফিগার করুন",
+          "description": "আপনার {name} অ্যাপ সেটিংসে এই ওয়েবহুক URL যোগ করুন।",
+          "copy": "URL কপি",
+          "copied": "কপি হয়েছে!"
+        },
+        "done": {
+          "title": "সংযুক্ত হয়েছে!",
+          "description": "{name} এখন সক্রিয় এবং কথোপকথন গ্রহণের জন্য প্রস্তুত।"
+        }
+      },
+      "widget": {
+        "title": "উইজেটের চেহারা",
+        "color": "অ্যাকসেন্ট রং",
+        "welcomeMessage": "স্বাগত বার্তা",
+        "welcomeMessagePlaceholder": "হ্যালো! আমি কীভাবে সাহায্য করতে পারি?",
+        "position": "অবস্থান",
+        "positionBottomRight": "নিচে ডানে",
+        "positionBottomLeft": "নিচে বামে",
+        "preview": "প্রিভিউ",
+        "save": "উইজেট সেটিংস সংরক্ষণ",
+        "saving": "সংরক্ষণ হচ্ছে…",
+        "saved": "উইজেট সেটিংস সংরক্ষিত।"
+      },
+      "errors": {
+        "displayNameRequired": "প্রদর্শনের নাম আবশ্যক।",
+        "displayNameTooLong": "প্রদর্শনের নাম ১০০ অক্ষরের বেশি হতে পারবে না।",
+        "accessTokenRequired": "অ্যাক্সেস টোকেন আবশ্যক।",
+        "externalAccountIdRequired": "অ্যাকাউন্ট আইডি আবশ্যক।",
+        "appSecretRequired": "অ্যাপ সিক্রেট আবশ্যক।",
+        "deleteError": "চ্যানেল সংযোগ বিচ্ছিন্ন করা যায়নি। আবার চেষ্টা করুন।",
+        "conflict": "সংরক্ষণ করা যায়নি — পুনরায় লোড করে চেষ্টা করুন।",
+        "generic": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।"
       }
     },
     "ai": {

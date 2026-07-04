@@ -1,5 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Domain/NexConvo.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="../../../shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
   </ItemGroup>
+
 </Project>

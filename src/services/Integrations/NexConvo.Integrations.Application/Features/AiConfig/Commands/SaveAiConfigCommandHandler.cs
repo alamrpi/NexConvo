@@ -26,6 +26,7 @@ public sealed class SaveAiConfigCommandHandler(
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Provider == request.Provider, cancellationToken);
 
         var hasNewKey = !string.IsNullOrWhiteSpace(request.ApiKey);
+        var parameters = string.IsNullOrWhiteSpace(request.Parameters) ? null : request.Parameters;
 
         if (config is null)
         {
@@ -39,7 +40,7 @@ public sealed class SaveAiConfigCommandHandler(
                 request.BaseUrl,
                 request.DefaultModel,
                 null,
-                request.Parameters,
+                parameters,
                 request.IsActive)
             {
                 CreatedByUserId = request.ActorUserId,
@@ -63,7 +64,7 @@ public sealed class SaveAiConfigCommandHandler(
                 request.BaseUrl,
                 request.DefaultModel,
                 null,
-                request.Parameters);
+                parameters);
 
             config.SetActive(request.IsActive);
 

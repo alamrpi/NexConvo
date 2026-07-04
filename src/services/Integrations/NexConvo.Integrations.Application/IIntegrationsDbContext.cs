@@ -6,7 +6,8 @@ namespace NexConvo.Integrations.Application;
 public interface IIntegrationsDbContext
 {
     DbSet<WorkspaceAiConfig> WorkspaceAiConfigs { get; }
+    DbSet<WorkspaceS3Config> WorkspaceS3Configs { get; }
     DbSet<AuditLog> AuditLogs { get; }
-    
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

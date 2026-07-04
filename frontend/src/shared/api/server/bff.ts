@@ -24,9 +24,19 @@ type BffHandler = (
  *
  * The handler receives a ready-to-use `api` client and the Next route context (for dynamic
  * `[id]` segments), and must never touch cookies itself.
+ *
+ * Pass `e2eFixture` to short-circuit in E2E mode (NEXT_PUBLIC_E2E=true) — returns
+ * deterministic data without a real session or backend. Never active in production.
  */
-export function withBff(handler: BffHandler) {
+export function withBff(
+  handler: BffHandler,
+  e2eFixture?: (req: NextRequest, routeCtx: RouteContext) => NextResponse,
+) {
   return async (req: NextRequest, routeCtx: RouteContext): Promise<NextResponse> => {
+    if (process.env.NEXT_PUBLIC_E2E === 'true' && e2eFixture) {
+      return e2eFixture(req, routeCtx);
+    }
+
     const session = await readSession();
     if (!session) {
       return NextResponse.json({ title: 'Unauthorized' }, { status: 401 });

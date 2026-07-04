@@ -3,7 +3,7 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nexconvo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -54,6 +54,19 @@ services:
     ports:
       - "5341:80"
 
+  # pgAdmin — PostgreSQL GUI (http://localhost:5050). Login: admin@nexconvo.local / admin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nexconvo.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Local transactional-email catcher. The platform-default sender points at smtp 1025;
   # nothing leaves the machine. View captured mail at http://localhost:8025.
   mailpit:
@@ -86,12 +99,15 @@ services:
       Jwt__Authority: http://identity:8080
       ReverseProxy__Clusters__identity-cluster__Destinations__primary__Address: http://identity:8080
       ReverseProxy__Clusters__integrations-cluster__Destinations__primary__Address: http://integrations:8080
+      ReverseProxy__Clusters__chat-cluster__Destinations__primary__Address: http://chat:8080
     ports:
       - "5055:8080"
     depends_on:
       seq:
         condition: service_started
       identity:
+        condition: service_started
+      chat:
         condition: service_started
 
   identity:
@@ -155,9 +171,18 @@ services:
       Seq__Url: http://seq
       Jwt__Authority: http://identity:8080
       Jwt__Audience: nexconvo-api
+      ConnectionStrings__ChatDb: "Host=postgres;Port=5432;Database=nexconvo_chat;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__ChatDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_chat;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
+      SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
     ports:
       - "5132:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       identity:
         condition: service_started
       seq:
