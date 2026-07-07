@@ -87,24 +87,36 @@ public sealed class IntegrationsHealthSweepService : IIntegrationsHealthSweepSer
 
     public async Task RunAsync(CancellationToken ct)
     {
+        // The owner-connection context is created per sweep and owned here — dispose it so the
+        // pooled Npgsql connection is released (the production factory new-s a concrete DbContext
+        // that DI never disposes; mirrors the `using var` in IntegrationsDatabaseMigrator).
         var context = _contextFactory();
-
-        var s3Configs = await context.WorkspaceS3Configs
-            .Where(x => x.IsActive)
-            .ToListAsync(ct);
-
-        foreach (var config in s3Configs)
+        try
         {
-            await SweepS3ConfigAsync(context, config, ct);
+            var s3Configs = await context.WorkspaceS3Configs
+                .Where(x => x.IsActive)
+                .ToListAsync(ct);
+
+            foreach (var config in s3Configs)
+            {
+                await SweepS3ConfigAsync(context, config, ct);
+            }
+
+            var aiConfigs = await context.WorkspaceAiConfigs
+                .Where(x => x.IsActive)
+                .ToListAsync(ct);
+
+            foreach (var config in aiConfigs)
+            {
+                await SweepAiConfigAsync(context, config, ct);
+            }
         }
-
-        var aiConfigs = await context.WorkspaceAiConfigs
-            .Where(x => x.IsActive)
-            .ToListAsync(ct);
-
-        foreach (var config in aiConfigs)
+        finally
         {
-            await SweepAiConfigAsync(context, config, ct);
+            if (context is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync();
+            else if (context is IDisposable disposable)
+                disposable.Dispose();
         }
     }
 

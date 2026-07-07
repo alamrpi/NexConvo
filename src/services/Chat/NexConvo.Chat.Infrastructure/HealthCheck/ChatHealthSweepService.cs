@@ -22,7 +22,8 @@ namespace NexConvo.Chat.Infrastructure.HealthCheck;
 /// Owner-connection enumeration (RLS-free): this sweep must see connections across ALL tenants,
 /// not just the caller's own tenant, so it cannot use the request-scoped <see cref="ChatDbContext"/>
 /// registered in DI. Instead it builds its own <see cref="ChatDbContext"/> directly on the
-/// <c>ChatDbMigrator</c> connection string with NO RLS interceptor and a <see cref="NullTenantContext"/>
+/// <c>ChatDbMigrator</c> connection string with a <see cref="NullTenantContext"/> (which leaves the
+/// RLS interceptor inert — it never emits set_config without a tenant)
 /// — mirroring <see cref="ChatDatabaseMigrator"/>, which does the same bare-ctor construction for
 /// migrations. The dev "nexconvo" Postgres role is a superuser, so it bypasses RLS transparently.
 /// The Chat DbContext uses pgvector, so the owner connection's Npgsql options must also call
@@ -75,23 +76,36 @@ public sealed class ChatHealthSweepService : IChatHealthSweepService
         var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>();
         optionsBuilder.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
 
-        // Bare ctor with a NullTenantContext — no RlsConnectionInterceptor — mirrors
-        // ChatDatabaseMigrator so this connection can enumerate every tenant's rows instead of
-        // being scoped to one.
+        // Bare ctor with a NullTenantContext — the RlsConnectionInterceptor is attached by
+        // ChatDbContext.OnConfiguring but stays inert because NullTenantContext.HasTenant is false
+        // (so it never emits set_config) — mirrors ChatDatabaseMigrator, letting this connection
+        // enumerate every tenant's rows instead of being scoped to one.
         return new ChatDbContext(optionsBuilder.Options, new NullTenantContext());
     }
 
     public async Task RunAsync(CancellationToken ct)
     {
+        // The owner-connection context is created per sweep and owned here — dispose it so the
+        // pooled Npgsql connection is released (the production factory new-s a concrete DbContext
+        // that DI never disposes; mirrors the `using var` in ChatDatabaseMigrator).
         var context = _contextFactory();
-
-        var connections = await context.ChannelConnections
-            .Where(c => c.IsActive)
-            .ToListAsync(ct);
-
-        foreach (var connection in connections)
+        try
         {
-            await SweepConnectionAsync(context, connection, ct);
+            var connections = await context.ChannelConnections
+                .Where(c => c.IsActive)
+                .ToListAsync(ct);
+
+            foreach (var connection in connections)
+            {
+                await SweepConnectionAsync(context, connection, ct);
+            }
+        }
+        finally
+        {
+            if (context is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync();
+            else if (context is IDisposable disposable)
+                disposable.Dispose();
         }
     }
 
