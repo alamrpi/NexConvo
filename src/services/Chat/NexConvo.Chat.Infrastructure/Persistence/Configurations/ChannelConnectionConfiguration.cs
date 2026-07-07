@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Chat.Domain.Entities;
 
 namespace NexConvo.Chat.Infrastructure.Persistence.Configurations;
@@ -66,6 +67,22 @@ public sealed class ChannelConnectionConfiguration : IEntityTypeConfiguration<Ch
 
         builder.Property(x => x.CreatedByUserId)
             .HasColumnName("created_by_user_id");
+
+        // Connection health tracking (Task 2 of channel-connection-health slice).
+        builder.Property(x => x.LastTestStatus)
+            .HasColumnName("last_test_status")
+            .HasConversion<int>()
+            .HasDefaultValue(ConnectionStatus.Untested);
+
+        builder.Property(x => x.LastTestError)
+            .HasColumnName("last_test_error")
+            .HasMaxLength(1000);
+
+        builder.Property(x => x.LastTestedAt)
+            .HasColumnName("last_tested_at");
+
+        builder.Property(x => x.LastTestLatencyMs)
+            .HasColumnName("last_test_latency_ms");
 
         // Tenant lookup index.
         builder.HasIndex(x => x.TenantId)
