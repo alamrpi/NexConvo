@@ -4,7 +4,7 @@ import { apiClient } from '@/shared/api/client/api-client';
 import type { S3ConfigValues } from '../model/s3-config.schema';
 import { s3ConfigQueryKey } from './use-s3-config';
 
-export type S3ConfigErrorCode = 'conflict' | 'generic';
+export type S3ConfigErrorCode = 'conflict' | 'test-failed' | 'generic';
 
 export class S3ConfigError extends Error {
   constructor(readonly code: S3ConfigErrorCode) {
@@ -19,6 +19,10 @@ function mapError(error: unknown): S3ConfigError {
     const code = (error.response?.data as { code?: string } | undefined)?.code;
     if (status === 409 || code === 'conflict' || code === 'concurrency-conflict') {
       return new S3ConfigError('conflict');
+    }
+    // Server re-tested credentials on save and they failed — distinct from a zod-validation 422.
+    if (status === 422 && code === 'test-failed') {
+      return new S3ConfigError('test-failed');
     }
   }
   return new S3ConfigError('generic');

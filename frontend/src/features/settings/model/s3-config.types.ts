@@ -1,3 +1,5 @@
+import type { S3HealthStatus } from './s3-config.schema';
+
 export interface S3ConfigDto {
   id: string;
   bucketName: string;
@@ -6,4 +8,8 @@ export interface S3ConfigDto {
   customEndpoint: string | null;
   pathPrefix: string | null;
   isActive: boolean;
+  lastTestStatus: S3HealthStatus;
+  lastTestedAt: string | null;
+  lastTestError: string | null;
+  lastTestLatencyMs: number | null;
 }

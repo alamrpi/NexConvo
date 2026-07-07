@@ -36,3 +36,23 @@ export const s3ConfigSchema = z.object({
 });
 
 export type S3ConfigValues = z.infer<typeof s3ConfigSchema>;
+
+/**
+ * Connection health status. The backend serializes `ConnectionStatus` (a C# enum) as its
+ * STRING member name via `JsonStringEnumConverter` — never as a number — so this is modeled
+ * as a string union, not `z.nativeEnum`/numeric schema.
+ */
+export const s3HealthStatusSchema = z.enum(['Untested', 'Healthy', 'Degraded', 'Failed']);
+
+export type S3HealthStatus = z.infer<typeof s3HealthStatusSchema>;
+
+/** Result of `POST /api/v1/s3-config/test`. Always HTTP 200 — failure is `success: false`. */
+export const s3TestResultSchema = z.object({
+  success: z.boolean(),
+  status: s3HealthStatusSchema,
+  detail: z.string().nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  latencyMs: z.number().nullable().optional(),
+});
+
+export type S3TestResult = z.infer<typeof s3TestResultSchema>;

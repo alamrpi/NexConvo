@@ -3,17 +3,20 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslations } from 'next-intl';
-import { CheckCircle2, Eye, EyeOff, Loader2, Save } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { CheckCircle2, Eye, EyeOff, Loader2, Save, XCircle, Zap } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { Badge } from '@/shared/ui/badge';
 import { useSessionStore } from '@/features/auth/model/session.store';
-import { s3ConfigSchema, type S3ConfigValues } from '../model/s3-config.schema';
+import { s3ConfigSchema, type S3ConfigValues, type S3HealthStatus } from '../model/s3-config.schema';
+import type { S3ConfigDto } from '../model/s3-config.types';
 import { useS3Config } from '../api/use-s3-config';
 import { S3ConfigError, useUpdateS3Config } from '../api/use-update-s3-config';
+import { useTestS3Connection } from '../api/use-test-s3-connection';
 
 // ── Masked input (show/hide secret) ──────────────────────────────────────────
 
@@ -65,6 +68,58 @@ function Field({
   );
 }
 
+// ── Health badge ──────────────────────────────────────────────────────────────
+
+const HEALTH_BADGE_VARIANT: Record<S3HealthStatus, 'success' | 'warning' | 'destructive' | 'outline'> = {
+  Healthy: 'success',
+  Degraded: 'warning',
+  Failed: 'destructive',
+  Untested: 'outline',
+};
+
+/** Formats a past ISO timestamp as a locale-aware relative time, e.g. "5 minutes ago" (S12). */
+function useRelativeTime(iso: string | null): string | null {
+  const locale = useLocale();
+  return React.useMemo(() => {
+    if (!iso) return null;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+      ['year', 60 * 60 * 24 * 365],
+      ['month', 60 * 60 * 24 * 30],
+      ['day', 60 * 60 * 24],
+      ['hour', 60 * 60],
+      ['minute', 60],
+    ];
+    for (const [unit, secondsInUnit] of units) {
+      if (Math.abs(diffSeconds) >= secondsInUnit) {
+        return rtf.format(Math.round(diffSeconds / secondsInUnit), unit);
+      }
+    }
+    return rtf.format(diffSeconds, 'second');
+  }, [iso, locale]);
+}
+
+function HealthBadge({ config }: { config: S3ConfigDto }) {
+  const t = useTranslations('settings.s3');
+  const relative = useRelativeTime(config.lastTestedAt);
+  const status = config.lastTestStatus;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant={HEALTH_BADGE_VARIANT[status]}>
+        {t(`health${status}` as 'healthHealthy')}
+      </Badge>
+      <span className="text-xs text-muted-foreground">
+        {relative ? t('lastTested', { time: relative }) : t('lastTestedNever')}
+      </span>
+    </div>
+  );
+}
+
 // ── Form skeleton ─────────────────────────────────────────────────────────────
 
 function FormSkeleton() {
@@ -82,6 +137,8 @@ function FormSkeleton() {
   );
 }
 
+type TestState = 'idle' | 'testing' | 'success' | 'failed';
+
 // ── Main form ─────────────────────────────────────────────────────────────────
 
 export function S3ConfigForm() {
@@ -89,11 +146,15 @@ export function S3ConfigForm() {
   const canManage = useSessionStore((s) => s.hasPermission('settings:manage'));
   const { data, isLoading, isError } = useS3Config();
   const update = useUpdateS3Config();
+  const testConnection = useTestS3Connection();
   const [saved, setSaved] = React.useState(false);
+  const [testState, setTestState] = React.useState<TestState>('idle');
+  const [testResult, setTestResult] = React.useState<{ detail?: string | null; error?: string | null; latencyMs?: number | null }>({});
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isDirty },
   } = useForm<S3ConfigValues>({
     resolver: zodResolver(s3ConfigSchema),
@@ -106,6 +167,14 @@ export function S3ConfigForm() {
     },
   });
 
+  // A changed credential invalidates any prior test result — force a fresh test before saving.
+  const watchedAccessKeyId = watch('accessKeyId');
+  const watchedSecretAccessKey = watch('secretAccessKey');
+  React.useEffect(() => {
+    setTestState('idle');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedAccessKeyId, watchedSecretAccessKey]);
+
   if (!canManage) {
     return (
       <p role="status" className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
@@ -116,7 +185,7 @@ export function S3ConfigForm() {
 
   if (isLoading) return <FormSkeleton />;
 
-  if (isError) {
+  if (isError || !data) {
     return (
       <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
         {t('loadError')}
@@ -125,20 +194,52 @@ export function S3ConfigForm() {
   }
 
   const isConflict = update.error instanceof S3ConfigError && update.error.code === 'conflict';
+  const isTestFailedOnSave = update.error instanceof S3ConfigError && update.error.code === 'test-failed';
+
+  // A fresh, passing test is required whenever a credential is being entered/changed.
+  const requiresTest = !!(watchedAccessKeyId || watchedSecretAccessKey);
+  const canSave = !requiresTest || testState === 'success';
+
+  const handleTest = handleSubmit(async (values) => {
+    setTestState('testing');
+    setTestResult({});
+    const result = await testConnection.mutateAsync({
+      bucketName: values.bucketName,
+      region: values.region,
+      accessKeyId: values.accessKeyId,
+      secretAccessKey: values.secretAccessKey,
+      customEndpoint: values.customEndpoint,
+    });
+    if (result.success) {
+      setTestState('success');
+      setTestResult({ detail: result.detail, latencyMs: result.latencyMs });
+    } else {
+      setTestState('failed');
+      setTestResult({ error: result.errorMessage });
+    }
+  });
 
   async function onSubmit(values: S3ConfigValues) {
     setSaved(false);
-    await update.mutateAsync(values);
-    setSaved(true);
+    try {
+      await update.mutateAsync(values);
+      setSaved(true);
+    } catch (error) {
+      if (error instanceof S3ConfigError && error.code === 'test-failed') {
+        setTestState('idle');
+      }
+    }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Card>
         <CardContent className="space-y-5 p-5">
+          <HealthBadge config={data} />
+
           {update.isError && (
             <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {isConflict ? t('saveConflict') : t('saveError')}
+              {isConflict ? t('saveConflict') : isTestFailedOnSave ? t('credentialsExpired') : t('saveError')}
             </p>
           )}
 
@@ -234,11 +335,51 @@ export function S3ConfigForm() {
               {...register('pathPrefix')}
             />
           </Field>
+
+          {testState === 'success' && (
+            <p role="status" className="flex items-center gap-2 text-sm text-primary">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {testResult.detail ?? t('testPassed')}
+              {typeof testResult.latencyMs === 'number' && (
+                <span className="text-muted-foreground">({testResult.latencyMs} ms)</span>
+              )}
+            </p>
+          )}
+          {testState === 'failed' && (
+            <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
+              <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {testResult.error ?? t('testFailed')}
+            </p>
+          )}
+          {requiresTest && testState === 'idle' && (
+            <p role="status" className="text-xs text-muted-foreground">
+              {t('testRequired')}
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      <div className="mt-4 flex items-center gap-3">
-        <Button type="submit" disabled={update.isPending || !isDirty}>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={testState === 'testing' || update.isPending}
+          onClick={handleTest}
+        >
+          {testState === 'testing' ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              {t('testingConnection')}
+            </>
+          ) : (
+            <>
+              <Zap className="mr-2 h-4 w-4" aria-hidden />
+              {t('testConnection')}
+            </>
+          )}
+        </Button>
+
+        <Button type="submit" disabled={update.isPending || !isDirty || !canSave}>
           {update.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
