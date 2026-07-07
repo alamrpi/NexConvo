@@ -10,7 +10,9 @@ using NexConvo.BuildingBlocks.Infrastructure.Security;
 using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
+using NexConvo.Chat.Application.Features.Health;
 using NexConvo.Chat.Infrastructure.ExternalServices;
+using NexConvo.Chat.Infrastructure.HealthCheck;
 using NexConvo.Chat.Infrastructure.Jobs;
 using NexConvo.Chat.Infrastructure.Persistence;
 using NexConvo.Chat.Infrastructure.Services;
@@ -68,6 +70,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IChannelVerificationHttpClientFactory, ChannelVerificationHttpClientFactory>();
         services.AddScoped<IConnectionTester<ChannelTestInput>, ChannelConnectionTester>();
+        services.AddScoped<IChatHealthSweepService, ChatHealthSweepService>();
 
         services.AddMassTransit(x =>
         {
