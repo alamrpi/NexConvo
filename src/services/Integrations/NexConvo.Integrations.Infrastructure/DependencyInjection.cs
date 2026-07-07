@@ -8,6 +8,7 @@ using MassTransit;
 using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Integrations.Application;
+using NexConvo.Integrations.Application.Features.AiConfig;
 using NexConvo.Integrations.Application.Features.S3Config;
 using NexConvo.Integrations.Infrastructure.ExternalServices;
 using NexConvo.Integrations.Infrastructure.Persistence;
@@ -54,6 +55,7 @@ public static class DependencyInjection
             return new AmazonS3Client(creds, cfg);
         });
         services.AddScoped<IConnectionTester<S3TestInput>, S3ConnectionTester>();
+        services.AddScoped<IConnectionTester<AiTestInput>, AiConnectionTester>();
 
         return services;
     }
