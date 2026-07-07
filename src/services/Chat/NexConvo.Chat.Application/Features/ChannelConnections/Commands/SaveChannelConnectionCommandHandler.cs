@@ -37,7 +37,10 @@ public sealed class SaveChannelConnectionCommandHandler(
 
         var hasNewToken = !string.IsNullOrWhiteSpace(cmd.AccessToken);
         var encryptedToken = hasNewToken ? encryption.Encrypt(cmd.AccessToken) : existing?.EncryptedAccessToken ?? string.Empty;
-        var encryptedAppSecret = cmd.AppSecret is not null ? encryption.Encrypt(cmd.AppSecret) : null;
+        // Preserve the stored app secret when none is supplied on an update — a blank field means
+        // "unchanged", not "clear it" (same clobber guard as the access token above).
+        var hasNewAppSecret = !string.IsNullOrWhiteSpace(cmd.AppSecret);
+        var encryptedAppSecret = hasNewAppSecret ? encryption.Encrypt(cmd.AppSecret!) : existing?.EncryptedAppSecret;
 
         ChannelConnection connection;
         bool isNewConnection = existing is null;

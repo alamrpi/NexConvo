@@ -48,12 +48,12 @@ public class SaveChannelConnectionGateTests
             _loggerMock);
     }
 
-    private SaveChannelConnectionCommand Command(bool withNewToken = true) => new(
+    private SaveChannelConnectionCommand Command(bool withNewToken = true, bool withAppSecret = false) => new(
         ChatChannel.WhatsApp,
         "acct-123",
         "My WhatsApp",
         withNewToken ? "token-abc" : string.Empty,
-        null,
+        withAppSecret ? "app-secret-xyz" : null,
         _actorId);
 
     private void SetupConnections(params ChannelConnection[] connections)
@@ -110,8 +110,24 @@ public class SaveChannelConnectionGateTests
 
         await _testerMock.DidNotReceive().TestAsync(Arg.Any<ChannelTestInput>(), Arg.Any<CancellationToken>());
         existing.LastTestStatus.Should().Be(ConnectionStatus.Untested);
+        // The stored token ciphertext must be preserved on an unchanged-token save (clobber guard).
+        existing.EncryptedAccessToken.Should().Be("ENC_TOKEN");
         result.IsSuccess.Should().BeTrue();
         result.Value!.Status.Should().Be("disconnected");
         await _dbMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Save_preserves_stored_app_secret_when_none_supplied_on_update()
+    {
+        var existing = new ChannelConnection(
+            _tenantId, ChatChannel.WhatsApp, "acct-123", "My WhatsApp", "ENC_TOKEN", "ENC_APP_SECRET");
+        SetupConnections(existing);
+
+        // Update with no new token AND no new app secret — both blank means "unchanged".
+        await _handler.Handle(Command(withNewToken: false, withAppSecret: false), CancellationToken.None);
+
+        // The stored app secret (WA/FB/IG HMAC signing key) must survive, not be nulled out.
+        existing.EncryptedAppSecret.Should().Be("ENC_APP_SECRET");
     }
 }
