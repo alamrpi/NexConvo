@@ -50,7 +50,7 @@ public sealed class ChannelConnectionsController(ISender sender) : ControllerBas
     public async Task<IActionResult> Test([FromBody] TestConnectionRequest body, CancellationToken ct)
     {
         var result = await sender.Send(
-            new TestChannelConnectionCommand(body.Channel, body.AccessToken),
+            new TestChannelConnectionCommand(body.Channel, body.AccessToken, null),
             ct);
         return Ok(result);
     }
