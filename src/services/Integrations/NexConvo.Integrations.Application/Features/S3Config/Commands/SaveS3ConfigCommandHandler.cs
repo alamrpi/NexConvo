@@ -2,8 +2,10 @@ using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Contracts.Events.Integrations;
 using NexConvo.Integrations.Domain.Entities;
@@ -15,6 +17,7 @@ public sealed class SaveS3ConfigCommandHandler(
     ITenantContext tenant,
     IAesEncryptionService encryptionService,
     IPublishEndpoint publishEndpoint,
+    IConnectionTester<S3TestInput> tester,
     ILogger<SaveS3ConfigCommandHandler> logger)
     : IRequestHandler<SaveS3ConfigCommand, Guid>
 {
@@ -27,8 +30,9 @@ public sealed class SaveS3ConfigCommandHandler(
 
         var hasNewAccessKey = !string.IsNullOrWhiteSpace(request.AccessKeyId);
         var hasNewSecretKey = !string.IsNullOrWhiteSpace(request.SecretAccessKey);
+        var isNewConfig = config is null;
 
-        if (config is null)
+        if (isNewConfig)
         {
             if (!hasNewAccessKey || !hasNewSecretKey)
                 throw new DomainException("Access Key ID and Secret Access Key are required when configuring S3 for the first time.");
@@ -45,7 +49,48 @@ public sealed class SaveS3ConfigCommandHandler(
             {
                 CreatedByUserId = request.ActorUserId,
             };
+        }
+        else
+        {
+            var encryptedAccessKeyId = hasNewAccessKey
+                ? encryptionService.Encrypt(request.AccessKeyId!)
+                : config!.EncryptedAccessKeyId;
 
+            var encryptedSecretKey = hasNewSecretKey
+                ? encryptionService.Encrypt(request.SecretAccessKey!)
+                : config!.EncryptedSecretAccessKey;
+
+            config!.UpdateSettings(
+                request.BucketName,
+                request.Region,
+                encryptedAccessKeyId,
+                encryptedSecretKey,
+                request.CustomEndpoint,
+                request.PathPrefix);
+
+            config.SetActive(request.IsActive);
+        }
+
+        // Re-test credentials server-side whenever they're new/changed, before anything is
+        // persisted. A failing probe throws (mapped to 422) and nothing is saved. Unchanged
+        // credentials skip the re-test and leave prior health untouched (Task 9).
+        if (hasNewAccessKey || hasNewSecretKey)
+        {
+            var accessKeyId = request.AccessKeyId ?? encryptionService.Decrypt(config.EncryptedAccessKeyId);
+            var secretAccessKey = request.SecretAccessKey ?? encryptionService.Decrypt(config.EncryptedSecretAccessKey);
+
+            var probe = await tester.TestAsync(
+                new S3TestInput(request.BucketName, request.Region, accessKeyId, secretAccessKey, request.CustomEndpoint),
+                cancellationToken);
+
+            if (!probe.Success)
+                throw new ConnectionTestFailedException("s3", probe.ErrorMessage);
+
+            config.ApplyHealth(probe);
+        }
+
+        if (isNewConfig)
+        {
             context.WorkspaceS3Configs.Add(config);
 
             context.AuditLogs.Add(new AuditLog(
@@ -57,24 +102,6 @@ public sealed class SaveS3ConfigCommandHandler(
         }
         else
         {
-            var encryptedAccessKeyId = hasNewAccessKey
-                ? encryptionService.Encrypt(request.AccessKeyId!)
-                : config.EncryptedAccessKeyId;
-
-            var encryptedSecretKey = hasNewSecretKey
-                ? encryptionService.Encrypt(request.SecretAccessKey!)
-                : config.EncryptedSecretAccessKey;
-
-            config.UpdateSettings(
-                request.BucketName,
-                request.Region,
-                encryptedAccessKeyId,
-                encryptedSecretKey,
-                request.CustomEndpoint,
-                request.PathPrefix);
-
-            config.SetActive(request.IsActive);
-
             context.AuditLogs.Add(new AuditLog(
                 "integrations.s3-config.update",
                 tenantId,

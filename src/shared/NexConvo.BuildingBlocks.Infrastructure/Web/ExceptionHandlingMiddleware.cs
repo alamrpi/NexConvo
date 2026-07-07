@@ -10,7 +10,7 @@ using NexConvo.BuildingBlocks.Domain.Health;
 namespace NexConvo.BuildingBlocks.Infrastructure.Web;
 
 /// <summary>
-/// Maps unhandled exceptions to RFC 7807 problem responses: FluentValidation → 422,
+/// Maps unhandled exceptions to RFC 7807 problem responses: FluentValidation / ConnectionTestFailedException → 422,
 /// DbUpdateConcurrencyException / ConnectionUnhealthyException → 409, DomainException /
 /// NotSupportedException → 400, everything else → 500 (logged once, with correlation via
 /// Serilog). Never leaks internal detail on 500.
@@ -27,6 +27,10 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         {
             await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "Validation failed",
                 ex.Errors.Select(e => e.ErrorMessage).Distinct().ToArray());
+        }
+        catch (ConnectionTestFailedException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message, code: "connection-test-failed");
         }
         catch (EmailNotVerifiedException ex)
         {
