@@ -1,9 +1,15 @@
+using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MassTransit;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Integrations.Application;
+using NexConvo.Integrations.Application.Features.S3Config;
+using NexConvo.Integrations.Infrastructure.ExternalServices;
 using NexConvo.Integrations.Infrastructure.Persistence;
 
 namespace NexConvo.Integrations.Infrastructure;
@@ -23,7 +29,7 @@ public static class DependencyInjection
 
         services.AddSingleton<NexConvo.BuildingBlocks.Application.Security.IAesEncryptionService, NexConvo.BuildingBlocks.Infrastructure.Security.AesEncryptionService>();
 
-        services.AddMassTransit(x => 
+        services.AddMassTransit(x =>
         {
             x.UsingRabbitMq((context, cfg) =>
             {
@@ -31,6 +37,23 @@ public static class DependencyInjection
                 cfg.Host(rmq);
             });
         });
+
+        services.AddSingleton<Func<S3TestInput, IAmazonS3>>(_ => input =>
+        {
+            var creds = new BasicAWSCredentials(input.AccessKeyId, input.SecretAccessKey);
+            var cfg = new AmazonS3Config();
+            if (!string.IsNullOrWhiteSpace(input.CustomEndpoint))
+            {
+                cfg.ServiceURL = input.CustomEndpoint;
+                cfg.ForcePathStyle = true;
+            }
+            else
+            {
+                cfg.RegionEndpoint = RegionEndpoint.GetBySystemName(input.Region);
+            }
+            return new AmazonS3Client(creds, cfg);
+        });
+        services.AddScoped<IConnectionTester<S3TestInput>, S3ConnectionTester>();
 
         return services;
     }
