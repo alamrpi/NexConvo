@@ -31,8 +31,8 @@
 ## File Structure
 
 **Slice 1 — BuildingBlocks (shared):**
-- Create `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionStatus.cs` — the enum.
-- Create `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionHealth.cs` — the value record.
+- Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionStatus.cs` — the enum.
+- Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionHealth.cs` — the value record.
 - Create `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/IConnectionTester.cs` — generic tester interface.
 - Create `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/ConnectionUnhealthyException.cs` — thrown by the guard.
 - Test `tests/.../BuildingBlocks.Domain.Tests/ConnectionHealthTests.cs`.
@@ -61,8 +61,8 @@
 ## Task 1: ConnectionStatus enum + ConnectionHealth value record (BuildingBlocks.Domain)
 
 **Files:**
-- Create: `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionStatus.cs`
-- Create: `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionHealth.cs`
+- Create: `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionStatus.cs`
+- Create: `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionHealth.cs`
 - Test: `tests/shared/NexConvo.BuildingBlocks.Domain.Tests/ConnectionHealthTests.cs` (create test project if absent — see Step 0)
 
 **Interfaces:**
@@ -81,7 +81,7 @@ Then add its `GlobalSection(NestedProjects)` entry under the `tests` folder GUID
 - [ ] **Step 1: Write the failing test**
 
 ```csharp
-using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+using NexConvo.BuildingBlocks.Domain.Health;
 using Xunit;
 
 public class ConnectionHealthTests
@@ -118,7 +118,7 @@ Expected: FAIL — `ConnectionHealth`/`ConnectionStatus` do not exist.
 
 `ConnectionStatus.cs`:
 ```csharp
-namespace NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Domain.Health;
 
 public enum ConnectionStatus
 {
@@ -131,7 +131,7 @@ public enum ConnectionStatus
 
 `ConnectionHealth.cs`:
 ```csharp
-namespace NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Domain.Health;
 
 public sealed record ConnectionHealth(
     bool Success,
@@ -156,7 +156,7 @@ Expected: PASS (2 tests).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth tests/shared/NexConvo.BuildingBlocks.Domain.Tests NexConvo.sln
+git add src/shared/NexConvo.BuildingBlocks.Domain/Health tests/shared/NexConvo.BuildingBlocks.Domain.Tests NexConvo.sln
 git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionStatus enum"
 ```
 
@@ -171,7 +171,7 @@ git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionS
 
 **Files:**
 - Create: `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/IConnectionTester.cs`
-- Create: `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionUnhealthyException.cs`
+- Create: `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionUnhealthyException.cs`
 
 **Interfaces:**
 - Consumes: `ConnectionHealth`, `ConnectionStatus` (Task 1).
@@ -181,7 +181,7 @@ git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionS
 
 `IConnectionTester.cs`:
 ```csharp
-using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+using NexConvo.BuildingBlocks.Domain.Health;
 
 namespace NexConvo.BuildingBlocks.Application.ConnectionHealth;
 
@@ -194,7 +194,7 @@ public interface IConnectionTester<TInput>
 
 `ConnectionUnhealthyException.cs` (in **BuildingBlocks.Domain**):
 ```csharp
-namespace NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Domain.Health;
 
 public sealed class ConnectionUnhealthyException(string integrationKind, string? detail)
     : Exception($"The {integrationKind} connection is not healthy. {detail}".Trim())
@@ -215,7 +215,7 @@ Find the shared exception→ProblemDetails mapping (search: `grep -rl "DomainExc
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth src/shared/NexConvo.BuildingBlocks.Infrastructure
+git add src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth src/shared/NexConvo.BuildingBlocks.Domain/Health src/shared/NexConvo.BuildingBlocks.Infrastructure
 git commit -m "feat(buildingblocks): IConnectionTester contract + ConnectionUnhealthy 409 mapping"
 ```
 
@@ -234,7 +234,7 @@ git commit -m "feat(buildingblocks): IConnectionTester contract + ConnectionUnhe
 - [ ] **Step 1: Write the failing test**
 
 ```csharp
-using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Integrations.Domain.Entities;
 using Xunit;
 
@@ -299,7 +299,7 @@ public void EnsureHealthy()
         throw new ConnectionUnhealthyException("s3", LastTestError ?? "Run a connection test in Settings.");
 }
 ```
-Add `using NexConvo.BuildingBlocks.Domain.ConnectionHealth;` only. Both `ConnectionHealth`/`ConnectionStatus` and `ConnectionUnhealthyException` now live in **BuildingBlocks.Domain** (locked decision in Task 2), so `Integrations.Domain` needs only its existing `BuildingBlocks.Domain` reference — no Application reference, Clean Architecture holds. `EnsureHealthy()` throws `ConnectionUnhealthyException` directly.
+Add `using NexConvo.BuildingBlocks.Domain.Health;` only. Both `ConnectionHealth`/`ConnectionStatus` and `ConnectionUnhealthyException` now live in **BuildingBlocks.Domain** (locked decision in Task 2), so `Integrations.Domain` needs only its existing `BuildingBlocks.Domain` reference — no Application reference, Clean Architecture holds. `EnsureHealthy()` throws `ConnectionUnhealthyException` directly.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -332,7 +332,7 @@ builder.Property(x => x.LastTestError).HasMaxLength(1000);
 builder.Property(x => x.LastTestedAt);
 builder.Property(x => x.LastTestLatencyMs);
 ```
-Add `using NexConvo.BuildingBlocks.Domain.ConnectionHealth;`.
+Add `using NexConvo.BuildingBlocks.Domain.Health;`.
 
 - [ ] **Step 2: Generate the migration (produces Designer + snapshot — do NOT hand-write)**
 
@@ -389,7 +389,7 @@ The tester takes a `Func<S3TestInput, IAmazonS3>` factory so tests inject a fake
 ```csharp
 using Amazon.S3;
 using Amazon.S3.Model;
-using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Integrations.Application.Features.S3Config;
 using NexConvo.Integrations.Infrastructure.ExternalServices;
 using Xunit;
@@ -440,7 +440,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
 using NexConvo.BuildingBlocks.Application.ConnectionHealth;
-using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Integrations.Application.Features.S3Config;
 
 namespace NexConvo.Integrations.Infrastructure.ExternalServices;

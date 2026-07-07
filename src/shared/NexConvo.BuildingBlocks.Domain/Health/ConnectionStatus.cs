@@ -1,4 +1,4 @@
-namespace NexConvo.BuildingBlocks.Domain.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Domain.Health;
 
 public enum ConnectionStatus
 {
