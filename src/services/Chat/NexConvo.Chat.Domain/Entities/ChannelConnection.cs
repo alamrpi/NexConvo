@@ -1,4 +1,5 @@
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Chat.Domain.Enums;
 
 namespace NexConvo.Chat.Domain.Entities;
@@ -29,6 +30,11 @@ public class ChannelConnection : BaseAggregateRoot
 
     /// <summary>Soft-delete flag — use SetActive(false) instead of hard delete.</summary>
     public bool IsActive { get; private set; }
+
+    public DateTimeOffset? LastTestedAt { get; private set; }
+    public ConnectionStatus LastTestStatus { get; private set; } = ConnectionStatus.Untested;
+    public string? LastTestError { get; private set; }
+    public int? LastTestLatencyMs { get; private set; }
 
     private ChannelConnection()
     {
@@ -65,4 +71,18 @@ public class ChannelConnection : BaseAggregateRoot
     }
 
     public void SetActive(bool isActive) => IsActive = isActive;
+
+    public void ApplyHealth(ConnectionHealth health)
+    {
+        LastTestStatus = health.Status;
+        LastTestError = health.ErrorMessage;
+        LastTestLatencyMs = health.LatencyMs;
+        LastTestedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void EnsureHealthy()
+    {
+        if (LastTestStatus != ConnectionStatus.Healthy)
+            throw new ConnectionUnhealthyException("channel", LastTestError ?? "Run a connection test in Settings.");
+    }
 }

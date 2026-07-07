@@ -125,6 +125,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Integrations.Domai
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Integrations.Infrastructure.Tests", "tests\services\Integrations\NexConvo.Integrations.Infrastructure.Tests\NexConvo.Integrations.Infrastructure.Tests.csproj", "{BF9B07DA-3524-4083-AD22-523FB02AA8DB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Chat", "Chat", "{4E48965F-9292-9D96-9D98-6C3894C6D01B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Chat.Domain.Tests", "tests\services\Chat\NexConvo.Chat.Domain.Tests\NexConvo.Chat.Domain.Tests.csproj", "{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -687,6 +691,18 @@ Global
 		{BF9B07DA-3524-4083-AD22-523FB02AA8DB}.Release|x64.Build.0 = Release|Any CPU
 		{BF9B07DA-3524-4083-AD22-523FB02AA8DB}.Release|x86.ActiveCfg = Release|Any CPU
 		{BF9B07DA-3524-4083-AD22-523FB02AA8DB}.Release|x86.Build.0 = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|x64.Build.0 = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Debug|x86.Build.0 = Debug|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|x64.ActiveCfg = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|x64.Build.0 = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|x86.ActiveCfg = Release|Any CPU
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -751,5 +767,7 @@ Global
 		{7F6F027B-2463-4FEB-8A9F-4E79C5CEABC9} = {D0D6B8B0-AC35-B3FA-0B96-A9B0E4A3253E}
 		{82E43B9A-DB61-4132-9A60-894A78D1AA9D} = {7CFFD77E-C261-EA81-020C-54139F9DB56D}
 		{BF9B07DA-3524-4083-AD22-523FB02AA8DB} = {7CFFD77E-C261-EA81-020C-54139F9DB56D}
+		{4E48965F-9292-9D96-9D98-6C3894C6D01B} = {4353066B-F410-E540-F593-55E469B78A5F}
+		{583A9B2A-B8DC-4CE7-AB1B-5533F87501B2} = {4E48965F-9292-9D96-9D98-6C3894C6D01B}
 	EndGlobalSection
 EndGlobal
