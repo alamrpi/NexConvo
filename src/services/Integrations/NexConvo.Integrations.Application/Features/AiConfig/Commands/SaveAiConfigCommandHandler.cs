@@ -2,8 +2,10 @@ using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Contracts.Events.Integrations;
 using NexConvo.Integrations.Domain.Entities;
@@ -15,6 +17,7 @@ public sealed class SaveAiConfigCommandHandler(
     ITenantContext tenant,
     IAesEncryptionService encryptionService,
     IPublishEndpoint publishEndpoint,
+    IConnectionTester<AiTestInput> tester,
     ILogger<SaveAiConfigCommandHandler> logger)
     : IRequestHandler<SaveAiConfigCommand, Guid>
 {
@@ -27,8 +30,9 @@ public sealed class SaveAiConfigCommandHandler(
 
         var hasNewKey = !string.IsNullOrWhiteSpace(request.ApiKey);
         var parameters = string.IsNullOrWhiteSpace(request.Parameters) ? null : request.Parameters;
+        var isNewConfig = config is null;
 
-        if (config is null)
+        if (isNewConfig)
         {
             if (!hasNewKey)
                 throw new DomainException("An API key is required when configuring a new provider.");
@@ -45,7 +49,38 @@ public sealed class SaveAiConfigCommandHandler(
             {
                 CreatedByUserId = request.ActorUserId,
             };
+        }
+        else
+        {
+            var encryptedKey = hasNewKey ? encryptionService.Encrypt(request.ApiKey!) : config!.EncryptedApiKey;
 
+            config!.UpdateSettings(
+                encryptedKey,
+                request.BaseUrl,
+                request.DefaultModel,
+                null,
+                parameters);
+
+            config.SetActive(request.IsActive);
+        }
+
+        // Re-test the API key server-side whenever it's new/changed, before anything is
+        // persisted. A failing probe throws (mapped to 422) and nothing is saved. An unchanged
+        // key skips the re-test and leaves prior health untouched (mirrors S3 Task 9).
+        if (hasNewKey)
+        {
+            var probe = await tester.TestAsync(
+                new AiTestInput(request.Provider, request.ApiKey!, request.BaseUrl, request.DefaultModel),
+                cancellationToken);
+
+            if (!probe.Success)
+                throw new ConnectionTestFailedException("ai", probe.ErrorMessage);
+
+            config.ApplyHealth(probe);
+        }
+
+        if (isNewConfig)
+        {
             context.WorkspaceAiConfigs.Add(config);
 
             context.AuditLogs.Add(new AuditLog(
@@ -57,17 +92,6 @@ public sealed class SaveAiConfigCommandHandler(
         }
         else
         {
-            var encryptedKey = hasNewKey ? encryptionService.Encrypt(request.ApiKey!) : config.EncryptedApiKey;
-
-            config.UpdateSettings(
-                encryptedKey,
-                request.BaseUrl,
-                request.DefaultModel,
-                null,
-                parameters);
-
-            config.SetActive(request.IsActive);
-
             context.AuditLogs.Add(new AuditLog(
                 "integrations.ai-config.update",
                 tenantId,
