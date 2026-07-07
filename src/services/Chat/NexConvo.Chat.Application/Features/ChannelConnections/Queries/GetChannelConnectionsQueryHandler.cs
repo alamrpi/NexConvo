@@ -28,20 +28,6 @@ public sealed class GetChannelConnectionsQueryHandler(
             "Retrieved {Count} channel connections for tenant {TenantId}",
             connections.Count, tenantId);
 
-        return connections.Select(c => new ChannelConnectionDto(
-            c.Id,
-            c.Channel,
-            c.ExternalAccountId,
-            c.AccountName,
-            MaskToken(c.EncryptedAccessToken),
-            c.IsActive)).ToList();
-    }
-
-    /// <summary>Shows "●●●●{last4}" so the UI can confirm a token is set without exposing it.</summary>
-    private static string MaskToken(string encryptedToken)
-    {
-        if (string.IsNullOrEmpty(encryptedToken) || encryptedToken.Length < 4)
-            return "●●●●";
-        return "●●●●" + encryptedToken[^4..];
+        return connections.Select(ChannelConnectionDto.FromEntity).ToList();
     }
 }

@@ -55,6 +55,10 @@ public sealed class ChannelConnectionsController(ISender sender) : ControllerBas
         return Ok(result);
     }
 
+    [HttpPost("{id:guid}/test")]
+    public async Task<IActionResult> TestById(Guid id, CancellationToken ct)
+        => Ok(await sender.Send(new TestChannelConnectionByIdCommand(id), ct));
+
     private bool TryGetUserId(out Guid id)
     {
         var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
