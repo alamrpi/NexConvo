@@ -489,6 +489,9 @@
         "restore": "Restore"
       },
       "reEmbedding": "Re-embedding…",
+      "s3Unhealthy": "S3 storage connection isn't healthy — knowledge uploads are paused. Test & fix it in Settings.",
+      "s3NotConfigured": "S3 storage isn't configured yet — knowledge uploads are paused until it's set up.",
+      "s3UnhealthyCta": "Go to S3 settings",
       "deleteConfirm": "Delete this document?",
       "deleteDescription": "This will permanently remove the document and all its chunks.",
       "cancel": "Cancel",

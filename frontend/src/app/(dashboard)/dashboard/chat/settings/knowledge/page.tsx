@@ -44,6 +44,8 @@ import { useKnowledgeDocuments } from '@/features/settings/api/use-knowledge-doc
 import { useUploadKnowledgeDocument } from '@/features/settings/api/use-upload-knowledge-document';
 import { useDeleteKnowledgeDocument } from '@/features/settings/api/use-delete-knowledge-document';
 import { useReEmbedKnowledgeDocument } from '@/features/settings/api/use-re-embed-knowledge-document';
+import { useS3UploadGuard } from '@/features/settings/api/use-s3-upload-guard';
+import { S3UploadGuardBanner } from '@/features/settings/components/s3-upload-guard-banner';
 import type {
   KnowledgeDocumentDto,
   SourceType,
@@ -208,9 +210,11 @@ interface QAPair {
 interface AddKnowledgeDialogProps {
   open: boolean;
   onClose: () => void;
+  /** True when the S3 connection isn't Healthy — the file-upload tab is disabled pre-flight. */
+  uploadBlocked: boolean;
 }
 
-function AddKnowledgeDialog({ open, onClose }: AddKnowledgeDialogProps) {
+function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialogProps) {
   const t = useTranslations('chat');
   const { mutate: upload, progressRef } = useUploadKnowledgeDocument();
 
@@ -405,22 +409,26 @@ function AddKnowledgeDialog({ open, onClose }: AddKnowledgeDialogProps) {
 
           {/* ── Tab 1: Upload File ── */}
           <TabsContent value="upload" className="mt-4 space-y-3">
+            {uploadBlocked && <S3UploadGuardBanner />}
+
             <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragOver={(e) => { if (!uploadBlocked) { e.preventDefault(); setIsDragging(true); } }}
               onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
+              onDrop={(e) => { if (!uploadBlocked) handleDrop(e); }}
               className={cn(
-                'cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-                isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50',
+                'rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+                uploadBlocked
+                  ? 'cursor-not-allowed border-border opacity-50'
+                  : 'cursor-pointer border-border hover:border-primary/50',
+                isDragging && !uploadBlocked && 'border-primary bg-primary/5',
               )}
-              onClick={() => document.getElementById('kb-file-input')?.click()}
+              onClick={() => { if (!uploadBlocked) document.getElementById('kb-file-input')?.click(); }}
               role="button"
-              tabIndex={0}
+              tabIndex={uploadBlocked ? -1 : 0}
+              aria-disabled={uploadBlocked}
               aria-label={t('knowledge.addDialog.upload.hint')}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (!uploadBlocked && (e.key === 'Enter' || e.key === ' ')) {
                   e.preventDefault();
                   document.getElementById('kb-file-input')?.click();
                 }
@@ -437,6 +445,7 @@ function AddKnowledgeDialog({ open, onClose }: AddKnowledgeDialogProps) {
                 type="file"
                 accept=".pdf,.docx,.txt,.csv,.md"
                 className="sr-only"
+                disabled={uploadBlocked}
                 onChange={handleFileInput}
               />
             </div>
@@ -491,7 +500,9 @@ function AddKnowledgeDialog({ open, onClose }: AddKnowledgeDialogProps) {
 
             <DialogFooter>
               <Button
-                disabled={!uploadFile || !uploadTitle.trim() || isUploading || !!uploadError}
+                disabled={
+                  uploadBlocked || !uploadFile || !uploadTitle.trim() || isUploading || !!uploadError
+                }
                 onClick={submitUpload}
               >
                 {isUploading ? 'Uploading…' : 'Upload'}
@@ -750,6 +761,7 @@ export default function KnowledgePage() {
   const { data, isLoading, isError }                            = useKnowledgeDocuments();
   const { mutate: reEmbed, variables: reEmbedId, isPending: reEmbedPending } =
     useReEmbedKnowledgeDocument();
+  const s3Guard = useS3UploadGuard();
 
   const docs = data?.items ?? [];
 
@@ -775,6 +787,9 @@ export default function KnowledgePage() {
             {t('knowledge.addKnowledge')}
           </Button>
         </div>
+
+        {/* ── S3 connection pre-flight guard (Task 12) ── */}
+        {s3Guard.blocked && <S3UploadGuardBanner />}
 
         {/* ── Error ── */}
         {isError && (
@@ -920,7 +935,11 @@ export default function KnowledgePage() {
         )}
 
         {/* ── Dialogs ── */}
-        <AddKnowledgeDialog open={addOpen} onClose={() => setAddOpen(false)} />
+        <AddKnowledgeDialog
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          uploadBlocked={s3Guard.blocked}
+        />
         <DeleteDialog doc={deleteTarget} onClose={() => setDeleteTarget(null)} />
       </div>
     </div>
