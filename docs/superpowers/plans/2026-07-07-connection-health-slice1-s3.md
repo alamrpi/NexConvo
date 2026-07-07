@@ -162,15 +162,20 @@ git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionS
 
 ---
 
-## Task 2: IConnectionTester interface + ConnectionUnhealthyException (BuildingBlocks.Application)
+## Task 2: IConnectionTester interface (Application) + ConnectionUnhealthyException (Domain)
+
+> **DECISION (locked):** `ConnectionUnhealthyException` lives in **BuildingBlocks.Domain**
+> (not Application) so the `WorkspaceS3Config` entity's `EnsureHealthy()` can throw it while
+> Clean Architecture holds (Domain → Domain, never Domain → Application). `IConnectionTester`
+> stays in Application (it's an orchestration contract).
 
 **Files:**
 - Create: `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/IConnectionTester.cs`
-- Create: `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/ConnectionUnhealthyException.cs`
+- Create: `src/shared/NexConvo.BuildingBlocks.Domain/ConnectionHealth/ConnectionUnhealthyException.cs`
 
 **Interfaces:**
 - Consumes: `ConnectionHealth`, `ConnectionStatus` (Task 1).
-- Produces: `interface IConnectionTester<TInput> { string IntegrationKind { get; } Task<ConnectionHealth> TestAsync(TInput input, CancellationToken ct); }`; `class ConnectionUnhealthyException(string integrationKind, string? detail) : Exception` used by the guard (maps to HTTP 409).
+- Produces: `interface IConnectionTester<TInput> { string IntegrationKind { get; } Task<ConnectionHealth> TestAsync(TInput input, CancellationToken ct); }` (in Application); `sealed class ConnectionUnhealthyException(string integrationKind, string? detail) : Exception` (in **Domain**) used by the guard (maps to HTTP 409).
 
 - [ ] **Step 1: Write the interface (no test — pure contract)**
 
@@ -187,9 +192,9 @@ public interface IConnectionTester<TInput>
 }
 ```
 
-`ConnectionUnhealthyException.cs`:
+`ConnectionUnhealthyException.cs` (in **BuildingBlocks.Domain**):
 ```csharp
-namespace NexConvo.BuildingBlocks.Application.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Domain.ConnectionHealth;
 
 public sealed class ConnectionUnhealthyException(string integrationKind, string? detail)
     : Exception($"The {integrationKind} connection is not healthy. {detail}".Trim())
@@ -230,7 +235,6 @@ git commit -m "feat(buildingblocks): IConnectionTester contract + ConnectionUnhe
 
 ```csharp
 using NexConvo.BuildingBlocks.Domain.ConnectionHealth;
-using NexConvo.BuildingBlocks.Application.ConnectionHealth;
 using NexConvo.Integrations.Domain.Entities;
 using Xunit;
 
@@ -295,7 +299,7 @@ public void EnsureHealthy()
         throw new ConnectionUnhealthyException("s3", LastTestError ?? "Run a connection test in Settings.");
 }
 ```
-Add `using NexConvo.BuildingBlocks.Domain.ConnectionHealth;` and `using NexConvo.BuildingBlocks.Application.ConnectionHealth;`. Confirm `Integrations.Domain` references `BuildingBlocks.Application` (it may only reference `.Domain`; if so, move `ConnectionUnhealthyException` + `EnsureHealthy`'s throw to keep the Domain layer clean — alternative: throw a domain-level exception the mapper also maps to 409). Prefer keeping `EnsureHealthy` returning `bool IsHealthy` on the entity and throwing in the Application handler if the reference direction is wrong.
+Add `using NexConvo.BuildingBlocks.Domain.ConnectionHealth;` only. Both `ConnectionHealth`/`ConnectionStatus` and `ConnectionUnhealthyException` now live in **BuildingBlocks.Domain** (locked decision in Task 2), so `Integrations.Domain` needs only its existing `BuildingBlocks.Domain` reference — no Application reference, Clean Architecture holds. `EnsureHealthy()` throws `ConnectionUnhealthyException` directly.
 
 - [ ] **Step 4: Run test to verify it passes**
 
