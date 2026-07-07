@@ -16,6 +16,8 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="MockQueryable.NSubstitute" />
+    <PackageReference Include="MassTransit.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +29,7 @@
     <ProjectReference Include="..\..\..\..\src\services\Integrations\NexConvo.Integrations.Infrastructure\NexConvo.Integrations.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Application\NexConvo.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Domain\NexConvo.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

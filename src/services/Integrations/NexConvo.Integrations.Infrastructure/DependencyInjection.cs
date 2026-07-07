@@ -9,8 +9,10 @@ using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Integrations.Application;
 using NexConvo.Integrations.Application.Features.AiConfig;
+using NexConvo.Integrations.Application.Features.Health;
 using NexConvo.Integrations.Application.Features.S3Config;
 using NexConvo.Integrations.Infrastructure.ExternalServices;
+using NexConvo.Integrations.Infrastructure.HealthCheck;
 using NexConvo.Integrations.Infrastructure.Persistence;
 
 namespace NexConvo.Integrations.Infrastructure;
@@ -32,12 +34,17 @@ public static class DependencyInjection
 
         services.AddMassTransit(x =>
         {
+            x.AddConsumers(typeof(NexConvo.Integrations.Application.DependencyInjection).Assembly);
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 var rmq = configuration.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@localhost:5672";
                 cfg.Host(rmq);
+                cfg.ConfigureEndpoints(context);
             });
         });
+
+        services.AddScoped<IIntegrationsHealthSweepService, IntegrationsHealthSweepService>();
 
         services.AddSingleton<Func<S3TestInput, IAmazonS3>>(_ => input =>
         {
