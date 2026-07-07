@@ -1,3 +1,4 @@
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Contracts.Enums;
 using System;
 
@@ -10,5 +11,9 @@ public record AiConfigDto(
     string? BaseUrl,
     string DefaultModel,
     string? Parameters,
-    bool IsActive
+    bool IsActive,
+    ConnectionStatus LastTestStatus,
+    DateTimeOffset? LastTestedAt,
+    string? LastTestError,
+    int? LastTestLatencyMs
 );

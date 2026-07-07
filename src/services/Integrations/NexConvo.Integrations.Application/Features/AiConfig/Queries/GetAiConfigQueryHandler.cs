@@ -33,7 +33,11 @@ public sealed class GetAiConfigQueryHandler(
             c.BaseUrl,
             c.DefaultModel,
             c.Parameters,
-            c.IsActive
+            c.IsActive,
+            c.LastTestStatus,
+            c.LastTestedAt,
+            c.LastTestError,
+            c.LastTestLatencyMs
         )).ToList();
     }
 }
