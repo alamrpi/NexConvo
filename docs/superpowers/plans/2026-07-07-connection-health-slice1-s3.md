@@ -33,7 +33,7 @@
 **Slice 1 — BuildingBlocks (shared):**
 - Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionStatus.cs` — the enum.
 - Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionHealth.cs` — the value record.
-- Create `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/IConnectionTester.cs` — generic tester interface.
+- Create `src/shared/NexConvo.BuildingBlocks.Application/Health/IConnectionTester.cs` — generic tester interface.
 - Create `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/ConnectionUnhealthyException.cs` — thrown by the guard.
 - Test `tests/.../BuildingBlocks.Domain.Tests/ConnectionHealthTests.cs`.
 
@@ -170,7 +170,7 @@ git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionS
 > stays in Application (it's an orchestration contract).
 
 **Files:**
-- Create: `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/IConnectionTester.cs`
+- Create: `src/shared/NexConvo.BuildingBlocks.Application/Health/IConnectionTester.cs`
 - Create: `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionUnhealthyException.cs`
 
 **Interfaces:**
@@ -183,7 +183,7 @@ git commit -m "feat(buildingblocks): ConnectionHealth value object + ConnectionS
 ```csharp
 using NexConvo.BuildingBlocks.Domain.Health;
 
-namespace NexConvo.BuildingBlocks.Application.ConnectionHealth;
+namespace NexConvo.BuildingBlocks.Application.Health;
 
 public interface IConnectionTester<TInput>
 {
@@ -215,7 +215,7 @@ Find the shared exception→ProblemDetails mapping (search: `grep -rl "DomainExc
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth src/shared/NexConvo.BuildingBlocks.Domain/Health src/shared/NexConvo.BuildingBlocks.Infrastructure
+git add src/shared/NexConvo.BuildingBlocks.Application/Health src/shared/NexConvo.BuildingBlocks.Domain/Health src/shared/NexConvo.BuildingBlocks.Infrastructure
 git commit -m "feat(buildingblocks): IConnectionTester contract + ConnectionUnhealthy 409 mapping"
 ```
 
@@ -439,7 +439,7 @@ using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
-using NexConvo.BuildingBlocks.Application.ConnectionHealth;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Integrations.Application.Features.S3Config;
 
