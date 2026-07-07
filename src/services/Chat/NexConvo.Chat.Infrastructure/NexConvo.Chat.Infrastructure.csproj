@@ -23,4 +23,8 @@
     <PackageReference Include="MassTransit.RabbitMQ" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NexConvo.Chat.Infrastructure.Tests" />
+  </ItemGroup>
 </Project>

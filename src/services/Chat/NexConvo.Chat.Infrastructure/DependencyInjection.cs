@@ -4,9 +4,13 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Infrastructure.Security;
+using NexConvo.BuildingBlocks.Resilience;
+using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
+using NexConvo.Chat.Infrastructure.ExternalServices;
 using NexConvo.Chat.Infrastructure.Jobs;
 using NexConvo.Chat.Infrastructure.Persistence;
 using NexConvo.Chat.Infrastructure.Services;
@@ -51,7 +55,19 @@ public static class DependencyInjection
         services.AddStackExchangeRedisCache(o => o.Configuration = redisConn);
 
         services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
-        services.AddSingleton<IChannelConnectionTester, ChannelConnectionTester>();
+
+        // Resilient (Standard 8: Polly retry/circuit-breaker/timeout) named HttpClients for
+        // channel connection verification. ChannelVerificationHttpClientFactory maps each
+        // ChatChannel to the correct named client below.
+        services.AddHttpClient("MetaGraphApi", c => c.BaseAddress = new Uri("https://graph.facebook.com/"))
+            .AddNexConvoResilience();
+        services.AddHttpClient("TelegramApi", c => c.BaseAddress = new Uri("https://api.telegram.org/"))
+            .AddNexConvoResilience();
+        services.AddHttpClient("ChannelVerification")
+            .AddNexConvoResilience();
+
+        services.AddSingleton<IChannelVerificationHttpClientFactory, ChannelVerificationHttpClientFactory>();
+        services.AddScoped<IConnectionTester<ChannelTestInput>, ChannelConnectionTester>();
 
         services.AddMassTransit(x =>
         {

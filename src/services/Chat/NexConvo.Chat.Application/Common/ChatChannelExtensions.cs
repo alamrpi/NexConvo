@@ -3,9 +3,14 @@ using NexConvo.Contracts.Enums;
 
 namespace NexConvo.Chat.Application.Common;
 
-internal static class ChatChannelExtensions
+public static class ChatChannelExtensions
 {
-    internal static LeadSourceChannel ToLeadSourceChannel(this ChatChannel channel) => channel switch
+    /// <summary>
+    /// Maps the Chat service's channel enum to the shared cross-service <see cref="LeadSourceChannel"/>
+    /// discriminator. Public because Chat.Infrastructure (e.g. <c>ChannelConnectionTester</c>) needs it
+    /// to select the correct named HttpClient per channel via <c>IChannelVerificationHttpClientFactory</c>.
+    /// </summary>
+    public static LeadSourceChannel ToLeadSourceChannel(this ChatChannel channel) => channel switch
     {
         ChatChannel.WhatsApp => LeadSourceChannel.WhatsApp,
         ChatChannel.Facebook => LeadSourceChannel.Facebook,
