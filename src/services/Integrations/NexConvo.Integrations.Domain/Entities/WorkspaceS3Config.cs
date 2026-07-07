@@ -1,4 +1,5 @@
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 
 namespace NexConvo.Integrations.Domain.Entities;
 
@@ -16,6 +17,11 @@ public class WorkspaceS3Config : BaseAggregateRoot
     public string? PathPrefix { get; private set; }
 
     public bool IsActive { get; private set; }
+
+    public DateTimeOffset? LastTestedAt { get; private set; }
+    public ConnectionStatus LastTestStatus { get; private set; } = ConnectionStatus.Untested;
+    public string? LastTestError { get; private set; }
+    public int? LastTestLatencyMs { get; private set; }
 
     private WorkspaceS3Config()
     {
@@ -62,4 +68,18 @@ public class WorkspaceS3Config : BaseAggregateRoot
     }
 
     public void SetActive(bool isActive) => IsActive = isActive;
+
+    public void ApplyHealth(ConnectionHealth health)
+    {
+        LastTestStatus = health.Status;
+        LastTestError = health.ErrorMessage;
+        LastTestLatencyMs = health.LatencyMs;
+        LastTestedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void EnsureHealthy()
+    {
+        if (LastTestStatus != ConnectionStatus.Healthy)
+            throw new ConnectionUnhealthyException("s3", LastTestError ?? "Run a connection test in Settings.");
+    }
 }
