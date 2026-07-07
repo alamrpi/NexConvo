@@ -34,7 +34,7 @@
 - Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionStatus.cs` — the enum.
 - Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionHealth.cs` — the value record.
 - Create `src/shared/NexConvo.BuildingBlocks.Application/Health/IConnectionTester.cs` — generic tester interface.
-- Create `src/shared/NexConvo.BuildingBlocks.Application/ConnectionHealth/ConnectionUnhealthyException.cs` — thrown by the guard.
+- Create `src/shared/NexConvo.BuildingBlocks.Domain/Health/ConnectionUnhealthyException.cs` — thrown by the guard (Domain, per locked decision).
 - Test `tests/.../BuildingBlocks.Domain.Tests/ConnectionHealthTests.cs`.
 
 **Slice 2 — Integrations (S3):**
