@@ -762,6 +762,7 @@
       "email": "Email",
       "channels": "Channels",
       "ai": "AI Config",
+      "s3": "S3 Storage",
       "general": "General",
       "members": "Members",
       "roles": "Roles",
@@ -1194,6 +1195,42 @@
         "defaultModelRequired": "Default model is required.",
         "baseUrlInvalid": "Enter a valid URL.",
         "parametersInvalid": "Parameters must be a valid JSON object."
+      }
+    },
+    "s3": {
+      "title": "S3 Storage",
+      "description": "Configure S3-compatible object storage for knowledge base documents and file uploads.",
+      "noPermission": "You don't have permission to manage storage settings.",
+      "loadError": "Couldn't load storage settings. Please try again.",
+      "bucketNameLabel": "Bucket Name",
+      "bucketNamePlaceholder": "my-nexconvo-bucket",
+      "regionLabel": "Region",
+      "regionPlaceholder": "us-east-1",
+      "regionHint": "AWS region or provider-specific region code.",
+      "accessKeyIdLabel": "Access Key ID",
+      "accessKeyIdPlaceholder": "Enter access key ID",
+      "secretAccessKeyLabel": "Secret Access Key",
+      "secretAccessKeyPlaceholder": "Enter secret access key",
+      "secretConfigured": "Credentials are configured — leave blank to keep.",
+      "secretPlaceholder": "Leave blank to keep current value",
+      "customEndpointLabel": "Custom Endpoint (Optional)",
+      "customEndpointPlaceholder": "https://your-account.r2.cloudflarestorage.com",
+      "customEndpointHint": "For S3-compatible providers: Cloudflare R2, MinIO, DigitalOcean Spaces. Leave empty for AWS S3.",
+      "pathPrefixLabel": "Path Prefix (Optional)",
+      "pathPrefixPlaceholder": "knowledge/",
+      "pathPrefixHint": "Prefix applied to all stored objects, e.g. \"knowledge/\". Must end with a slash.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn't save settings. Please try again.",
+      "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "errors": {
+        "bucketNameRequired": "Bucket name is required.",
+        "bucketNameTooLong": "Bucket name must be 63 characters or fewer.",
+        "bucketNameInvalid": "Bucket name must be 3–63 lowercase letters, numbers, or hyphens, and cannot start or end with a hyphen.",
+        "regionRequired": "Region is required.",
+        "customEndpointInvalid": "Custom endpoint must be a valid http:// or https:// URL.",
+        "pathPrefixInvalid": "Path prefix must not start with a slash and must end with a slash, e.g. \"knowledge/\"."
       }
     }
   }

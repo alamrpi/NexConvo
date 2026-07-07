@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import {
   Bot,
   CreditCard,
+  Database,
   KeyRound,
   Mail,
   Shield,
@@ -59,6 +60,7 @@ const groups: readonly SettingsGroup[] = [
     items: [
       { key: 'email', href: '/dashboard/settings/email', icon: Mail, enabled: true },
       { key: 'channels', href: '/dashboard/settings/channels', icon: Zap, enabled: true },
+      { key: 's3', href: '/dashboard/settings/s3', icon: Database, enabled: true },
     ],
   },
 ];
