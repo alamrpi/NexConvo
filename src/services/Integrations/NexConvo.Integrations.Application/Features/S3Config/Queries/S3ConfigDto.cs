@@ -1,3 +1,5 @@
+using NexConvo.BuildingBlocks.Domain.Health;
+
 namespace NexConvo.Integrations.Application.Features.S3Config.Queries;
 
 public record S3ConfigDto(
@@ -7,5 +9,9 @@ public record S3ConfigDto(
     bool HasAccessKey,
     string? CustomEndpoint,
     string? PathPrefix,
-    bool IsActive
+    bool IsActive,
+    ConnectionStatus LastTestStatus,
+    DateTimeOffset? LastTestedAt,
+    string? LastTestError,
+    int? LastTestLatencyMs
 );

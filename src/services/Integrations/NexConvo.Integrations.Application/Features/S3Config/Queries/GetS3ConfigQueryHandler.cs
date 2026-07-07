@@ -30,7 +30,11 @@ public sealed class GetS3ConfigQueryHandler(
             !string.IsNullOrEmpty(config.EncryptedAccessKeyId),
             config.CustomEndpoint,
             config.PathPrefix,
-            config.IsActive
+            config.IsActive,
+            config.LastTestStatus,
+            config.LastTestedAt,
+            config.LastTestError,
+            config.LastTestLatencyMs
         );
     }
 }
