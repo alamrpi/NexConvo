@@ -37,6 +37,11 @@ public sealed class WorkspaceS3ConfigController(ISender sender) : ControllerBase
         return Ok(new { Id = id });
     }
 
+    [HttpPost("test")]
+    public async Task<IActionResult> Test([FromBody] TestS3ConfigRequest body, CancellationToken ct)
+        => Ok(await sender.Send(new TestS3ConnectionCommand(
+            body.BucketName, body.Region, body.AccessKeyId, body.SecretAccessKey, body.CustomEndpoint), ct));
+
     private bool TryGetUserId(out Guid id)
     {
         var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
