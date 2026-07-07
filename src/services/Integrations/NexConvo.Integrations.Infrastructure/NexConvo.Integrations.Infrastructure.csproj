@@ -12,6 +12,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NexConvo.Integrations.Infrastructure.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
