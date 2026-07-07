@@ -1190,6 +1190,13 @@
       "saved": "Settings saved.",
       "saveError": "Couldn’t save settings. Please try again.",
       "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "credentialsExpired": "These credentials no longer work. Test the connection again before saving.",
+      "healthUntested": "Untested",
+      "healthHealthy": "Healthy",
+      "healthDegraded": "Degraded",
+      "healthFailed": "Failed",
+      "lastTested": "Last tested {time}",
+      "lastTestedNever": "Never tested",
       "status": {
         "active": "Active",
         "inactive": "Inactive"

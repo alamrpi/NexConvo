@@ -14,6 +14,10 @@ const config: AiConfigDto = {
   defaultModel: 'gpt-4o',
   parameters: null,
   isActive: true,
+  lastTestStatus: 'Healthy',
+  lastTestedAt: '2026-07-01T10:00:00Z',
+  lastTestError: null,
+  lastTestLatencyMs: 180,
 };
 
 describe('useAiSettings', () => {

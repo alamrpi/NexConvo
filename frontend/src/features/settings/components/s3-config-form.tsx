@@ -3,20 +3,20 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { CheckCircle2, Eye, EyeOff, Loader2, Save, XCircle, Zap } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Skeleton } from '@/shared/ui/skeleton';
-import { Badge } from '@/shared/ui/badge';
 import { useSessionStore } from '@/features/auth/model/session.store';
-import { s3ConfigSchema, type S3ConfigValues, type S3HealthStatus } from '../model/s3-config.schema';
+import { s3ConfigSchema, type S3ConfigValues } from '../model/s3-config.schema';
 import type { S3ConfigDto } from '../model/s3-config.types';
 import { useS3Config } from '../api/use-s3-config';
 import { S3ConfigError, useUpdateS3Config } from '../api/use-update-s3-config';
 import { useTestS3Connection } from '../api/use-test-s3-connection';
+import { HealthBadge } from './health-badge';
 
 // ── Masked input (show/hide secret) ──────────────────────────────────────────
 
@@ -70,53 +70,15 @@ function Field({
 
 // ── Health badge ──────────────────────────────────────────────────────────────
 
-const HEALTH_BADGE_VARIANT: Record<S3HealthStatus, 'success' | 'warning' | 'destructive' | 'outline'> = {
-  Healthy: 'success',
-  Degraded: 'warning',
-  Failed: 'destructive',
-  Untested: 'outline',
-};
-
-/** Formats a past ISO timestamp as a locale-aware relative time, e.g. "5 minutes ago" (S12). */
-function useRelativeTime(iso: string | null): string | null {
-  const locale = useLocale();
-  return React.useMemo(() => {
-    if (!iso) return null;
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return null;
-
-    const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-    const units: [Intl.RelativeTimeFormatUnit, number][] = [
-      ['year', 60 * 60 * 24 * 365],
-      ['month', 60 * 60 * 24 * 30],
-      ['day', 60 * 60 * 24],
-      ['hour', 60 * 60],
-      ['minute', 60],
-    ];
-    for (const [unit, secondsInUnit] of units) {
-      if (Math.abs(diffSeconds) >= secondsInUnit) {
-        return rtf.format(Math.round(diffSeconds / secondsInUnit), unit);
-      }
-    }
-    return rtf.format(diffSeconds, 'second');
-  }, [iso, locale]);
-}
-
-function HealthBadge({ config }: { config: S3ConfigDto }) {
+function S3HealthBadge({ config }: { config: S3ConfigDto }) {
   const t = useTranslations('settings.s3');
-  const relative = useRelativeTime(config.lastTestedAt);
-  const status = config.lastTestStatus;
-
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Badge variant={HEALTH_BADGE_VARIANT[status]}>
-        {t(`health${status}` as 'healthHealthy')}
-      </Badge>
-      <span className="text-xs text-muted-foreground">
-        {relative ? t('lastTested', { time: relative }) : t('lastTestedNever')}
-      </span>
-    </div>
+    <HealthBadge
+      status={config.lastTestStatus}
+      lastTestedAt={config.lastTestedAt}
+      statusLabel={(status) => t(`health${status}` as 'healthHealthy')}
+      lastTestedLabel={(relative) => (relative ? t('lastTested', { time: relative }) : t('lastTestedNever'))}
+    />
   );
 }
 
@@ -235,7 +197,7 @@ export function S3ConfigForm() {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Card>
         <CardContent className="space-y-5 p-5">
-          <HealthBadge config={data} />
+          <S3HealthBadge config={data} />
 
           {update.isError && (
             <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">

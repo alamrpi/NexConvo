@@ -19,9 +19,11 @@ import {
   type AiSettingsValues,
 } from '../model/ai-settings.schema';
 import type { AiConfigDto, AiProviderType } from '../model/ai-settings.types';
+import type { ConnectionHealthResult } from '../model/connection-health.schema';
 import { useAiSettings } from '../api/use-ai-settings';
 import { AiSettingsError, useUpdateAiSettings } from '../api/use-update-ai-settings';
 import { useTestAiConnection } from '../api/use-test-ai-connection';
+import { HealthBadge } from './health-badge';
 
 const MODEL_HINTS: Record<AiProviderType, string> = {
   OpenAI: 'gpt-4o',
@@ -108,6 +110,18 @@ export function AiSettingsForm() {
   );
 }
 
+function AiHealthBadge({ config }: { config: AiConfigDto }) {
+  const t = useTranslations('settings.ai');
+  return (
+    <HealthBadge
+      status={config.lastTestStatus}
+      lastTestedAt={config.lastTestedAt}
+      statusLabel={(status) => t(`health${status}` as 'healthHealthy')}
+      lastTestedLabel={(relative) => (relative ? t('lastTested', { time: relative }) : t('lastTestedNever'))}
+    />
+  );
+}
+
 function FormSkeleton() {
   return (
     <Card>
@@ -137,7 +151,9 @@ function AiSettingsFields({
   const testConnection = useTestAiConnection();
   const [replacingSecret, setReplacingSecret] = React.useState(!config?.hasApiKey);
   const [testState, setTestState] = React.useState<TestState>('idle');
-  const [testError, setTestError] = React.useState<string | undefined>();
+  const [testResult, setTestResult] = React.useState<
+    Pick<ConnectionHealthResult, 'detail' | 'errorMessage' | 'latencyMs'>
+  >({});
 
   const {
     register,
@@ -169,6 +185,7 @@ function AiSettingsFields({
   const errorText = (key?: string) => (key ? t(`errors.${key}`) : undefined);
   const busy = isSubmitting || update.isPending;
   const isConflict = update.error instanceof AiSettingsError && update.error.code === 'conflict';
+  const isTestFailedOnSave = update.error instanceof AiSettingsError && update.error.code === 'test-failed';
 
   // Save requires a passing test when key is being set for the first time or replaced.
   const requiresTest = !config?.hasApiKey || replacingSecret;
@@ -176,7 +193,7 @@ function AiSettingsFields({
 
   const handleTest = handleSubmit(async (values) => {
     setTestState('testing');
-    setTestError(undefined);
+    setTestResult({});
     const result = await testConnection.mutateAsync({
       provider,
       apiKey: values.apiKey || undefined,
@@ -185,14 +202,22 @@ function AiSettingsFields({
     });
     if (result.success) {
       setTestState('success');
+      setTestResult({ detail: result.detail, latencyMs: result.latencyMs });
     } else {
       setTestState('failed');
-      setTestError(result.error);
+      setTestResult({ errorMessage: result.errorMessage });
     }
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await update.mutateAsync(values).catch(() => undefined);
+    try {
+      await update.mutateAsync(values);
+    } catch (error) {
+      // Server re-tested the credentials on save and they no longer work — force a fresh test.
+      if (error instanceof AiSettingsError && error.code === 'test-failed') {
+        setTestState('idle');
+      }
+    }
   });
 
   return (
@@ -206,9 +231,11 @@ function AiSettingsFields({
           )}
           {update.isError && (
             <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {isConflict ? t('saveConflict') : t('saveError')}
+              {isConflict ? t('saveConflict') : isTestFailedOnSave ? t('credentialsExpired') : t('saveError')}
             </p>
           )}
+
+          {config && <AiHealthBadge config={config} />}
 
           {/* Hidden provider field */}
           <input type="hidden" {...register('provider')} value={provider} />
@@ -281,13 +308,16 @@ function AiSettingsFields({
           {testState === 'success' && (
             <p role="status" className="flex items-center gap-2 text-sm text-primary">
               <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {t('testPassed')}
+              {testResult.detail ?? t('testPassed')}
+              {typeof testResult.latencyMs === 'number' && (
+                <span className="text-muted-foreground">({testResult.latencyMs} ms)</span>
+              )}
             </p>
           )}
           {testState === 'failed' && (
             <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
               <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {testError ?? t('testFailed')}
+              {testResult.errorMessage ?? t('testFailed')}
             </p>
           )}
           {requiresTest && testState === 'idle' && (

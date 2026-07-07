@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { connectionHealthResultSchema, connectionHealthStatusSchema } from './connection-health.schema';
 
 const S3_BUCKET_RE = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
 
@@ -38,21 +39,14 @@ export const s3ConfigSchema = z.object({
 export type S3ConfigValues = z.infer<typeof s3ConfigSchema>;
 
 /**
- * Connection health status. The backend serializes `ConnectionStatus` (a C# enum) as its
- * STRING member name via `JsonStringEnumConverter` — never as a number — so this is modeled
- * as a string union, not `z.nativeEnum`/numeric schema.
+ * Connection health status — re-exported from the shared module (`connection-health.schema.ts`)
+ * so existing S3 imports keep working unchanged after the AI-slice extraction.
  */
-export const s3HealthStatusSchema = z.enum(['Untested', 'Healthy', 'Degraded', 'Failed']);
+export const s3HealthStatusSchema = connectionHealthStatusSchema;
 
 export type S3HealthStatus = z.infer<typeof s3HealthStatusSchema>;
 
 /** Result of `POST /api/v1/s3-config/test`. Always HTTP 200 — failure is `success: false`. */
-export const s3TestResultSchema = z.object({
-  success: z.boolean(),
-  status: s3HealthStatusSchema,
-  detail: z.string().nullable().optional(),
-  errorMessage: z.string().nullable().optional(),
-  latencyMs: z.number().nullable().optional(),
-});
+export const s3TestResultSchema = connectionHealthResultSchema;
 
 export type S3TestResult = z.infer<typeof s3TestResultSchema>;
