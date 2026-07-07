@@ -132,6 +132,10 @@ Reusable persisted health fields, embedded on each config entity:
   generalise it.)
 - **Server safety net:** on Save, if credentials are new/changed, re-run the tester; on
   failure return **422** and do not persist. On success, `ApplyHealth(Healthy)`.
+- **422-on-save UX (required):** the user may test, then wait minutes before Save — the key
+  can expire in between, so the re-test returns **422**. On 422 the UI shows a clear
+  toast/inline message ("Credentials expired or changed since the last test — please Test
+  again.") and resets `testState` to force a fresh test before Save re-enables. (en + bn.)
 
 ### 4. Feature guard
 
@@ -155,6 +159,11 @@ decrypts secrets locally, runs `IConnectionTester`, and saves `ApplyHealth(...)`
 `Healthy → Failed/Degraded` transition (and not on already-failed, to avoid repeat spam),
 publish `IntegrationHealthFailedEvent`.
 
+**Sweep filter (required):** the health job only tests **live** configs — filter
+`WHERE IsActive = true` (and `IsDeleted = false` where a soft-delete flag exists). A config
+the tenant deleted or deactivated is skipped entirely (never tested, never alerted on), so a
+deliberately-disabled integration does not generate false failures or emails.
+
 **Tenant context in a background consumer (critical — net-new).** There is no HttpContext in
 a consumer, so `HttpTenantContext.HasTenant` is `false` and RLS would return zero rows. Two
 established options: (a) generalise Identity's `AmbientTenantContext`/`IAmbientTenantSetter`
@@ -177,6 +186,11 @@ send via its own provider + template to owner **and** admins.
 - **Internal transport:** REST (codebase has no gRPC; REST is far less overhead and is
   secured with service auth). Migratable to gRPC later. *(Announce: REST over gRPC for the
   internal contact lookup — no existing gRPC infra.)*
+- **REST resilience (required):** the Notification → Identity HTTP client MUST attach
+  `AddNexConvoResilience()` (Polly retry-with-backoff + circuit breaker + timeout, per
+  Standard 8) — Identity may be briefly down or the network may glitch. On persistent
+  failure the consumer does not crash: it relies on MassTransit redelivery and logs; the
+  alert is retried later rather than lost.
 
 ### New event/command contracts — `NexConvo.Contracts/Events`
 
