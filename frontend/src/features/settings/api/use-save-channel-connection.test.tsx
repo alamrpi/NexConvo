@@ -25,6 +25,10 @@ const mockConnection: ChannelConnectionDto = {
   isActive: true,
   createdAt: '2026-01-01T00:00:00Z',
   maskedAccessToken: '●●●●7890',
+  lastTestStatus: 'Healthy',
+  lastTestedAt: '2026-01-01T00:05:00Z',
+  lastTestError: null,
+  lastTestLatencyMs: 140,
 };
 
 describe('useSaveChannelConnection', () => {
@@ -80,5 +84,35 @@ describe('useSaveChannelConnection', () => {
 
     await expect(result.current.mutateAsync(values)).rejects.toBeInstanceOf(ChannelConnectionError);
     await expect(result.current.mutateAsync(values)).rejects.toMatchObject({ code: 'generic' });
+  });
+
+  it('on 422 test-failed, maps to typed error with code test-failed', async () => {
+    server.use(
+      http.post('/api/bff/settings/channels', () =>
+        HttpResponse.json({ code: 'test-failed' }, { status: 422 }),
+      ),
+    );
+
+    const { result } = renderHook(() => useSaveChannelConnection(), { wrapper: createWrapper() });
+
+    await expect(result.current.mutateAsync(values)).rejects.toMatchObject({
+      name: 'ChannelConnectionError',
+      code: 'test-failed',
+    });
+  });
+
+  it('on 422 without test-failed code (validation failure), maps to a generic error', async () => {
+    server.use(
+      http.post('/api/bff/settings/channels', () =>
+        HttpResponse.json({ title: 'Invalid input' }, { status: 422 }),
+      ),
+    );
+
+    const { result } = renderHook(() => useSaveChannelConnection(), { wrapper: createWrapper() });
+
+    await expect(result.current.mutateAsync(values)).rejects.toMatchObject({
+      name: 'ChannelConnectionError',
+      code: 'generic',
+    });
   });
 });

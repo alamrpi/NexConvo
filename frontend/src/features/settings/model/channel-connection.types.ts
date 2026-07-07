@@ -1,3 +1,5 @@
+import type { ConnectionHealthStatus } from './connection-health.schema';
+
 export type ChannelType = 'whatsapp' | 'facebook' | 'instagram' | 'telegram' | 'web'
 export type ConnectionStatus = 'connected' | 'disconnected' | 'error'
 
@@ -11,6 +13,10 @@ export interface ChannelConnectionDto {
   isActive: boolean
   createdAt: string
   maskedAccessToken: string | null
+  lastTestStatus: ConnectionHealthStatus
+  lastTestedAt: string | null
+  lastTestError: string | null
+  lastTestLatencyMs: number | null
 }
 
 export interface SaveChannelConnectionRequest {
@@ -22,8 +28,14 @@ export interface SaveChannelConnectionRequest {
   verifyToken?: string
 }
 
-export interface TestChannelConnectionResponse {
+/**
+ * Result of `POST /api/v1/channel-connections/{id}/test` — the shared `ConnectionHealth` shape
+ * (S3/AI slices reuse the same contract). Always HTTP 200; failure is `success: false` (S15).
+ */
+export type TestChannelConnectionResponse = {
   success: boolean
-  accountName?: string
-  errorMessage?: string
+  status: ConnectionHealthStatus
+  detail?: string | null
+  errorMessage?: string | null
+  latencyMs?: number | null
 }

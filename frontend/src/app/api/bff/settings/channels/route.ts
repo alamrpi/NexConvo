@@ -30,6 +30,17 @@ export const POST = withBff(async (req, { api }) => {
     if (axios.isAxiosError(error) && error.response?.status === 409) {
       return NextResponse.json({ code: 'conflict' }, { status: 409 });
     }
+    if (axios.isAxiosError(error) && error.response?.status === 422) {
+      // Two kinds of 422 come back from the gateway: the server re-tested the connection on
+      // save and it failed (`connection-test-failed`), or FluentValidation rejected the body.
+      // Only the former should surface as the "credentials expired, test again" message —
+      // discriminate on the backend `code` so a validation failure passes its payload through.
+      const data = error.response.data as { code?: string } | undefined;
+      if (data?.code === 'connection-test-failed') {
+        return NextResponse.json({ code: 'test-failed' }, { status: 422 });
+      }
+      return NextResponse.json(error.response.data ?? { title: 'Invalid input' }, { status: 422 });
+    }
     throw error;
   }
 }, e2eChannelsPost);

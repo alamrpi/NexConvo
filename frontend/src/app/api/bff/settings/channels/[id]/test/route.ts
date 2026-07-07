@@ -28,7 +28,7 @@ export const POST = withBff(async (_req, { api }, routeCtx) => {
           )
         : 'connectionTestFailed';
 
-    const result: TestChannelConnectionResponse = { success: false, errorMessage: message };
+    const result: TestChannelConnectionResponse = { success: false, status: 'Failed', errorMessage: message };
     return NextResponse.json(result);
   }
 }, e2eChannelTest);

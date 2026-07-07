@@ -16,6 +16,10 @@ export const E2E_CHANNELS: ChannelConnectionDto[] = [
     isActive: true,
     createdAt: '2026-06-01T00:00:00Z',
     maskedAccessToken: '●●●●1234',
+    lastTestStatus: 'Healthy',
+    lastTestedAt: '2026-07-06T12:00:00Z',
+    lastTestError: null,
+    lastTestLatencyMs: 180,
   },
   {
     id: 'e2e-ch-instagram',
@@ -27,6 +31,10 @@ export const E2E_CHANNELS: ChannelConnectionDto[] = [
     isActive: true,
     createdAt: '2026-06-01T00:00:00Z',
     maskedAccessToken: '●●●●5678',
+    lastTestStatus: 'Failed',
+    lastTestedAt: '2026-07-06T09:00:00Z',
+    lastTestError: 'Access token expired. Reconnect to restore messaging.',
+    lastTestLatencyMs: null,
   },
   {
     id: 'e2e-ch-web',
@@ -38,6 +46,10 @@ export const E2E_CHANNELS: ChannelConnectionDto[] = [
     isActive: true,
     createdAt: '2026-06-01T00:00:00Z',
     maskedAccessToken: null,
+    lastTestStatus: 'Untested',
+    lastTestedAt: null,
+    lastTestError: null,
+    lastTestLatencyMs: null,
   },
 ];
 
@@ -51,13 +63,17 @@ export const E2E_SAVED_CHANNEL: ChannelConnectionDto = {
   isActive: true,
   createdAt: '2026-06-01T00:00:00Z',
   maskedAccessToken: '●●●●9999',
+  lastTestStatus: 'Healthy',
+  lastTestedAt: '2026-06-01T00:00:00Z',
+  lastTestError: null,
+  lastTestLatencyMs: 150,
 };
 
 export const e2eChannelsGet = () => NextResponse.json(E2E_CHANNELS);
 export const e2eChannelsPost = () => NextResponse.json(E2E_SAVED_CHANNEL, { status: 201 });
 export const e2eChannelDelete = () => new NextResponse(null, { status: 204 });
 export const e2eChannelTest = () =>
-  NextResponse.json({ success: true, accountName: 'Test Account (@bot)' });
+  NextResponse.json({ success: true, status: 'Healthy', detail: 'Test Account (@bot)' });
 
 // ── Knowledge Base ─────────────────────────────────────────────────────────────
 

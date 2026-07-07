@@ -1066,6 +1066,8 @@
       "disconnectConfirmTitle": "Disconnect {name}?",
       "disconnectConfirmDescription": "This will stop receiving new conversations from this channel.",
       "cancel": "Cancel",
+      "lastTested": "Last tested {time}",
+      "lastTestedNever": "Never tested",
       "status": {
         "connected": "Connected",
         "disconnected": "Not connected",
@@ -1163,6 +1165,7 @@
         "appSecretRequired": "App secret is required.",
         "deleteError": "Couldn’t disconnect the channel. Please try again.",
         "conflict": "Couldn’t save — please reload and try again.",
+        "credentialsExpired": "These credentials no longer work. Test the connection again before saving.",
         "generic": "Something went wrong. Please try again."
       }
     },

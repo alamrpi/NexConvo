@@ -35,6 +35,7 @@ import { useChannelConnections } from '@/features/settings/api/use-channel-conne
 import { useSaveChannelConnection, ChannelConnectionError } from '@/features/settings/api/use-save-channel-connection';
 import { useDeleteChannelConnection } from '@/features/settings/api/use-delete-channel-connection';
 import { useTestChannelConnection } from '@/features/settings/api/use-test-channel-connection';
+import { useRelativeTime } from '@/features/settings/components/health-badge';
 
 // ── Static channel metadata (no server data — these are always the same 5) ──────
 
@@ -382,7 +383,7 @@ function ConnectDrawer({ channel, channelMeta, existingConnection, onClose }: Co
       const result = await testConn.mutateAsync(savedConnectionId);
       if (result.success) {
         setVerifyState('success');
-        setVerifyAccountName(result.accountName);
+        setVerifyAccountName(result.detail ?? undefined);
       } else {
         setVerifyState('failed');
         setVerifyError(result.errorMessage ?? tErrors('generic'));
@@ -396,12 +397,13 @@ function ConnectDrawer({ channel, channelMeta, existingConnection, onClose }: Co
   const onSubmitCredentials = handleSubmit(async (values) => {
     const result = await save.mutateAsync(values).catch(() => null);
     if (result) {
-      setSavedConnectionId((result as ChannelConnectionDto).id);
+      setSavedConnectionId(result.id);
       setStep(3);
     }
   });
 
   const isConflict = save.error instanceof ChannelConnectionError && save.error.code === 'conflict';
+  const isTestFailed = save.error instanceof ChannelConnectionError && save.error.code === 'test-failed';
 
   const titleKey = isConfigureMode ? 'configureTitle' : 'connectTitle';
   const channelName = t(`channels.${channel}`);
@@ -475,7 +477,11 @@ function ConnectDrawer({ channel, channelMeta, existingConnection, onClose }: Co
 
               {save.isError && (
                 <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {isConflict ? tErrors('conflict') : tErrors('generic')}
+                  {isConflict
+                    ? tErrors('conflict')
+                    : isTestFailed
+                      ? tErrors('credentialsExpired')
+                      : tErrors('generic')}
                 </p>
               )}
 
@@ -778,6 +784,8 @@ function ChannelRow({
   const isWeb = meta.channel === 'web';
 
   const status: ConnectionStatus = connection?.status ?? 'disconnected';
+  const relativeTested = useRelativeTime(connection?.lastTestedAt ?? null);
+  const lastTestedLabel = relativeTested ? t('lastTested', { time: relativeTested }) : t('lastTestedNever');
 
   function handleActionClick() {
     if (isWeb && connection?.status === 'connected') {
@@ -817,6 +825,7 @@ function ChannelRow({
               ? connection.displayName
               : t(`descriptions.${meta.channel}`)}
           </p>
+          {connection && <p className="text-xs text-muted-foreground">{lastTestedLabel}</p>}
         </div>
 
         {/* Status badge (hidden on smallest screens) */}

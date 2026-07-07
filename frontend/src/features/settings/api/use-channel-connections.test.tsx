@@ -16,6 +16,10 @@ const mockConnection: ChannelConnectionDto = {
   isActive: true,
   createdAt: '2026-01-01T00:00:00Z',
   maskedAccessToken: '●●●●7890',
+  lastTestStatus: 'Healthy',
+  lastTestedAt: '2026-01-01T00:05:00Z',
+  lastTestError: null,
+  lastTestLatencyMs: 140,
 };
 
 describe('useChannelConnections', () => {
