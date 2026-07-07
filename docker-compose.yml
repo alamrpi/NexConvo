@@ -237,9 +237,17 @@ services:
       Seq__Url: http://seq
       Jwt__Authority: http://identity:8080
       Jwt__Audience: nexconvo-api
+      ConnectionStrings__AutomationDb: "Host=postgres;Port=5432;Database=nexconvo_automation;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__AutomationDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_automation;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      HealthSweep__Cron: "0 */6 * * *"
     ports:
       - "5228:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       identity:
         condition: service_started
       seq:
