@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../NexConvo.Notification.Domain/NexConvo.Notification.Domain.csproj" />
+    <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="../../../shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>
