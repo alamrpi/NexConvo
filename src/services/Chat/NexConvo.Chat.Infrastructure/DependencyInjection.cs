@@ -79,7 +79,13 @@ public static class DependencyInjection
             {
                 var rmq = configuration.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@localhost:5672";
                 cfg.Host(rmq);
-                cfg.ConfigureEndpoints(context);
+
+                // Prefix every endpoint with the service name. Without this, MassTransit's default
+                // convention names a queue after the MESSAGE type — so CheckIntegrationHealthCommand
+                // (a fan-out trigger BOTH Chat and Integrations must receive) would land both
+                // services' consumers on the SAME queue as competing consumers, delivering each
+                // publish to only one of them instead of both.
+                cfg.ConfigureEndpoints(context, new KebabCaseEndpointNameFormatter("chat", false));
             });
         });
 
