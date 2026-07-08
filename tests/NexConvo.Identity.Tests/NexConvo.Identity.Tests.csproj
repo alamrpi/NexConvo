@@ -10,6 +10,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="MockQueryable.NSubstitute" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
@@ -18,5 +19,6 @@
     <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Application/NexConvo.Identity.Application.csproj" />
     <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Domain/NexConvo.Identity.Domain.csproj" />
     <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Infrastructure/NexConvo.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/services/Identity/NexConvo.Identity.Api/NexConvo.Identity.Api.csproj" />
   </ItemGroup>
 </Project>

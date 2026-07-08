@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Observability;
+using NexConvo.Identity.Api.Middleware;
 using NexConvo.Identity.Application;
 using NexConvo.Identity.Infrastructure;
 using NexConvo.Identity.Infrastructure.Persistence;
@@ -79,6 +80,7 @@ await IdentityDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Envir
 app.UseNexConvoExceptionHandling();
 app.UseNexConvoSwagger();
 app.UseNexConvoRequestLogging();
+app.UseInternalApiKey(); // shared-secret guard for /internal/*; runs before the user-JWT pipeline
 app.UseAuthentication();
 app.UseRequestCorrelation(); // after auth so tenant/user claims enrich the logs
 app.UseAuthorization();
