@@ -11,17 +11,25 @@ public sealed record RecipientDto(string Name, string Email);
 /// <summary>
 /// Resolves a tenant's active Owner+Admin contacts. Called ONLY via the internal, shared-secret
 /// guarded endpoint (<see cref="Api.Controllers.InternalController"/>) — the caller (Notification
-/// service) is not logged into the target tenant, so <see cref="TenantId"/> is applied as an
-/// EXPLICIT filter rather than relying on RLS (mirrors the Slice-5 owner-connection sweep).
+/// service) is not logged into the target tenant, so there is no JWT/HttpContext to seed
+/// <c>app.current_tenant_id</c>. Users/UserRoles/Roles run under FORCE ROW LEVEL SECURITY, so without
+/// explicitly setting the ambient tenant, the RLS predicate evaluates against a NULL setting and
+/// admits zero rows regardless of the in-app <see cref="TenantId"/> filter. The handler therefore
+/// calls <see cref="IAmbientTenantSetter.SetTenant"/> first (same pattern as Login/Refresh) and keeps
+/// the explicit TenantId filter as defense in depth (mirrors the Slice-5 owner-connection sweep).
 /// </summary>
 public sealed record GetHealthAlertRecipientsQuery(Guid TenantId) : IRequest<IReadOnlyList<RecipientDto>>;
 
-public sealed class GetHealthAlertRecipientsQueryHandler(IIdentityDbContext db)
+public sealed class GetHealthAlertRecipientsQueryHandler(IIdentityDbContext db, IAmbientTenantSetter tenantSetter)
     : IRequestHandler<GetHealthAlertRecipientsQuery, IReadOnlyList<RecipientDto>>
 {
     public async Task<IReadOnlyList<RecipientDto>> Handle(
         GetHealthAlertRecipientsQuery query, CancellationToken cancellationToken)
     {
+        // Must run before any DB access — there's no JWT here, so this is the only thing that makes
+        // the RLS interceptor emit `set_config(app.current_tenant_id, ...)` on the connection.
+        tenantSetter.SetTenant(query.TenantId);
+
         // Pin to the seeded system roles — a tenant could rename/recreate a custom role "Owner"/"Admin".
         var alertRoleIds = await db.Roles
             .Where(r => r.IsSystem && (r.Name == "Owner" || r.Name == "Admin") && r.TenantId == query.TenantId)

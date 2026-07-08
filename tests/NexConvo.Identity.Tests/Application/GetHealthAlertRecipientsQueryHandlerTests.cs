@@ -18,6 +18,7 @@ namespace NexConvo.Identity.Tests.Application;
 public sealed class GetHealthAlertRecipientsQueryHandlerTests
 {
     private readonly IIdentityDbContext _db = Substitute.For<IIdentityDbContext>();
+    private readonly IAmbientTenantSetter _tenantSetter = Substitute.For<IAmbientTenantSetter>();
     private readonly Guid _tenantId = Guid.NewGuid();
     private readonly Guid _otherTenantId = Guid.NewGuid();
 
@@ -55,7 +56,7 @@ public sealed class GetHealthAlertRecipientsQueryHandlerTests
         _db.UserRoles.Returns(userRolesDbSet);
         _db.Users.Returns(usersDbSet);
 
-        var handler = new GetHealthAlertRecipientsQueryHandler(_db);
+        var handler = new GetHealthAlertRecipientsQueryHandler(_db, _tenantSetter);
 
         var result = await handler.Handle(new GetHealthAlertRecipientsQuery(_tenantId), CancellationToken.None);
 
@@ -64,6 +65,7 @@ public sealed class GetHealthAlertRecipientsQueryHandlerTests
             new RecipientDto("Jane Owner", "owner@acme.com"),
             new RecipientDto("Alan Admin", "admin@acme.com"),
         ]);
+        _tenantSetter.Received(1).SetTenant(_tenantId);
     }
 
     [Fact]
@@ -87,11 +89,12 @@ public sealed class GetHealthAlertRecipientsQueryHandlerTests
         _db.UserRoles.Returns(userRolesDbSet);
         _db.Users.Returns(usersDbSet);
 
-        var handler = new GetHealthAlertRecipientsQueryHandler(_db);
+        var handler = new GetHealthAlertRecipientsQueryHandler(_db, _tenantSetter);
 
         var result = await handler.Handle(new GetHealthAlertRecipientsQuery(_tenantId), CancellationToken.None);
 
         result.Should().ContainSingle().Which.Should().Be(new RecipientDto("Dual Role", "dual@acme.com"));
+        _tenantSetter.Received(1).SetTenant(_tenantId);
     }
 
     [Fact]
@@ -106,10 +109,11 @@ public sealed class GetHealthAlertRecipientsQueryHandlerTests
         _db.UserRoles.Returns(userRolesDbSet);
         _db.Users.Returns(usersDbSet);
 
-        var handler = new GetHealthAlertRecipientsQueryHandler(_db);
+        var handler = new GetHealthAlertRecipientsQueryHandler(_db, _tenantSetter);
 
         var result = await handler.Handle(new GetHealthAlertRecipientsQuery(_tenantId), CancellationToken.None);
 
         result.Should().BeEmpty();
+        _tenantSetter.Received(1).SetTenant(_tenantId);
     }
 }
