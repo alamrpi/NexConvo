@@ -131,6 +131,9 @@ services:
       # Platform-default email sender → Mailpit (captured at http://localhost:8025).
       Email__Default__Smtp__Host: mailpit
       Email__Default__Smtp__Port: "1025"
+      # Shared secret guarding /internal/* (health-alert-recipients) — same value as the
+      # notification service's Internal__ApiKey. Env-only (Standard 13).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5047:8080"
     depends_on:
@@ -272,6 +275,41 @@ services:
       - "5018:8080"
     depends_on:
       identity:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  notification:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Notification/NexConvo.Notification.Worker/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      # Identity's internal (non-gateway, shared-secret-guarded) endpoint for owner/admin lookup.
+      Identity__BaseUrl: http://identity:8080
+      # Same value as Identity's Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
+      # Notification is the sole holder of the alert email-provider secret. Dev → Mailpit.
+      Email__Default__Provider: Smtp
+      Email__Default__FromAddress: alerts@nexconvo.local
+      Email__Default__FromName: NexConvo Alerts
+      Email__Default__Smtp__Host: mailpit
+      Email__Default__Smtp__Port: "1025"
+      Email__Default__Resend__ApiKey: "${NOTIFICATION_RESEND_API_KEY:-}"
+    ports:
+      - "5233:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      mailpit:
         condition: service_started
       seq:
         condition: service_started
