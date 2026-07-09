@@ -147,7 +147,7 @@ export function S3ConfigForm() {
 
   if (isLoading) return <FormSkeleton />;
 
-  if (isError || !data) {
+  if (isError) {
     return (
       <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
         {t('loadError')}
@@ -197,7 +197,7 @@ export function S3ConfigForm() {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Card>
         <CardContent className="space-y-5 p-5">
-          <S3HealthBadge config={data} />
+          {data && <S3HealthBadge config={data} />}
 
           {update.isError && (
             <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
