@@ -19,8 +19,15 @@ public sealed class SaveChannelConnectionCommandValidator : AbstractValidator<Sa
                 .MaximumLength(200);
         });
 
+        // Web widget: no external provider to authenticate against, so no token is collected —
+        // mirrors the ExternalAccountId exemption above. All other channels require one.
+        When(x => x.Channel != ChatChannel.Web, () =>
+        {
+            RuleFor(x => x.AccessToken)
+                .NotEmpty().WithMessage("Access token is required.");
+        });
+
         RuleFor(x => x.AccessToken)
-            .NotEmpty().WithMessage("Access token is required.")
             .MaximumLength(2000);
 
         RuleFor(x => x.AccountName)
