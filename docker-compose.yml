@@ -54,6 +54,22 @@ services:
     ports:
       - "5341:80"
 
+  # Self-hosted embedding server (BGE-M3, 1024-dim) for the RAG knowledge base — OpenAI-compatible
+  # /embeddings API. First start downloads the model weights into the cached volume (a few minutes).
+  # CPU build: the default (GPU/CUDA) image is 4.5 GB and unnecessary for local dev; -cpu is 714 MB.
+  bge-m3:
+    image: michaelf34/infinity:0.0.77-cpu
+    command: v2 --model-id BAAI/bge-m3 --port 7997
+    ports:
+      - "7997:7997"
+    volumes:
+      - bge_model_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7997/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
   # pgAdmin — PostgreSQL GUI (http://localhost:5050). Login: admin@nexconvo.local / admin
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -316,3 +332,4 @@ services:
 
 volumes:
   postgres_data:
+  bge_model_cache:
