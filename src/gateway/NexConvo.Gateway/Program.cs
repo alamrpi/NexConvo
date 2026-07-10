@@ -65,6 +65,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger-json/voice/swagger.json", "Voice API");
     c.SwaggerEndpoint("/swagger-json/aiassistant/swagger.json", "AI Assistant API");
     c.SwaggerEndpoint("/swagger-json/integrations/swagger.json", "Integrations API");
+    c.SwaggerEndpoint("/swagger-json/knowledge/swagger.json", "Knowledge API");
     c.SwaggerEndpoint("/swagger-json/automation/swagger.json", "Automation API");
     c.RoutePrefix = "swagger";
 });

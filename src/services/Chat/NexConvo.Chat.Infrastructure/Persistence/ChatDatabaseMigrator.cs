@@ -19,7 +19,7 @@ public static class ChatDatabaseMigrator
         logger.LogInformation("Applying Chat database migrations...");
 
         var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>();
-        optionsBuilder.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
+        optionsBuilder.UseNpgsql(connectionString);
 
         using var dbContext = new ChatDbContext(optionsBuilder.Options, new NullTenantContext());
         await dbContext.Database.MigrateAsync();

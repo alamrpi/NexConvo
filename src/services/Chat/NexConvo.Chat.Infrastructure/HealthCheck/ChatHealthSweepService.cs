@@ -26,8 +26,6 @@ namespace NexConvo.Chat.Infrastructure.HealthCheck;
 /// RLS interceptor inert — it never emits set_config without a tenant)
 /// — mirroring <see cref="ChatDatabaseMigrator"/>, which does the same bare-ctor construction for
 /// migrations. The dev "nexconvo" Postgres role is a superuser, so it bypasses RLS transparently.
-/// The Chat DbContext uses pgvector, so the owner connection's Npgsql options must also call
-/// <c>UseVector()</c> or model building will fail.
 ///
 /// PROD CAVEAT: same as the Integrations sweep — a non-superuser owner role will NOT bypass RLS
 /// in production. This is a known gap to close before deploying the sweep to prod.
@@ -74,7 +72,7 @@ public sealed class ChatHealthSweepService : IChatHealthSweepService
                              ?? configuration.GetConnectionString("ChatDb");
 
         var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>();
-        optionsBuilder.UseNpgsql(connectionString, npgsql => npgsql.UseVector());
+        optionsBuilder.UseNpgsql(connectionString);
 
         // Bare ctor with a NullTenantContext — the RlsConnectionInterceptor is attached by
         // ChatDbContext.OnConfiguring but stays inert because NullTenantContext.HasTenant is false

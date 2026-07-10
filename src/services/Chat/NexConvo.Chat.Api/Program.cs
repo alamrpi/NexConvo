@@ -1,5 +1,3 @@
-using Hangfire;
-using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using NexConvo.BuildingBlocks.Infrastructure.Web;
@@ -36,7 +34,6 @@ static Action<AuthorizationPolicyBuilder> RequirePermission(string key) => polic
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("settings:manage",   RequirePermission("settings:manage"));
-    options.AddPolicy("knowledge:manage",  RequirePermission("knowledge:manage"));
 });
 
 builder.Services.AddControllers()
@@ -57,10 +54,6 @@ app.UseAuthorization();
 
 app.UseNexConvoSwagger();
 app.UseNexConvoExceptionHandling();
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = Array.Empty<IDashboardAuthorizationFilter>(),
-});
 app.MapControllers();
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

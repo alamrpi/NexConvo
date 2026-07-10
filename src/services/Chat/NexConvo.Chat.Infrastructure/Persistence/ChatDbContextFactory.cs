@@ -13,9 +13,7 @@ internal sealed class ChatDbContextFactory : IDesignTimeDbContextFactory<ChatDbC
     public ChatDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
-            .UseNpgsql(
-                "Host=localhost;Database=nexconvo_chat;Username=postgres;Password=postgres",
-                npgsql => npgsql.UseVector())
+            .UseNpgsql("Host=localhost;Database=nexconvo_chat;Username=postgres;Password=postgres")
             .Options;
 
         return new ChatDbContext(options, new NullTenantContext());

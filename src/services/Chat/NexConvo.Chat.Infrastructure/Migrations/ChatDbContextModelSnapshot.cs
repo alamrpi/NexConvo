@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexConvo.Chat.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Pgvector;
 
 #nullable disable
 
@@ -156,122 +155,6 @@ namespace NexConvo.Chat.Infrastructure.Migrations
                     b.ToTable("chat_audit_logs", (string)null);
                 });
 
-            modelBuilder.Entity("NexConvo.Chat.Domain.Entities.KnowledgeChunk", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("DocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("knowledge_document_id");
-
-                    b.Property<int>("DocumentVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("document_version");
-
-                    b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(1536)")
-                        .HasColumnName("embedding");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentId");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("idx_knowledge_chunks_tenant");
-
-                    b.HasIndex("TenantId", "DocumentId")
-                        .HasDatabaseName("idx_knowledge_chunks_document");
-
-                    b.ToTable("knowledge_chunks", (string)null);
-                });
-
-            modelBuilder.Entity("NexConvo.Chat.Domain.Entities.KnowledgeDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ContentHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("content_hash");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_user_id");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("original_file_name");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("is_active");
-
-                    b.Property<short>("Status")
-                        .HasColumnType("smallint")
-                        .HasColumnName("ingestion_status");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("idx_knowledge_documents_tenant");
-
-                    b.HasIndex("TenantId", "ContentHash")
-                        .IsUnique()
-                        .HasDatabaseName("idx_knowledge_documents_content_hash");
-
-                    b.ToTable("knowledge_documents", (string)null);
-                });
-
             modelBuilder.Entity("NexConvo.Chat.Domain.Entities.WorkspaceChatSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -366,16 +249,6 @@ namespace NexConvo.Chat.Infrastructure.Migrations
                         .HasDatabaseName("idx_workspace_chat_settings_tenant_id");
 
                     b.ToTable("workspace_chat_settings", (string)null);
-                });
-
-            modelBuilder.Entity("NexConvo.Chat.Domain.Entities.KnowledgeChunk", b =>
-                {
-                    b.HasOne("NexConvo.Chat.Domain.Entities.KnowledgeDocument", null)
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("knowledge_chunks_knowledge_document_id_fkey");
                 });
 #pragma warning restore 612, 618
         }

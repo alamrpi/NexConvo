@@ -116,6 +116,7 @@ services:
       ReverseProxy__Clusters__identity-cluster__Destinations__primary__Address: http://identity:8080
       ReverseProxy__Clusters__integrations-cluster__Destinations__primary__Address: http://integrations:8080
       ReverseProxy__Clusters__chat-cluster__Destinations__primary__Address: http://chat:8080
+      ReverseProxy__Clusters__knowledge-cluster__Destinations__primary__Address: http://knowledge:8080
     ports:
       - "5055:8080"
     depends_on:
@@ -205,6 +206,37 @@ services:
       identity:
         condition: service_started
       seq:
+        condition: service_started
+
+  knowledge:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Knowledge/NexConvo.Knowledge.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+      ConnectionStrings__KnowledgeDb: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__KnowledgeDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      # Slice 1 embedding providers — BGE-M3 (self-hosted Infinity container) is the default.
+      EMBEDDING__PROVIDER: BgeM3
+      EMBEDDING__BGEM3__BASEURL: http://bge-m3:7997
+    ports:
+      - "5019:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      seq:
+        condition: service_started
+      bge-m3:
         condition: service_started
 
   voice:

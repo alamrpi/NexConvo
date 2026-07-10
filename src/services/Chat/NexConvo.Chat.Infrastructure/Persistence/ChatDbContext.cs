@@ -8,8 +8,7 @@ namespace NexConvo.Chat.Infrastructure.Persistence;
 
 /// <summary>
 /// Chat service's own DbContext (database-per-service: skill Standard 5).
-/// Applies RLS interceptor for tenant isolation (Standard 6) and UseVector()
-/// for pgvector support (CHATBOT-ARCHITECTURE.md §12).
+/// Applies RLS interceptor for tenant isolation (Standard 6).
 /// </summary>
 public sealed class ChatDbContext(
     DbContextOptions<ChatDbContext> options,
@@ -18,8 +17,6 @@ public sealed class ChatDbContext(
 {
     public DbSet<ChannelConnection> ChannelConnections => Set<ChannelConnection>();
     public DbSet<WorkspaceChatSettings> WorkspaceChatSettings => Set<WorkspaceChatSettings>();
-    public DbSet<KnowledgeDocument> KnowledgeDocuments => Set<KnowledgeDocument>();
-    public DbSet<KnowledgeChunk> KnowledgeChunks => Set<KnowledgeChunk>();
     public DbSet<ChatAuditLog> ChatAuditLogs => Set<ChatAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
