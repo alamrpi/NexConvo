@@ -13,11 +13,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
-    <PackageReference Include="Testcontainers.PostgreSql" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+
   </ItemGroup>
 
   <ItemGroup>
@@ -25,8 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Infrastructure\NexConvo.Knowledge.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Application\NexConvo.Knowledge.Application.csproj" />
     <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Api\NexConvo.Knowledge.Api.csproj" />
   </ItemGroup>
 

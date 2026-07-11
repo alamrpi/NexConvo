@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Domain\NexConvo.Knowledge.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Application\NexConvo.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Ai\NexConvo.BuildingBlocks.Ai.csproj" />
   </ItemGroup>
 
 </Project>

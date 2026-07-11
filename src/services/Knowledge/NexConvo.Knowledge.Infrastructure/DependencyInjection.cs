@@ -53,6 +53,7 @@ public static class DependencyInjection
 
         services.AddScoped<IKnowledgeIngestionJobRunner, KnowledgeIngestionJob>();
         services.AddScoped<IKnowledgeChunkWriter, KnowledgeChunkWriter>();
+        services.AddScoped<IKnowledgeChunkRepository, KnowledgeChunkRepository>();
         services.AddSingleton<IChunker, BengaliAwareChunker>();
 
         // Embedding provider used by the ingestion job to embed chunks (BGE-M3 default, Cohere

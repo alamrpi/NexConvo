@@ -171,6 +171,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Knowledge.Integrat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Knowledge.Infrastructure.Tests", "tests\services\Knowledge\NexConvo.Knowledge.Infrastructure.Tests\NexConvo.Knowledge.Infrastructure.Tests.csproj", "{BBC1624B-478C-44B0-8C8E-E9F9FCD9F4D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Knowledge.Api.UnitTests", "tests\services\Knowledge\NexConvo.Knowledge.Api.UnitTests\NexConvo.Knowledge.Api.UnitTests.csproj", "{67CF0A64-02AB-459D-9352-1B55A43D198A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -937,6 +939,18 @@ Global
 		{BBC1624B-478C-44B0-8C8E-E9F9FCD9F4D0}.Release|x64.Build.0 = Release|Any CPU
 		{BBC1624B-478C-44B0-8C8E-E9F9FCD9F4D0}.Release|x86.ActiveCfg = Release|Any CPU
 		{BBC1624B-478C-44B0-8C8E-E9F9FCD9F4D0}.Release|x86.Build.0 = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|x64.Build.0 = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Debug|x86.Build.0 = Debug|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|x64.ActiveCfg = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|x64.Build.0 = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|x86.ActiveCfg = Release|Any CPU
+		{67CF0A64-02AB-459D-9352-1B55A43D198A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1023,5 +1037,6 @@ Global
 		{8F8F1677-0622-4FEB-979E-EE0E1BD95F30} = {D6A22CD2-7DB2-4BDA-939C-61336B0295D5}
 		{CEF81C91-E85F-4717-9AF6-E496F50F6B0F} = {D6A22CD2-7DB2-4BDA-939C-61336B0295D5}
 		{BBC1624B-478C-44B0-8C8E-E9F9FCD9F4D0} = {D6A22CD2-7DB2-4BDA-939C-61336B0295D5}
+		{67CF0A64-02AB-459D-9352-1B55A43D198A} = {D6A22CD2-7DB2-4BDA-939C-61336B0295D5}
 	EndGlobalSection
 EndGlobal

@@ -227,6 +227,9 @@ services:
       # Slice 1 embedding providers — BGE-M3 (self-hosted Infinity container) is the default.
       EMBEDDING__PROVIDER: BgeM3
       EMBEDDING__BGEM3__BASEURL: http://bge-m3:7997
+      # Guards the internal-only KnowledgeRetrieval gRPC service (Chat/Voice callers).
+      # Same value as Identity's Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5019:8080"
     depends_on:

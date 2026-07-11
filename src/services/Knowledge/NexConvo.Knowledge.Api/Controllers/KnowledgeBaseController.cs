@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexConvo.Knowledge.Api.Extensions;
 using NexConvo.Knowledge.Application.Features.KnowledgeBase.Commands;
+using NexConvo.Knowledge.Application.Features.KnowledgeBase.Queries.GetKnowledgeDocumentById;
+using NexConvo.Knowledge.Application.Features.KnowledgeBase.Queries.GetKnowledgeDocumentsPaged;
 using NexConvo.Knowledge.Domain.Enums;
 using System.Security.Cryptography;
 using System.Text;
@@ -24,12 +26,16 @@ public sealed class KnowledgeBaseController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public IActionResult List(
+    public async Task<IActionResult> List(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] DocumentStatus? status = null,
+        [FromQuery] SourceType? sourceType = null,
+        CancellationToken cancellationToken = default)
     {
-        // Slice 3: full query handler with filtering and pagination will be implemented here.
-        return Ok(new { page, pageSize, items = Array.Empty<object>(), total = 0 });
+        var result = await sender.Send(
+            new GetKnowledgeDocumentsPagedQuery(page, pageSize, status, sourceType), cancellationToken);
+        return result.ToActionResult();
     }
 
     /// <summary>Returns a single knowledge document with chunk preview.</summary>
@@ -38,10 +44,15 @@ public sealed class KnowledgeBaseController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public IActionResult GetById(Guid id)
+    public async Task<IActionResult> GetById(
+        Guid id,
+        [FromQuery] int chunkPage = 1,
+        [FromQuery] int chunkPageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        // Slice 3: full query handler will be implemented here.
-        return NotFound();
+        var result = await sender.Send(
+            new GetKnowledgeDocumentByIdQuery(id, chunkPage, chunkPageSize), cancellationToken);
+        return result.ToActionResult();
     }
 
     /// <summary>

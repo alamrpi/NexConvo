@@ -2,11 +2,13 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using NexConvo.BuildingBlocks.Ai;
 using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Observability;
+using NexConvo.Knowledge.Api.Grpc;
 using NexConvo.Knowledge.Application;
 using NexConvo.Knowledge.Infrastructure;
 using NexConvo.Knowledge.Infrastructure.Persistence;
@@ -20,10 +22,23 @@ builder.Host.UseNexConvoSerilog(serviceName);
 builder.Services.AddNexConvoOpenTelemetry(builder.Configuration, serviceName);
 builder.Services.AddNexConvoTenancy();
 
+// The gRPC retrieval path has no HttpContext, so the tenant travels on GrpcCallContext instead
+// of the JWT claim. CompositeTenantContext replaces the HttpTenantContext registration
+// AddNexConvoTenancy just added — one ITenantContext resolves correctly for both call kinds, so
+// every existing handler/repository/DbContext interceptor keeps injecting ITenantContext unchanged.
+builder.Services.AddScoped<GrpcCallContext>();
+builder.Services.Replace(ServiceDescriptor.Scoped<ITenantContext, CompositeTenantContext>());
+
 builder.Services.AddKnowledgeApplication();
 builder.Services.AddKnowledgeInfrastructure(builder.Configuration);
 // Slice 1 embedding providers (BGE-M3 / Cohere) — the Knowledge service is the embedder.
 builder.Services.AddEmbeddingProviders(builder.Configuration);
+
+// First gRPC contract in the repo (docs/ARCHITECTURE.md §8) — internal-only retrieval seam shared
+// by Chat/Voice. Not routed through the public YARP gateway (skill Standard 21 doesn't apply:
+// this is deliberately NOT a gateway-exposed route). Authenticated by a shared key, not a JWT
+// policy (skill Standard 12) — see InternalServiceAuthInterceptor for the written reason.
+builder.Services.AddGrpc(options => options.Interceptors.Add<InternalServiceAuthInterceptor>());
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -79,6 +94,11 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.MapHealthChecks("/health/live").AllowAnonymous();
 app.MapHealthChecks("/health/ready").AllowAnonymous();
+
+// Internal-only: exempted from the HTTP JWT FallbackPolicy (no JWT exists between services) —
+// InternalServiceAuthInterceptor is this endpoint's actual AuthN gate (skill Standard 12).
+// Never routed through YARP; only reachable service-to-service inside the cluster network.
+app.MapGrpcService<KnowledgeRetrievalGrpcService>().AllowAnonymous();
 
 await app.RunAsync();
 
