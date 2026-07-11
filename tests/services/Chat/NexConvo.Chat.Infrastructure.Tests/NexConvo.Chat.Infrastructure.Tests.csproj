@@ -17,6 +17,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="MockQueryable.NSubstitute" />
     <PackageReference Include="MassTransit.Abstractions" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
 
   <ItemGroup>

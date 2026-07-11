@@ -18,6 +18,9 @@ public sealed class ChatDbContext(
     public DbSet<ChannelConnection> ChannelConnections => Set<ChannelConnection>();
     public DbSet<WorkspaceChatSettings> WorkspaceChatSettings => Set<WorkspaceChatSettings>();
     public DbSet<ChatAuditLog> ChatAuditLogs => Set<ChatAuditLog>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<Escalation> Escalations => Set<Escalation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
