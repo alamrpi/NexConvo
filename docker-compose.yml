@@ -222,6 +222,8 @@ services:
       ConnectionStrings__KnowledgeDb: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
       ConnectionStrings__KnowledgeDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
       ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      # Caches the Integrations-owned S3 config (Standard 5 — never queried cross-service directly).
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
       # Slice 1 embedding providers — BGE-M3 (self-hosted Infinity container) is the default.
       EMBEDDING__PROVIDER: BgeM3
       EMBEDDING__BGEM3__BASEURL: http://bge-m3:7997
@@ -237,6 +239,8 @@ services:
       seq:
         condition: service_started
       bge-m3:
+        condition: service_started
+      redis:
         condition: service_started
 
   voice:

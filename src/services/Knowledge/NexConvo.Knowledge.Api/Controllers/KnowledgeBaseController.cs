@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexConvo.Knowledge.Api.Extensions;
 using NexConvo.Knowledge.Application.Features.KnowledgeBase.Commands;
+using NexConvo.Knowledge.Domain.Enums;
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace NexConvo.Knowledge.Api.Controllers;
 
@@ -42,8 +45,12 @@ public sealed class KnowledgeBaseController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    /// Uploads a knowledge document for async ingestion.
-    /// Accepts multipart/form-data file uploads; computes SHA-256 hash for deduplication.
+    /// Uploads a knowledge document for async ingestion. Accepts multipart/form-data carrying
+    /// exactly one of four source shapes (File/Url/Text/Faq) selected by <see cref="UploadDocumentFormRequest.SourceType"/>.
+    /// The server computes the SHA-256 content hash itself (never trusts a client-supplied hash)
+    /// and dispatches a single <see cref="UploadKnowledgeDocumentCommand"/> — all source-specific
+    /// validation and persistence lives in the Application layer; this controller only maps the
+    /// HTTP request and dispatches (Standard 1).
     /// Returns 202 Accepted with the document ID immediately; ingestion runs in the background.
     /// </summary>
     [HttpPost]
@@ -51,28 +58,76 @@ public sealed class KnowledgeBaseController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload(
         [FromForm] UploadDocumentFormRequest formRequest,
         CancellationToken cancellationToken = default)
     {
-        if (formRequest.File is null)
-            return UnprocessableEntity("A file is required.");
-
         var actorUserId = GetActorUserId();
 
-        using var ms = new MemoryStream();
-        await formRequest.File.CopyToAsync(ms, cancellationToken);
-        var fileBytes = ms.ToArray();
-        var contentHash = Convert.ToHexString(SHA256.HashData(fileBytes)).ToLowerInvariant();
+        Stream? fileStream = null;
+        string? fileName = null;
+        string contentHash;
+        IReadOnlyList<FaqPair>? faqPairs = null;
 
-        var command = new UploadKnowledgeDocumentCommand(
-            FileName: formRequest.File.FileName,
-            ContentHash: contentHash,
-            ActorUserId: actorUserId);
+        switch (formRequest.SourceType)
+        {
+            case SourceType.File:
+                if (formRequest.File is null)
+                    return UnprocessableEntity("A file is required for a File upload.");
 
-        var result = await sender.Send(command, cancellationToken);
-        return result.ToAcceptedResult(id => Url.Action(nameof(GetById), new { id })!);
+                var ms = new MemoryStream();
+                await formRequest.File.CopyToAsync(ms, cancellationToken);
+                ms.Position = 0;
+                contentHash = Convert.ToHexString(SHA256.HashData(ms.ToArray())).ToLowerInvariant();
+                fileStream = ms;
+                fileName = formRequest.File.FileName;
+                break;
+
+            case SourceType.Url:
+                contentHash = ComputeHash(formRequest.SourceUrl ?? string.Empty);
+                break;
+
+            case SourceType.Text:
+                contentHash = ComputeHash(formRequest.RawText ?? string.Empty);
+                break;
+
+            case SourceType.Faq:
+                faqPairs = ParseFaqPairs(formRequest.FaqPairsJson);
+                contentHash = ComputeHash(string.Join(
+                    "\n\n", faqPairs.Select(p => $"Q: {p.Question}\nA: {p.Answer}")));
+                break;
+
+            default:
+                return UnprocessableEntity($"Unsupported source type '{formRequest.SourceType}'.");
+        }
+
+        try
+        {
+            var title = string.IsNullOrWhiteSpace(formRequest.Title)
+                ? fileName ?? formRequest.SourceType.ToString()
+                : formRequest.Title;
+
+            var command = new UploadKnowledgeDocumentCommand(
+                SourceType: formRequest.SourceType,
+                Title: title,
+                ContentHash: contentHash,
+                ActorUserId: actorUserId,
+                FileName: fileName,
+                FileStream: fileStream,
+                SourceUrl: formRequest.SourceUrl,
+                RawText: formRequest.RawText,
+                FaqPairs: faqPairs);
+
+            var result = await sender.Send(command, cancellationToken);
+            return result.ToAcceptedResult(id => Url.Action(nameof(GetById), new { id })!);
+        }
+        finally
+        {
+            if (fileStream is not null)
+                await fileStream.DisposeAsync();
+        }
     }
 
     /// <summary>Soft-deletes a knowledge document and all its chunks.</summary>
@@ -108,9 +163,57 @@ public sealed class KnowledgeBaseController(ISender sender) : ControllerBase
             ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         return Guid.TryParse(claim?.Value, out var id) ? id : Guid.Empty;
     }
+
+    private static string ComputeHash(string content)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
+
+    /// <summary>
+    /// FAQ pairs travel over multipart/form-data as a single JSON-encoded form field
+    /// (an array of <c>{ "question": "...", "answer": "..." }</c> objects) since HTML form
+    /// encoding has no native nested-list shape. Malformed/missing JSON yields an empty list —
+    /// the command validator (Application layer) rejects it, keeping validation out of the controller.
+    /// </summary>
+    private static IReadOnlyList<FaqPair> ParseFaqPairs(string? faqPairsJson)
+    {
+        if (string.IsNullOrWhiteSpace(faqPairsJson))
+            return Array.Empty<FaqPair>();
+
+        try
+        {
+            var dto = JsonSerializer.Deserialize<List<FaqPairDto>>(
+                faqPairsJson, JsonOptions) ?? [];
+            return dto.Select(p => new FaqPair(p.Question ?? string.Empty, p.Answer ?? string.Empty)).ToList();
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<FaqPair>();
+        }
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 }
 
+/// <summary>
+/// Multipart/form-data binding for <see cref="KnowledgeBaseController.Upload"/>. Carries the
+/// union of fields needed across all four <see cref="SourceType"/> shapes — only the fields
+/// relevant to the selected <see cref="SourceType"/> are required (enforced by
+/// <c>UploadKnowledgeDocumentCommandValidator</c> in the Application layer, not here).
+/// </summary>
 public sealed class UploadDocumentFormRequest
 {
+    public SourceType SourceType { get; set; } = SourceType.File;
+    public string? Title { get; set; }
     public IFormFile? File { get; set; }
+    public string? SourceUrl { get; set; }
+    public string? RawText { get; set; }
+
+    /// <summary>JSON-encoded array of <c>{ "question": "...", "answer": "..." }</c> for Faq uploads.</summary>
+    public string? FaqPairsJson { get; set; }
+}
+
+/// <summary>Wire shape for one FAQ pair inside <see cref="UploadDocumentFormRequest.FaqPairsJson"/>.</summary>
+internal sealed class FaqPairDto
+{
+    public string? Question { get; set; }
+    public string? Answer { get; set; }
 }

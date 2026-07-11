@@ -81,6 +81,46 @@ public class KnowledgeChunkWriterTests(KnowledgePostgresFixture fixture)
     }
 
     [Fact]
+    public async Task WriteChunksAsync_ReRunForSameVersion_ReplacesRatherThanDuplicates()
+    {
+        var tenantId = Guid.NewGuid();
+        var document = await SeedDocumentAsync(tenantId, $"hash-{Guid.NewGuid():N}");
+
+        await using (var db = fixture.CreateTenantContext(tenantId))
+        {
+            var writer = new KnowledgeChunkWriter(
+                db, new FixedTenantContext(tenantId), NullLogger<KnowledgeChunkWriter>.Instance);
+
+            await writer.WriteChunksAsync(
+                document.Id,
+                documentVersion: 1,
+                [
+                    new KnowledgeChunkWrite("first pass chunk 0", 0, 4, RandomEmbedding(1024)),
+                    new KnowledgeChunkWrite("first pass chunk 1", 1, 4, RandomEmbedding(1024)),
+                ],
+                CancellationToken.None);
+        }
+
+        // Re-run for the SAME document+version with a different chunk set — must replace, not append.
+        await using (var db = fixture.CreateTenantContext(tenantId))
+        {
+            var writer = new KnowledgeChunkWriter(
+                db, new FixedTenantContext(tenantId), NullLogger<KnowledgeChunkWriter>.Instance);
+
+            await writer.WriteChunksAsync(
+                document.Id,
+                documentVersion: 1,
+                [new KnowledgeChunkWrite("second pass chunk 0", 0, 4, RandomEmbedding(1024))],
+                CancellationToken.None);
+        }
+
+        await using var verify = fixture.CreateTenantContext(tenantId);
+        var chunks = await verify.KnowledgeChunks.Where(c => c.DocumentId == document.Id).ToListAsync();
+        chunks.Should().HaveCount(1);
+        chunks[0].Content.Should().Be("second pass chunk 0");
+    }
+
+    [Fact]
     public async Task Writer_Rejects_1536DimensionEmbedding()
     {
         var tenantId = Guid.NewGuid();

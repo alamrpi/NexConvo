@@ -119,7 +119,11 @@ public sealed class SaveS3ConfigCommandHandler(
                 config.Region,
                 config.CustomEndpoint,
                 config.PathPrefix,
-                config.IsActive),
+                config.IsActive,
+                config.EncryptedAccessKeyId,
+                config.EncryptedSecretAccessKey,
+                config.LastTestStatus.ToString(),
+                config.LastTestedAt),
             cancellationToken);
 
         logger.LogInformation("Workspace S3 configuration {ConfigId} saved for bucket {Bucket}", config.Id, request.BucketName);

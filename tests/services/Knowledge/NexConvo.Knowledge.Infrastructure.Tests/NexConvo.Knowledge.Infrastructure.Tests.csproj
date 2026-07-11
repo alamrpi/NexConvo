@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Application\NexConvo.Knowledge.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\services\Knowledge\NexConvo.Knowledge.Infrastructure\NexConvo.Knowledge.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Application\NexConvo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Domain\NexConvo.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

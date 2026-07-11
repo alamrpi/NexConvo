@@ -4,6 +4,10 @@ using NexConvo.Knowledge.Domain.Entities;
 
 namespace NexConvo.Knowledge.Infrastructure.Persistence.Configurations;
 
+// Note: source_type, title, failure_reason, embedding_model, embedding_dimensions and
+// chunk_count columns were created (with defaults) by the InitialKnowledgeSchema migration
+// but left unmapped until this slice added the corresponding KnowledgeDocument properties.
+
 public sealed class KnowledgeDocumentConfiguration : IEntityTypeConfiguration<KnowledgeDocument>
 {
     public void Configure(EntityTypeBuilder<KnowledgeDocument> builder)
@@ -32,6 +36,39 @@ public sealed class KnowledgeDocumentConfiguration : IEntityTypeConfiguration<Kn
         builder.Property(d => d.Status)
             .HasColumnName("ingestion_status")
             .HasConversion<short>()
+            .IsRequired();
+
+        builder.Property(d => d.SourceType)
+            .HasColumnName("source_type")
+            .HasConversion<short>()
+            .IsRequired();
+
+        builder.Property(d => d.Title)
+            .HasColumnName("title")
+            .IsRequired()
+            .HasMaxLength(500);
+
+        builder.Property(d => d.SourceUrl)
+            .HasColumnName("source_url");
+
+        builder.Property(d => d.S3ObjectKey)
+            .HasColumnName("s3_object_key")
+            .HasMaxLength(1000);
+
+        builder.Property(d => d.FailureReason)
+            .HasColumnName("failure_reason");
+
+        builder.Property(d => d.EmbeddingModel)
+            .HasColumnName("embedding_model")
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Property(d => d.EmbeddingDimensions)
+            .HasColumnName("embedding_dimensions")
+            .IsRequired();
+
+        builder.Property(d => d.ChunkCount)
+            .HasColumnName("chunk_count")
             .IsRequired();
 
         builder.Property(d => d.Version)

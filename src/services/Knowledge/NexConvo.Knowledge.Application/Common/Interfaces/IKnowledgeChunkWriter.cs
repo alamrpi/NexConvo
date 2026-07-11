@@ -19,8 +19,12 @@ public sealed record KnowledgeChunkWrite(
 public interface IKnowledgeChunkWriter
 {
     /// <summary>
-    /// Persists the chunks of <paramref name="documentId"/> at <paramref name="documentVersion"/>
-    /// for the current tenant. Rejects embeddings whose length differs from the schema dimension.
+    /// Replaces the chunks of <paramref name="documentId"/> at <paramref name="documentVersion"/>
+    /// for the current tenant: deletes any existing rows for that (document, version) pair and
+    /// inserts <paramref name="chunks"/>, all inside one transaction, so a re-run of ingestion for
+    /// the same version is idempotent (Standard 18) — never leaves duplicate or partial chunk sets.
+    /// Rejects embeddings whose length differs from the schema dimension; the transaction is rolled
+    /// back and nothing is written when that happens.
     /// </summary>
     Task WriteChunksAsync(
         Guid documentId,

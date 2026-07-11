@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Knowledge.Application.Common.Interfaces;
@@ -38,6 +39,16 @@ public sealed class KnowledgeChunkWriter(
 
         var tenantId = tenant.TenantId;
 
+        // Delete-then-insert in one transaction so a re-run of ingestion for the same
+        // (document, version) — e.g. a retried Hangfire job — is idempotent (Standard 18):
+        // never leaves duplicate rows or a partial chunk set if the process dies mid-write.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        var existing = await db.KnowledgeChunks
+            .Where(c => c.DocumentId == documentId && c.DocumentVersion == documentVersion)
+            .ToListAsync(cancellationToken);
+        db.KnowledgeChunks.RemoveRange(existing);
+
         foreach (var chunk in chunks)
         {
             var entity = new KnowledgeChunk(
@@ -53,9 +64,10 @@ public sealed class KnowledgeChunkWriter(
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation(
-            "Persisted {ChunkCount} chunks for document {DocumentId} at version {DocumentVersion}",
-            chunks.Count, documentId, documentVersion);
+            "Persisted {ChunkCount} chunks for document {DocumentId} at version {DocumentVersion}, replacing {ExistingCount} prior chunks",
+            chunks.Count, documentId, documentVersion, existing.Count);
     }
 }
