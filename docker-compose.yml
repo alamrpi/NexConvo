@@ -196,6 +196,10 @@ services:
       ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
       ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
       SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
+      Knowledge__GrpcAddress: http://knowledge:8080
+      # Guards Chat's outbound call to Knowledge's internal-only KnowledgeRetrieval gRPC service.
+      # Same value as Knowledge's own Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5132:8080"
     depends_on:
@@ -204,6 +208,8 @@ services:
       rabbitmq:
         condition: service_healthy
       identity:
+        condition: service_started
+      knowledge:
         condition: service_started
       seq:
         condition: service_started

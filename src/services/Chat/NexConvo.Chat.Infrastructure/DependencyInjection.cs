@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Infrastructure.Security;
+using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
@@ -13,6 +14,7 @@ using NexConvo.Chat.Infrastructure.ExternalServices;
 using NexConvo.Chat.Infrastructure.HealthCheck;
 using NexConvo.Chat.Infrastructure.Persistence;
 using NexConvo.Chat.Infrastructure.Services;
+using NexConvo.Knowledge.Api.Grpc;
 
 namespace NexConvo.Chat.Infrastructure;
 
@@ -49,6 +51,25 @@ public static class DependencyInjection
         services.AddSingleton<IChannelVerificationHttpClientFactory, ChannelVerificationHttpClientFactory>();
         services.AddScoped<IConnectionTester<ChannelTestInput>, ChannelConnectionTester>();
         services.AddScoped<IChatHealthSweepService, ChatHealthSweepService>();
+
+        // First gRPC client in the solution — calls Knowledge's internal-only KnowledgeRetrieval.Search
+        // (Standard 8: Polly resilience via AddNexConvoResilience, which composes with AddGrpcClient
+        // since both return IHttpClientBuilder). Chat compiles its own copy of knowledge.proto
+        // (GrpcServices="Client") rather than project-referencing Knowledge.Api — see Protos/knowledge.proto.
+        var knowledgeGrpcAddress = configuration["Knowledge:GrpcAddress"]
+            ?? throw new InvalidOperationException("Configuration 'Knowledge:GrpcAddress' is not set.");
+        var internalApiKey = configuration["Internal:ApiKey"]
+            ?? throw new InvalidOperationException("Configuration 'Internal:ApiKey' is not set.");
+
+        services.AddGrpcClient<KnowledgeRetrieval.KnowledgeRetrievalClient>(o =>
+            o.Address = new Uri(knowledgeGrpcAddress))
+            .AddNexConvoResilience();
+
+        services.AddScoped<IKnowledgeRetrievalClient>(sp =>
+            new KnowledgeRetrievalClient(
+                sp.GetRequiredService<KnowledgeRetrieval.KnowledgeRetrievalClient>(),
+                sp.GetRequiredService<ITenantContext>(),
+                internalApiKey));
 
         services.AddMassTransit(x =>
         {
