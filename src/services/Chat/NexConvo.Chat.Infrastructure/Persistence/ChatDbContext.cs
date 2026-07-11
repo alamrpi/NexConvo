@@ -1,4 +1,5 @@
 using System.Reflection;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Chat.Application.Common.Interfaces;
@@ -25,6 +26,14 @@ public sealed class ChatDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // MassTransit's own EF outbox/inbox schema (Standard 10 — first use in the solution).
+        // Infrastructure-internal transport-plumbing tables, intentionally NOT RLS-scoped —
+        // tenant isolation is enforced by the business tables the outbox messages reference.
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
+
         base.OnModelCreating(modelBuilder);
     }
 

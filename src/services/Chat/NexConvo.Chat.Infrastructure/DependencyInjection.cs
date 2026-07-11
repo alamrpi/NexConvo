@@ -73,6 +73,15 @@ public static class DependencyInjection
 
         services.AddMassTransit(x =>
         {
+            // EF outbox: SaveChangesAsync + event publish commit atomically (Standard 10 — first
+            // use in the solution). UseBusOutbox also enables the EF inbox, deduping consumers by
+            // the transport message id (Standard 18).
+            x.AddEntityFrameworkOutbox<ChatDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.UseBusOutbox();
+            });
+
             x.AddConsumers(typeof(NexConvo.Chat.Application.DependencyInjection).Assembly);
             x.UsingRabbitMq((context, cfg) =>
             {
