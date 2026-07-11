@@ -16,4 +16,11 @@ public sealed record MessageReceivedIntegrationEvent : IntegrationEvent
     public required string ExternalSenderId { get; init; }
 
     public required string MessageRef { get; init; }
+
+    /// <summary>The inbound message text. Added in Slice 5 — no real webhook ingestion publishes
+    /// this event yet, so this is populated directly by whatever seam creates the event (tests,
+    /// and later a real webhook receiver).</summary>
+    public required string Body { get; init; }
+
+    public string? ProviderMessageId { get; init; }
 }
