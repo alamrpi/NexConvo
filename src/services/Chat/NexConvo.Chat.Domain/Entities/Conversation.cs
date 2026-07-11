@@ -49,6 +49,10 @@ public class Conversation : BaseAggregateRoot
     {
         if (State != ConversationState.AiHandling)
         {
+            // NOTE: LowConfidence here is a placeholder — this guard fires on domain-invariant
+            // misuse (AppendAiReply called outside AiHandling), not an actual low-confidence
+            // suppression. No EscalationReason member fits "invalid caller usage"; do not treat
+            // this Reason value as a real classification if it appears in logs/telemetry.
             throw new AiReplySuppressedException(
                 EscalationReason.LowConfidence,
                 $"Conversation {Id} state is {State}, expected AiHandling.");
