@@ -20,9 +20,13 @@ namespace NexConvo.Chat.Application.Rag;
 /// Retrieval -> grounded prompt -> tenant LLM -> confidence -> answer-or-handoff. One iteration
 /// today; designed to be called in a loop by a future MCP tool-calling orchestrator (P3) rather
 /// than requiring a rewrite. Cancelable end-to-end.
+///
+/// Tenant scoping: invoked from a MassTransit consumer with no ambient HTTP request, so it builds
+/// its own IChatDbContext via IChatDbContextFactory (pinned to the caller-supplied tenantId)
+/// rather than depending on the DI-scoped, HttpTenantContext-backed IChatDbContext.
 /// </summary>
 public sealed class ReplyOrchestrator(
-    IChatDbContext db,
+    IChatDbContextFactory dbFactory,
     IKnowledgeRetrievalClient knowledge,
     IAiProviderFactory aiProviderFactory,
     IDistributedCache cache,
@@ -34,8 +38,10 @@ public sealed class ReplyOrchestrator(
 {
     private const string AbstentionMarker = "[[NO_ANSWER]]";
 
-    public async Task<ReplyOutcome> RunAsync(Guid conversationId, CancellationToken cancellationToken)
+    public async Task<ReplyOutcome> RunAsync(Guid tenantId, Guid conversationId, CancellationToken cancellationToken)
     {
+        await using var db = dbFactory.CreateForTenant(tenantId);
+
         var conversation = await db.Conversations.FirstAsync(c => c.Id == conversationId, cancellationToken);
         var settings = await db.WorkspaceChatSettings.FirstAsync(s => s.TenantId == conversation.TenantId, cancellationToken);
         var lastInbound = await db.Messages
@@ -54,13 +60,13 @@ public sealed class ReplyOrchestrator(
         var triggerPhrases = JsonSerializer.Deserialize<string[]>(settings.TriggerPhrases) ?? [];
         if (triggerPhrases.Any(p => lastInbound.Body.Contains(p, StringComparison.OrdinalIgnoreCase)))
         {
-            return await HandoffAsync(conversation, EscalationReason.TriggerPhrase, cancellationToken);
+            return await HandoffAsync(db, conversation, EscalationReason.TriggerPhrase, cancellationToken);
         }
 
         var cachedBytes = await cache.GetAsync($"AiConfig:{conversation.TenantId}", cancellationToken);
         if (cachedBytes is null)
         {
-            return await HandoffAsync(conversation, EscalationReason.NoAiConfig, cancellationToken);
+            return await HandoffAsync(db, conversation, EscalationReason.NoAiConfig, cancellationToken);
         }
 
         var aiConfig = JsonSerializer.Deserialize<CachedAiConfig>(Encoding.UTF8.GetString(cachedBytes))!;
@@ -95,11 +101,17 @@ public sealed class ReplyOrchestrator(
 
         if (confidence.Score < settings.HandoffConfidenceThreshold || abstained)
         {
-            return await HandoffAsync(conversation, EscalationReason.LowConfidence, cancellationToken);
+            return await HandoffAsync(db, conversation, EscalationReason.LowConfidence, cancellationToken);
         }
 
         var message = conversation.AppendAiReply(replyText, confidence, tokens: null);
         db.Messages.Add(message);
+        db.ChatAuditLogs.Add(new ChatAuditLog(
+            "chat.rag.answered",
+            tenantId,
+            userId: null,
+            $"conversationId={conversationId},messageId={message.Id},confidenceBand={confidence.Band},confidenceScore={confidence.Score:F2}",
+            DateTimeOffset.UtcNow));
         await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
@@ -109,10 +121,16 @@ public sealed class ReplyOrchestrator(
         return new AnsweredOutcome(message.Id, replyText, confidence);
     }
 
-    private async Task<ReplyOutcome> HandoffAsync(Conversation conversation, EscalationReason reason, CancellationToken cancellationToken)
+    private async Task<ReplyOutcome> HandoffAsync(IChatDbContext db, Conversation conversation, EscalationReason reason, CancellationToken cancellationToken)
     {
         var escalation = conversation.RequestHandoff(reason);
         db.Escalations.Add(escalation);
+        db.ChatAuditLogs.Add(new ChatAuditLog(
+            "chat.rag.handoff-requested",
+            conversation.TenantId,
+            userId: null,
+            $"conversationId={conversation.Id},escalationId={escalation.Id},reason={reason}",
+            DateTimeOffset.UtcNow));
         await db.SaveChangesAsync(cancellationToken);
 
         // Once the EF outbox is registered (already wired in AddChatInfrastructure), MassTransit

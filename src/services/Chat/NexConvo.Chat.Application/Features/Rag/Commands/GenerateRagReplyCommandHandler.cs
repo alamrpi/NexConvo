@@ -11,7 +11,7 @@ public sealed class GenerateRagReplyCommandHandler(
 {
     public async Task<Result> Handle(GenerateRagReplyCommand request, CancellationToken cancellationToken)
     {
-        var outcome = await orchestrator.RunAsync(request.ConversationId, cancellationToken);
+        var outcome = await orchestrator.RunAsync(request.TenantId, request.ConversationId, cancellationToken);
 
         return outcome switch
         {

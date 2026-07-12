@@ -63,3 +63,6 @@ app.MapHealthChecks("/health/ready");
 await ChatDatabaseMigrator.MigrateAsync(builder.Configuration, builder.Environment, app.Logger);
 
 await app.RunAsync();
+
+// Exposes the top-level-statement entry point to WebApplicationFactory<Program> for integration tests.
+public partial class Program;

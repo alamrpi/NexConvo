@@ -3,7 +3,7 @@ using NexConvo.Chat.Domain.Entities;
 
 namespace NexConvo.Chat.Application.Common.Interfaces;
 
-public interface IChatDbContext
+public interface IChatDbContext : IAsyncDisposable
 {
     DbSet<ChannelConnection> ChannelConnections { get; }
     DbSet<WorkspaceChatSettings> WorkspaceChatSettings { get; }

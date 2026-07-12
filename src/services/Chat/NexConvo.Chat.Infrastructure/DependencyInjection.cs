@@ -32,6 +32,7 @@ public static class DependencyInjection
                 npgsql.EnableRetryOnFailure(3)));
 
         services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
+        services.AddSingleton<IChatDbContextFactory, TenantChatDbContextFactory>();
 
         var redisConn = configuration.GetConnectionString("Redis") ?? "localhost:6379";
         services.AddStackExchangeRedisCache(o => o.Configuration = redisConn);
@@ -78,8 +79,11 @@ public static class DependencyInjection
         services.AddMassTransit(x =>
         {
             // EF outbox: SaveChangesAsync + event publish commit atomically (Standard 10 — first
-            // use in the solution). UseBusOutbox also enables the EF inbox, deduping consumers by
-            // the transport message id (Standard 18).
+            // use in the solution). UseBusOutbox() only covers the OUTGOING half (publishes made
+            // inside a unit of work). It does NOT, by itself, dedupe incoming consumption — that
+            // is a separate, per-receive-endpoint opt-in via UseEntityFrameworkOutbox below, which
+            // is what actually makes MassTransit consult InboxState before invoking a consumer
+            // (Standard 18).
             x.AddEntityFrameworkOutbox<ChatDbContext>(o =>
             {
                 o.UsePostgres();
@@ -87,6 +91,15 @@ public static class DependencyInjection
             });
 
             x.AddConsumers(typeof(NexConvo.Chat.Application.DependencyInjection).Assembly);
+
+            // Applies the EF inbox (dedup by transport MessageId) to every receive endpoint,
+            // including MessageReceivedConsumer's — without this, AddEntityFrameworkOutbox only
+            // registers the InboxState table/plumbing but nothing ever reads it.
+            x.AddConfigureEndpointsCallback((context, _, cfg) =>
+            {
+                cfg.UseEntityFrameworkOutbox<ChatDbContext>(context);
+            });
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 var rmq = configuration.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@localhost:5672";

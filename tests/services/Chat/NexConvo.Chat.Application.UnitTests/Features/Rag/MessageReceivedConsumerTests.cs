@@ -7,6 +7,7 @@ using NexConvo.Chat.Application.Common.Interfaces;
 using NexConvo.Chat.Application.Features.Rag.Commands;
 using NexConvo.Chat.Application.Features.Rag.EventHandlers;
 using NexConvo.Chat.Domain.Entities;
+using NexConvo.Chat.Domain.Enums;
 using NexConvo.Chat.Domain.ValueObjects;
 using NexConvo.Contracts.Enums;
 using NexConvo.Contracts.Events.Chat;
@@ -16,20 +17,30 @@ namespace NexConvo.Chat.Application.UnitTests.Features.Rag;
 
 public class MessageReceivedConsumerTests
 {
+    private static IChatDbContext BuildDb(List<Conversation> conversations)
+    {
+        var conversationsSet = conversations.AsQueryable().BuildMockDbSet();
+        var messagesSet = new List<Message>().AsQueryable().BuildMockDbSet();
+
+        var db = Substitute.For<IChatDbContext>();
+        db.Conversations.Returns(conversationsSet);
+        db.Messages.Returns(messagesSet);
+        db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
+        return db;
+    }
+
     [Fact]
     public async Task Consume_NewConversation_CreatesConversationAndDispatchesRagReplyCommand()
     {
-        var conversations = new List<Conversation>();
-        var conversationsSet = conversations.AsQueryable().BuildMockDbSet();
-        var db = Substitute.For<IChatDbContext>();
-        db.Conversations.Returns(conversationsSet);
-        db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
-
-        var sender = Substitute.For<ISender>();
-        var consumer = new MessageReceivedConsumer(db, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
-
         var tenantId = Guid.NewGuid();
         var conversationId = Guid.NewGuid();
+
+        var db = BuildDb([]);
+
+        var sender = Substitute.For<ISender>();
+        var dbFactory = Substitute.For<IChatDbContextFactory>();
+        dbFactory.CreateForTenant(tenantId).Returns(db);
+        var consumer = new MessageReceivedConsumer(dbFactory, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
         var message = new MessageReceivedIntegrationEvent
         {
             ConversationId = conversationId,
@@ -47,11 +58,15 @@ public class MessageReceivedConsumerTests
         await consumer.Consume(context);
 
         await db.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-        await sender.Received(1).Send(Arg.Is<GenerateRagReplyCommand>(c => c.ConversationId != Guid.Empty), Arg.Any<CancellationToken>());
+        await sender.Received(1).Send(Arg.Is<GenerateRagReplyCommand>(c => c.TenantId == tenantId && c.ConversationId != Guid.Empty), Arg.Any<CancellationToken>());
         db.Conversations.Received(1).Add(Arg.Is<Conversation>(c =>
             c.TenantId == tenantId &&
             c.Channel.Channel == LeadSourceChannel.WhatsApp &&
             c.Channel.ExternalConversationId == "sender-1"));
+        db.Messages.Received(1).Add(Arg.Is<Message>(m =>
+            m.Direction == MessageDirection.Inbound &&
+            m.Body == "How long do refunds take?" &&
+            m.ProviderMessageId == "provider-1"));
     }
 
     [Fact]
@@ -61,14 +76,12 @@ public class MessageReceivedConsumerTests
         var existing = Conversation.StartAiHandling(
             tenantId, new ChannelIdentity(LeadSourceChannel.WhatsApp, "sender-1"), contactId: null);
 
-        var conversations = new List<Conversation> { existing };
-        var conversationsSet = conversations.AsQueryable().BuildMockDbSet();
-        var db = Substitute.For<IChatDbContext>();
-        db.Conversations.Returns(conversationsSet);
-        db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
+        var db = BuildDb([existing]);
 
         var sender = Substitute.For<ISender>();
-        var consumer = new MessageReceivedConsumer(db, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
+        var dbFactory = Substitute.For<IChatDbContextFactory>();
+        dbFactory.CreateForTenant(tenantId).Returns(db);
+        var consumer = new MessageReceivedConsumer(dbFactory, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
 
         var message = new MessageReceivedIntegrationEvent
         {
@@ -89,6 +102,7 @@ public class MessageReceivedConsumerTests
         db.Conversations.DidNotReceive().Add(Arg.Any<Conversation>());
         await sender.Received(1).Send(Arg.Is<GenerateRagReplyCommand>(c => c.ConversationId == existing.Id), Arg.Any<CancellationToken>());
         existing.LastInboundProviderMessageId.Should().Be("provider-2");
+        db.Messages.Received(1).Add(Arg.Is<Message>(m => m.ProviderMessageId == "provider-2"));
     }
 
     [Fact]
@@ -98,14 +112,12 @@ public class MessageReceivedConsumerTests
         var whatsAppConversation = Conversation.StartAiHandling(
             tenantId, new ChannelIdentity(LeadSourceChannel.WhatsApp, "sender-1"), contactId: null);
 
-        var conversations = new List<Conversation> { whatsAppConversation };
-        var conversationsSet = conversations.AsQueryable().BuildMockDbSet();
-        var db = Substitute.For<IChatDbContext>();
-        db.Conversations.Returns(conversationsSet);
-        db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
+        var db = BuildDb([whatsAppConversation]);
 
         var sender = Substitute.For<ISender>();
-        var consumer = new MessageReceivedConsumer(db, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
+        var dbFactory = Substitute.For<IChatDbContextFactory>();
+        dbFactory.CreateForTenant(tenantId).Returns(db);
+        var consumer = new MessageReceivedConsumer(dbFactory, sender, Substitute.For<ILogger<MessageReceivedConsumer>>());
 
         var message = new MessageReceivedIntegrationEvent
         {
@@ -124,5 +136,6 @@ public class MessageReceivedConsumerTests
         await consumer.Consume(context);
 
         db.Conversations.Received(1).Add(Arg.Is<Conversation>(c => c.Channel.Channel == LeadSourceChannel.Facebook));
+        db.Messages.Received(1).Add(Arg.Is<Message>(m => m.ProviderMessageId == "provider-3"));
     }
 }

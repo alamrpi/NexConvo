@@ -46,12 +46,14 @@ public class ReplyOrchestratorTests
         var settingsSet = new List<WorkspaceChatSettings> { settings }.AsQueryable().BuildMockDbSet();
         var messages = new List<Message> { inboundMessage }.AsQueryable().BuildMockDbSet();
         var escalations = new List<Escalation>().AsQueryable().BuildMockDbSet();
+        var auditLogs = new List<ChatAuditLog>().AsQueryable().BuildMockDbSet();
 
         var db = Substitute.For<IChatDbContext>();
         db.Conversations.Returns(conversations);
         db.WorkspaceChatSettings.Returns(settingsSet);
         db.Messages.Returns(messages);
         db.Escalations.Returns(escalations);
+        db.ChatAuditLogs.Returns(auditLogs);
         db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
 
         var knowledge = Substitute.For<IKnowledgeRetrievalClient>();
@@ -75,8 +77,11 @@ public class ReplyOrchestratorTests
 
         var publisher = Substitute.For<IPublishEndpoint>();
 
+        var dbFactory = Substitute.For<IChatDbContextFactory>();
+        dbFactory.CreateForTenant(conversation.TenantId).Returns(db);
+
         var sut = new ReplyOrchestrator(
-            db, knowledge, aiFactory, cache, aes,
+            dbFactory, knowledge, aiFactory, cache, aes,
             new GroundedPromptAssembler(), new TokenBudgeter(), publisher,
             Substitute.For<ILogger<ReplyOrchestrator>>());
 
@@ -115,10 +120,40 @@ public class ReplyOrchestratorTests
 
         var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
 
-        var outcome = await ctx.Sut.RunAsync(conversation.Id, CancellationToken.None);
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
         outcome.Should().BeOfType<AnsweredOutcome>();
         ((AnsweredOutcome)outcome).Text.Should().Contain("[1]");
+    }
+
+    [Fact]
+    public async Task RunAsync_GroundedQuestion_WritesAuditLogRow()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        ctx.Db.ChatAuditLogs.Received(1).Add(Arg.Is<ChatAuditLog>(a =>
+            a.TenantId == tenantId && a.Action == "chat.rag.answered"));
+    }
+
+    [Fact]
+    public async Task RunAsync_TriggerPhraseMatched_WritesAuditLogRow()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "I want to speak to a manager");
+        var settings = NewSettings(tenantId, triggerPhrases: "[\"speak to a manager\"]");
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        ctx.Db.ChatAuditLogs.Received(1).Add(Arg.Is<ChatAuditLog>(a =>
+            a.TenantId == tenantId && a.Action == "chat.rag.handoff-requested"));
     }
 
     [Fact]
@@ -133,7 +168,7 @@ public class ReplyOrchestratorTests
                 Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(StreamOf("[[NO_ANSWER]]"));
 
-        var outcome = await ctx.Sut.RunAsync(conversation.Id, CancellationToken.None);
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
         outcome.Should().BeOfType<HandoffOutcome>();
         ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.LowConfidence);
@@ -148,7 +183,7 @@ public class ReplyOrchestratorTests
 
         var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
 
-        var outcome = await ctx.Sut.RunAsync(conversation.Id, CancellationToken.None);
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
         outcome.Should().BeOfType<HandoffOutcome>();
         ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.TriggerPhrase);
@@ -165,7 +200,7 @@ public class ReplyOrchestratorTests
 
         var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
 
-        await ctx.Sut.RunAsync(conversation.Id, CancellationToken.None);
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
         await ctx.Publisher.Received(1).Publish(
             Arg.Is<ConversationHandoffRequestedIntegrationEvent>(e =>
@@ -183,7 +218,7 @@ public class ReplyOrchestratorTests
         var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
         ctx.Cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((byte[]?)null);
 
-        var outcome = await ctx.Sut.RunAsync(conversation.Id, CancellationToken.None);
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
         outcome.Should().BeOfType<HandoffOutcome>();
         ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.NoAiConfig);
@@ -204,7 +239,7 @@ public class ReplyOrchestratorTests
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var act = async () => await ctx.Sut.RunAsync(conversation.Id, cts.Token);
+        var act = async () => await ctx.Sut.RunAsync(tenantId, conversation.Id, cts.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         ctx.Db.Messages.DidNotReceive().Add(Arg.Any<Message>());

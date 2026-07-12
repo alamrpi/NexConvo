@@ -31,5 +31,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="NexConvo.Chat.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="NexConvo.Chat.IntegrationTests" />
   </ItemGroup>
 </Project>

@@ -177,6 +177,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.BuildingBlocks.Rag
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.BuildingBlocks.Rag.Tests", "tests\shared\NexConvo.BuildingBlocks.Rag.Tests\NexConvo.BuildingBlocks.Rag.Tests.csproj", "{AF1FB2AB-B9AD-4D0B-84DE-29A1FC5598EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexConvo.Chat.IntegrationTests", "tests\services\Chat\NexConvo.Chat.IntegrationTests\NexConvo.Chat.IntegrationTests.csproj", "{7416A9F6-D8E2-4554-96A8-B52FA16069E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -979,6 +981,18 @@ Global
 		{AF1FB2AB-B9AD-4D0B-84DE-29A1FC5598EB}.Release|x64.Build.0 = Release|Any CPU
 		{AF1FB2AB-B9AD-4D0B-84DE-29A1FC5598EB}.Release|x86.ActiveCfg = Release|Any CPU
 		{AF1FB2AB-B9AD-4D0B-84DE-29A1FC5598EB}.Release|x86.Build.0 = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|x64.Build.0 = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Debug|x86.Build.0 = Debug|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|x64.ActiveCfg = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|x64.Build.0 = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|x86.ActiveCfg = Release|Any CPU
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1068,5 +1082,6 @@ Global
 		{67CF0A64-02AB-459D-9352-1B55A43D198A} = {D6A22CD2-7DB2-4BDA-939C-61336B0295D5}
 		{A6071DAB-371E-4B71-B6E6-DF52F1307FA1} = {AEDDF75A-C255-4289-8D27-B593FDB8BBAE}
 		{AF1FB2AB-B9AD-4D0B-84DE-29A1FC5598EB} = {D0D6B8B0-AC35-B3FA-0B96-A9B0E4A3253E}
+		{7416A9F6-D8E2-4554-96A8-B52FA16069E7} = {4E48965F-9292-9D96-9D98-6C3894C6D01B}
 	EndGlobalSection
 EndGlobal

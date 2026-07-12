@@ -7,5 +7,5 @@ namespace NexConvo.Chat.Application.Rag;
 /// </summary>
 public interface IReplyOrchestrator
 {
-    Task<ReplyOutcome> RunAsync(Guid conversationId, CancellationToken cancellationToken);
+    Task<ReplyOutcome> RunAsync(Guid tenantId, Guid conversationId, CancellationToken cancellationToken);
 }
