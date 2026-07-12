@@ -54,6 +54,14 @@ public sealed class MessageReceivedConsumer(
             // Lost the race to create this conversation — another delivery (of this same message,
             // or a different one on the same channel thread) won. Re-query for the winner's row
             // and append the inbound message to it instead of faulting the whole delivery.
+            //
+            // Deliberate tradeoff: this catches DbUpdateException broadly rather than inspecting
+            // the Postgres error code for the specific unique-index violation, because doing the
+            // latter would require an Infrastructure/Postgres-specific type (Npgsql) in this
+            // Application-layer class (Standard 1). In the rare case this fires for an unrelated
+            // DbUpdateException (not the expected unique-index collision), the retry's own
+            // re-query will find no matching conversation and throw a clear
+            // InvalidOperationException below rather than silently misattributing the message.
             logger.LogInformation(
                 "Conversation creation raced for tenant {TenantId}, channel thread {ExternalSenderId}; retrying against the existing row",
                 message.TenantId, message.ExternalSenderId);

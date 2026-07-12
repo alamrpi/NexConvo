@@ -31,18 +31,23 @@ public class MessageReceivedConsumerIdempotencyTests(ChatApiFactory factory)
 
         await using var db = factory.CreateDbContext(tenantId);
 
-        // Give the consumer time to process both deliveries (the second should be deduped by the
-        // MassTransit EF inbox before ever reaching MessageReceivedConsumer.Consume).
-        int inboundCount = 0;
-        for (var i = 0; i < 20; i++)
+        // Wait for the count to be both non-zero AND stable across consecutive polls, rather than
+        // a fixed sleep — a blind "settle time" races against however long the (deduped) second
+        // delivery actually takes to be rejected by the inbox, which is a flakiness risk on a
+        // slow/loaded CI runner. Stability across several consecutive polls is a much stronger
+        // signal that no duplicate is still in flight.
+        const int requiredStableReads = 3;
+        var stableReads = 0;
+        var lastCount = -1;
+        var inboundCount = 0;
+        for (var i = 0; i < 40 && stableReads < requiredStableReads; i++)
         {
             inboundCount = await db.Messages.CountAsync(m => m.ProviderMessageId == "provider-2");
-            if (inboundCount > 0) break;
-            await Task.Delay(500);
+            stableReads = inboundCount > 0 && inboundCount == lastCount ? stableReads + 1 : 0;
+            lastCount = inboundCount;
+            await Task.Delay(250);
         }
-        await Task.Delay(1500); // extra settle time in case the duplicate is still in flight
 
-        inboundCount = await db.Messages.CountAsync(m => m.ProviderMessageId == "provider-2");
         inboundCount.Should().Be(1);
     }
 }
