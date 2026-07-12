@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using NexConvo.BuildingBlocks.Ai;
 using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Observability;
@@ -44,6 +45,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddChatApplication();
 builder.Services.AddChatInfrastructure(builder.Configuration);
+builder.Services.AddAiProviders();
 
 var app = builder.Build();
 

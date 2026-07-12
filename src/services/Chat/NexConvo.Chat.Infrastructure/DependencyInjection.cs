@@ -71,6 +71,10 @@ public static class DependencyInjection
                 sp.GetRequiredService<ITenantContext>(),
                 internalApiKey));
 
+        services.AddSingleton<NexConvo.BuildingBlocks.Rag.IGroundedPromptAssembler, NexConvo.BuildingBlocks.Rag.GroundedPromptAssembler>();
+        services.AddSingleton<NexConvo.BuildingBlocks.Rag.ITokenBudgeter, NexConvo.BuildingBlocks.Rag.TokenBudgeter>();
+        services.AddScoped<NexConvo.Chat.Application.Rag.IReplyOrchestrator, NexConvo.Chat.Application.Rag.ReplyOrchestrator>();
+
         services.AddMassTransit(x =>
         {
             // EF outbox: SaveChangesAsync + event publish commit atomically (Standard 10 — first
