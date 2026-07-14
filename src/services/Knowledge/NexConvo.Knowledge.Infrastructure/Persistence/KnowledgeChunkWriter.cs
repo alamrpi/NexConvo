@@ -49,6 +49,20 @@ public sealed class KnowledgeChunkWriter(
             .ToListAsync(cancellationToken);
         db.KnowledgeChunks.RemoveRange(existing);
 
+        // A re-embed increments the document's version before this runs (D4-5): the new chunks
+        // land at documentVersion, but the PRIOR version's chunks are a different DocumentVersion
+        // and so are untouched by the delete above. Deactivate them explicitly — otherwise they
+        // stay is_active=true forever and both old and new chunks are returned by similarity
+        // search side by side. Soft-deleted (not removed) to preserve them for audit/history, same
+        // as KnowledgeDocument.IsActive/SetActive already does at the document level.
+        var staleChunks = await db.KnowledgeChunks
+            .Where(c => c.DocumentId == documentId && c.DocumentVersion != documentVersion && c.IsActive)
+            .ToListAsync(cancellationToken);
+        foreach (var stale in staleChunks)
+        {
+            stale.SetActive(false);
+        }
+
         foreach (var chunk in chunks)
         {
             var entity = new KnowledgeChunk(
@@ -67,7 +81,7 @@ public sealed class KnowledgeChunkWriter(
         await transaction.CommitAsync(cancellationToken);
 
         logger.LogInformation(
-            "Persisted {ChunkCount} chunks for document {DocumentId} at version {DocumentVersion}, replacing {ExistingCount} prior chunks",
-            chunks.Count, documentId, documentVersion, existing.Count);
+            "Persisted {ChunkCount} chunks for document {DocumentId} at version {DocumentVersion}, replacing {ExistingCount} prior chunks and deactivating {StaleCount} chunks from earlier versions",
+            chunks.Count, documentId, documentVersion, existing.Count, staleChunks.Count);
     }
 }

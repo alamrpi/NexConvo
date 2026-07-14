@@ -5,6 +5,26 @@ using NexConvo.Contracts.Enums;
 namespace NexConvo.Chat.Domain.Entities;
 
 /// <summary>
+/// Built-in "speak to a human" trigger phrases seeded for a tenant's very first
+/// <see cref="WorkspaceChatSettings"/> row when they haven't configured any of their own
+/// (D4-8: previously TriggerPhrases defaulted to empty, so a tenant who never customized this
+/// field got zero trigger-phrase handoffs out of the box — including in Bengali, a first-class
+/// requirement per CLAUDE.md). Only used at first-create time; never overrides a tenant's own
+/// saved value, including an intentional empty list on a later save.
+/// </summary>
+public static class DefaultTriggerPhrases
+{
+    public static readonly IReadOnlyList<string> Values =
+    [
+        "speak to a manager",
+        "talk to a human",
+        "human agent",
+        "ম্যানেজারের সাথে কথা বলতে চাই",
+        "একজন মানুষের সাথে কথা বলতে চাই",
+    ];
+}
+
+/// <summary>
 /// Per-tenant chatbot configuration: AI provider selection, escalation behaviour, and privacy.
 /// One row per tenant — upserted on save.
 /// </summary>

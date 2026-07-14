@@ -116,4 +116,18 @@ public class ConversationSchemaTests(ChatPostgresFixture fixture)
 
         enabled.Should().BeTrue($"{table} must have RLS enabled");
     }
+
+    [Theory]
+    [InlineData("conversations")]
+    [InlineData("messages")]
+    [InlineData("escalations")]
+    [Trait("Category", "Security")]
+    public async Task RowLevelSecurity_IsForced(string table)
+    {
+        var forced = await ScalarAsync<bool>(
+            $"SELECT relforcerowsecurity FROM pg_class WHERE relname = '{table}'");
+
+        forced.Should().BeTrue(
+            $"{table} must FORCE row level security so RLS still applies if the runtime role ever becomes the table owner");
+    }
 }

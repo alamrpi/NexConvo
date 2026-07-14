@@ -54,12 +54,15 @@ import type {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-  }).format(new Date(iso));
+  }).format(date);
 }
 
 function formatFileSize(bytes: number): string {
@@ -71,21 +74,19 @@ function formatFileSize(bytes: number): string {
 function sourceIcon(type: SourceType): React.ReactNode {
   const cls = 'h-3.5 w-3.5 shrink-0';
   switch (type) {
-    case 'file':       return <File className={cls} />;
-    case 'url':        return <Link className={cls} />;
-    case 'text':       return <FileText className={cls} />;
-    case 'faq_pairs':  return <FileText className={cls} />;
-    case 'past_chats': return <MessageSquare className={cls} />;
+    case 'File': return <File className={cls} />;
+    case 'Url':  return <Link className={cls} />;
+    case 'Text': return <FileText className={cls} />;
+    case 'Faq':  return <FileText className={cls} />;
   }
 }
 
 function sourceLabel(type: SourceType): string {
   const labels: Record<SourceType, string> = {
-    file: 'File',
-    url: 'URL',
-    text: 'Text',
-    faq_pairs: 'FAQ',
-    past_chats: 'Chats',
+    File: 'File',
+    Url: 'URL',
+    Text: 'Text',
+    Faq: 'FAQ',
   };
   return labels[type];
 }
@@ -95,28 +96,26 @@ function sourceLabel(type: SourceType): string {
 function StatusBadge({ status }: { status: IngestionStatus }) {
   const cls = cn(
     'font-medium gap-1',
-    status === 'active'     && 'text-chatConfidence-high border-chatConfidence-high/40',
-    status === 'pending'    && 'text-amber-600 border-amber-600/40 dark:text-amber-400 dark:border-amber-400/40',
-    status === 'processing' && 'text-blue-600 border-blue-600/40 dark:text-blue-400 dark:border-blue-400/40',
-    status === 'failed'     && 'text-destructive border-destructive/40',
-    status === 'inactive'   && 'text-muted-foreground border-border',
+    status === 'Ready'      && 'text-chatConfidence-high border-chatConfidence-high/40',
+    status === 'Pending'    && 'text-amber-600 border-amber-600/40 dark:text-amber-400 dark:border-amber-400/40',
+    status === 'Processing' && 'text-blue-600 border-blue-600/40 dark:text-blue-400 dark:border-blue-400/40',
+    status === 'Failed'     && 'text-destructive border-destructive/40',
   );
   return (
     <Badge variant="outline" className={cls}>
-      {(status === 'pending' || status === 'processing') && (
+      {(status === 'Pending' || status === 'Processing') && (
         <span
           className={cn(
             'h-1.5 w-1.5 rounded-full animate-pulse',
-            status === 'pending'    && 'bg-amber-600 dark:bg-amber-400',
-            status === 'processing' && 'bg-blue-600 dark:bg-blue-400',
+            status === 'Pending'    && 'bg-amber-600 dark:bg-amber-400',
+            status === 'Processing' && 'bg-blue-600 dark:bg-blue-400',
           )}
         />
       )}
-      {status === 'active'     && 'Active'}
-      {status === 'pending'    && 'Pending'}
-      {status === 'processing' && 'Processing'}
-      {status === 'failed'     && 'Failed'}
-      {status === 'inactive'   && 'Inactive'}
+      {status === 'Ready'      && 'Active'}
+      {status === 'Pending'    && 'Pending'}
+      {status === 'Processing' && 'Processing'}
+      {status === 'Failed'     && 'Failed'}
     </Badge>
   );
 }
@@ -126,9 +125,9 @@ function StatusBadge({ status }: { status: IngestionStatus }) {
 const INGESTION_STEPS = ['Uploading', 'Extracting', 'Chunking', 'Embedding', 'Active'] as const;
 
 function statusToStep(status: IngestionStatus): number {
-  if (status === 'pending')    return 0;
-  if (status === 'processing') return 2;
-  if (status === 'active')     return 4;
+  if (status === 'Pending')    return 0;
+  if (status === 'Processing') return 2;
+  if (status === 'Ready')      return 4;
   return -1;
 }
 
@@ -284,7 +283,7 @@ function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialog
       if (pct >= 100) setUploadDone(true);
     };
     upload(
-      { file: uploadFile, title: uploadTitle.trim(), sourceType: 'file' },
+      { file: uploadFile, title: uploadTitle.trim(), sourceType: 'File' },
       {
         onSuccess: () => { handleClose(); },
         onError:   () => {
@@ -311,7 +310,7 @@ function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialog
     }
     setUrlError(null);
     upload(
-      { title: urlTitle.trim() || trimmed, sourceType: 'url', sourceUrl: trimmed },
+      { title: urlTitle.trim() || trimmed, sourceType: 'Url', sourceUrl: trimmed },
       { onSuccess: handleClose },
     );
   }
@@ -320,7 +319,7 @@ function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialog
     if (textMode === 'free') {
       if (!freeTitle.trim() || !freeText.trim()) return;
       upload(
-        { title: freeTitle.trim(), sourceType: 'text', content: freeText.trim() },
+        { title: freeTitle.trim(), sourceType: 'Text', content: freeText.trim() },
         { onSuccess: handleClose },
       );
     } else {
@@ -329,7 +328,7 @@ function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialog
       upload(
         {
           title: freeTitle.trim() || 'FAQ Document',
-          sourceType: 'faq_pairs',
+          sourceType: 'Faq',
           faqPairs: JSON.stringify(
             valid.map(({ question, answer }) => ({ question, answer })),
           ),
@@ -344,7 +343,9 @@ function AddKnowledgeDialog({ open, onClose, uploadBlocked }: AddKnowledgeDialog
     upload(
       {
         title: `Past Chats — ${chatFrom} to ${chatTo}`,
-        sourceType: 'past_chats',
+        // Knowledge.Domain.Enums.SourceType has no PastChats value yet — this tab is UI-only
+        // pending backend support; the request currently lands as SourceType.File server-side.
+        sourceType: 'past_chats' as SourceType,
         dateFrom: chatFrom,
         dateTo: chatTo,
         content: resolvedOnly ? 'resolved_only=true' : undefined,
@@ -865,7 +866,7 @@ export default function KnowledgePage() {
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={doc.status} />
-                      {(doc.status === 'pending' || doc.status === 'processing') && (
+                      {(doc.status === 'Pending' || doc.status === 'Processing') && (
                         <IngestionSteps status={doc.status} />
                       )}
                     </TableCell>

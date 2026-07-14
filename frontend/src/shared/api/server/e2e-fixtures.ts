@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { ChannelConnectionDto } from '@/features/settings/model/channel-connection.types';
-import type { KnowledgeDocumentPagedResult, KnowledgeDocumentDto } from '@/features/settings/model/knowledge-document.types';
+import type { KnowledgeDocumentPagedResult, KnowledgeDocumentDto, KnowledgeDocumentDetailDto } from '@/features/settings/model/knowledge-document.types';
 import type { WorkspaceChatSettingsDto } from '@/features/settings/model/chat-settings.types';
 
 // ── Channel Connections ────────────────────────────────────────────────────────
@@ -81,10 +81,10 @@ const E2E_KNOWLEDGE_DOCS: KnowledgeDocumentDto[] = [
   {
     id: '3',
     title: 'Warranty Terms 2026',
-    sourceType: 'url',
-    status: 'processing',
+    fileName: 'Warranty Terms 2026',
+    sourceType: 'Url',
+    status: 'Processing',
     chunkCount: 0,
-    embeddingModel: 'text-embedding-3-large',
     failureReason: null,
     version: 1,
     createdAt: '2026-06-30T09:00:00Z',
@@ -93,10 +93,10 @@ const E2E_KNOWLEDGE_DOCS: KnowledgeDocumentDto[] = [
   {
     id: '1',
     title: 'Product Catalog 2026',
-    sourceType: 'file',
-    status: 'active',
+    fileName: 'Product Catalog 2026',
+    sourceType: 'File',
+    status: 'Ready',
     chunkCount: 142,
-    embeddingModel: 'text-embedding-3-large',
     failureReason: null,
     version: 3,
     createdAt: '2026-06-25T08:00:00Z',
@@ -105,10 +105,10 @@ const E2E_KNOWLEDGE_DOCS: KnowledgeDocumentDto[] = [
   {
     id: '5',
     title: 'Delivery SLA Guide',
-    sourceType: 'file',
-    status: 'failed',
+    fileName: 'Delivery SLA Guide',
+    sourceType: 'File',
+    status: 'Failed',
     chunkCount: 0,
-    embeddingModel: 'text-embedding-3-large',
     failureReason: 'File could not be parsed. Ensure the PDF is not password-protected.',
     version: 1,
     createdAt: '2026-06-29T11:00:00Z',
@@ -117,10 +117,10 @@ const E2E_KNOWLEDGE_DOCS: KnowledgeDocumentDto[] = [
   {
     id: '2',
     title: 'Return Policy FAQ',
-    sourceType: 'faq_pairs',
-    status: 'active',
+    fileName: 'Return Policy FAQ',
+    sourceType: 'Faq',
+    status: 'Ready',
     chunkCount: 24,
-    embeddingModel: 'text-embedding-3-large',
     failureReason: null,
     version: 1,
     createdAt: '2026-06-27T14:30:00Z',
@@ -129,10 +129,10 @@ const E2E_KNOWLEDGE_DOCS: KnowledgeDocumentDto[] = [
   {
     id: '4',
     title: 'Past Chat Import',
-    sourceType: 'text',
-    status: 'active',
+    fileName: 'Past Chat Import',
+    sourceType: 'Text',
+    status: 'Ready',
     chunkCount: 318,
-    embeddingModel: 'text-embedding-3-large',
     failureReason: null,
     version: 1,
     createdAt: '2026-06-26T09:00:00Z',
@@ -150,10 +150,10 @@ const E2E_KNOWLEDGE_RESULT: KnowledgeDocumentPagedResult = {
 const E2E_UPLOADED_DOC: KnowledgeDocumentDto = {
   id: 'e2e-doc-new',
   title: 'New Document',
-  sourceType: 'file',
-  status: 'pending',
+  fileName: 'New Document',
+  sourceType: 'File',
+  status: 'Pending',
   chunkCount: 0,
-  embeddingModel: 'text-embedding-3-large',
   failureReason: null,
   version: 1,
   createdAt: '2026-07-01T00:00:00Z',
@@ -165,7 +165,26 @@ export const e2eKnowledgeUpload = () => NextResponse.json(E2E_UPLOADED_DOC, { st
 export const e2eKnowledgeDelete = () => new NextResponse(null, { status: 204 });
 export const e2eKnowledgeGetById = (_req: unknown, routeCtx: { params: Promise<Record<string, string>> }) => {
   // Return the first doc as a stand-in for any ID request in E2E
-  return NextResponse.json({ ...E2E_KNOWLEDGE_DOCS[0], chunks: [], versionHistory: [] });
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const doc = E2E_KNOWLEDGE_DOCS[0]!;
+  const detail: KnowledgeDocumentDetailDto = {
+    id: doc.id,
+    title: doc.title,
+    fileName: doc.fileName,
+    sourceType: doc.sourceType,
+    sourceUrl: null,
+    status: doc.status,
+    chunkCount: doc.chunkCount,
+    failureReason: doc.failureReason,
+    version: doc.version,
+    embeddingModel: 'text-embedding-3-large',
+    embeddingDimensions: 1024,
+    createdAt: doc.createdAt,
+    chunks: [],
+    chunkTotal: 0,
+    versionHistory: [],
+  };
+  return NextResponse.json(detail);
 };
 
 // ── Chat Settings ──────────────────────────────────────────────────────────────

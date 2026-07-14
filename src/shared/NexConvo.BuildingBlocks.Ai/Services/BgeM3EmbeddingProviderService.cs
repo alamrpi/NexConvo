@@ -12,7 +12,7 @@ namespace NexConvo.BuildingBlocks.Ai.Services;
 /// </summary>
 public class BgeM3EmbeddingProviderService : IEmbeddingProviderService
 {
-    private const string ModelId = "BAAI/bge-m3";
+    private const string ModelIdValue = "BAAI/bge-m3";
     private const string DefaultBaseUrl = "http://bge-m3:7997";
     private const string QueryInstruction = "Represent this sentence for searching relevant passages: ";
     private const int EmbeddingDimensions = 1024;
@@ -32,6 +32,8 @@ public class BgeM3EmbeddingProviderService : IEmbeddingProviderService
     }
 
     public int Dimensions => EmbeddingDimensions;
+
+    public string ModelId => ModelIdValue;
 
     public async Task<float[]> EmbedAsync(string text, EmbeddingInputType inputType, CancellationToken cancellationToken)
     {
@@ -102,6 +104,8 @@ public class BgeM3EmbeddingProviderService : IEmbeddingProviderService
                 : null;
 
         // Never log the embedded text (PII, Standard 9); TenantId/CorrelationId attach via LogContext.
-        _logger.LogInformation("Embedded {Count} texts with {Provider} ({TokenCount} tokens)", count, "BgeM3", tokens);
+        _logger.LogInformation(
+            "Embedded {Count} texts with {Provider} model {ModelId} ({TokenCount} tokens)",
+            count, "BgeM3", ModelId, tokens);
     }
 }

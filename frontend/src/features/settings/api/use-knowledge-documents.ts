@@ -30,7 +30,7 @@ export function useKnowledgeDocuments(params?: KnowledgeDocumentsParams) {
     refetchInterval: (query) => {
       const items = query.state.data?.items ?? [];
       const hasInFlight = items.some(
-        (d) => d.status === 'pending' || d.status === 'processing',
+        (d) => d.status === 'Pending' || d.status === 'Processing',
       );
       return hasInFlight ? 3_000 : false;
     },

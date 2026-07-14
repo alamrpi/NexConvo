@@ -9,10 +9,10 @@ import type { KnowledgeDocumentDto, KnowledgeDocumentPagedResult } from '../mode
 const mockDocument: KnowledgeDocumentDto = {
   id: 'doc-1',
   title: 'Product FAQ',
-  sourceType: 'file',
-  status: 'active',
+  fileName: 'product-faq.pdf',
+  sourceType: 'File',
+  status: 'Ready',
   chunkCount: 42,
-  embeddingModel: 'text-embedding-3-large',
   failureReason: null,
   version: 1,
   createdAt: '2026-01-01T00:00:00Z',

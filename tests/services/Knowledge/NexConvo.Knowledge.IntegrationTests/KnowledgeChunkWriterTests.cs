@@ -121,6 +121,52 @@ public class KnowledgeChunkWriterTests(KnowledgePostgresFixture fixture)
     }
 
     [Fact]
+    public async Task WriteChunksAsync_NewDocumentVersion_DeactivatesPriorVersionChunks()
+    {
+        // D4-5 regression guard: a re-embed writes chunks at a NEW DocumentVersion, so the
+        // same-version delete never touches the prior version's rows. Without this, both the
+        // stale and fresh chunk sets stay is_active=true and both retrieve forever.
+        var tenantId = Guid.NewGuid();
+        var document = await SeedDocumentAsync(tenantId, $"hash-{Guid.NewGuid():N}");
+
+        await using (var db = fixture.CreateTenantContext(tenantId))
+        {
+            var writer = new KnowledgeChunkWriter(
+                db, new FixedTenantContext(tenantId), NullLogger<KnowledgeChunkWriter>.Instance);
+
+            await writer.WriteChunksAsync(
+                document.Id,
+                documentVersion: 1,
+                [new KnowledgeChunkWrite("version 1 chunk", 0, 3, RandomEmbedding(1024))],
+                CancellationToken.None);
+        }
+
+        await using (var db = fixture.CreateTenantContext(tenantId))
+        {
+            var writer = new KnowledgeChunkWriter(
+                db, new FixedTenantContext(tenantId), NullLogger<KnowledgeChunkWriter>.Instance);
+
+            await writer.WriteChunksAsync(
+                document.Id,
+                documentVersion: 2,
+                [new KnowledgeChunkWrite("version 2 chunk", 0, 3, RandomEmbedding(1024))],
+                CancellationToken.None);
+        }
+
+        await using var verify = fixture.CreateTenantContext(tenantId);
+        var chunks = await verify.KnowledgeChunks
+            .Where(c => c.DocumentId == document.Id)
+            .OrderBy(c => c.DocumentVersion)
+            .ToListAsync();
+
+        chunks.Should().HaveCount(2);
+        chunks[0].DocumentVersion.Should().Be(1);
+        chunks[0].IsActive.Should().BeFalse("the prior version must be deactivated once a new version is written");
+        chunks[1].DocumentVersion.Should().Be(2);
+        chunks[1].IsActive.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Writer_Rejects_1536DimensionEmbedding()
     {
         var tenantId = Guid.NewGuid();

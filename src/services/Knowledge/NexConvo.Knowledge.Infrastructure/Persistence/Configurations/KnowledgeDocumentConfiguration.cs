@@ -98,9 +98,13 @@ public sealed class KnowledgeDocumentConfiguration : IEntityTypeConfiguration<Kn
             .ValueGeneratedOnAddOrUpdate()
             .IsConcurrencyToken();
 
-        // Dedup guard: same content cannot be re-uploaded for the same tenant
+        // Dedup guard: same content cannot be re-uploaded for the same tenant. Partial (WHERE
+        // is_active) so a soft-deleted document's hash can be reused — otherwise re-uploading
+        // identical content after deletion hits this constraint (unhandled 500) even though
+        // UploadKnowledgeDocumentCommandHandler's own dedup check already ignores inactive rows.
         builder.HasIndex(d => new { d.TenantId, d.ContentHash })
             .IsUnique()
+            .HasFilter("is_active")
             .HasDatabaseName("idx_knowledge_documents_content_hash");
 
         builder.HasIndex(d => d.TenantId)

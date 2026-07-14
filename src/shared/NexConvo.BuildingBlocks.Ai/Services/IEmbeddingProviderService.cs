@@ -22,6 +22,11 @@ public interface IEmbeddingProviderService
     /// <summary>The fixed vector length this provider produces (1024 for BGE-M3 / Cohere).</summary>
     int Dimensions { get; }
 
+    /// <summary>The model identifier this provider actually embeds with (e.g. "BAAI/bge-m3",
+    /// "embed-multilingual-v3.0") — persisted onto the KnowledgeDocument so the UI reports which
+    /// model really produced a document's chunks, not a stale constructor default.</summary>
+    string ModelId { get; }
+
     /// <summary>
     /// Embeds a single piece of text.
     /// </summary>

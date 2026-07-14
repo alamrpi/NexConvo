@@ -53,6 +53,10 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="7.3.0" />
   </ItemGroup>
+  <!-- Real-time (SignalR + Redis backplane) -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.4" />
+  </ItemGroup>
   <!-- Messaging / Event Bus -->
   <ItemGroup>
     <PackageVersion Include="MassTransit" Version="8.3.4" />
@@ -106,6 +110,8 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.1.0" />
     <PackageVersion Include="Testcontainers.RabbitMq" Version="4.1.0" />
+    <PackageVersion Include="Testcontainers.Redis" Version="4.1.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
     <PackageVersion Include="Respawn" Version="6.2.1" />
   </ItemGroup>

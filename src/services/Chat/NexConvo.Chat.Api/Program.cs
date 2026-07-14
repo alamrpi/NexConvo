@@ -4,6 +4,8 @@ using NexConvo.BuildingBlocks.Ai;
 using NexConvo.BuildingBlocks.Infrastructure.Web;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Observability;
+using NexConvo.Chat.Api.Extensions;
+using NexConvo.Chat.Api.Realtime;
 using NexConvo.Chat.Application;
 using NexConvo.Chat.Infrastructure;
 using NexConvo.Chat.Infrastructure.Persistence;
@@ -26,6 +28,22 @@ builder.Services
     {
         builder.Configuration.GetSection("Jwt").Bind(options);
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.Events = new JwtBearerEvents
+        {
+            // Browsers cannot set an Authorization header on a WebSocket handshake; SignalR's
+            // documented pattern is the access_token query parameter, honored ONLY for hub paths
+            // so regular API calls keep header-only auth.
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
+        };
     });
 // Permission policies: 'permission: *' (Owner wildcard) satisfies any specific key.
 static Action<AuthorizationPolicyBuilder> RequirePermission(string key) => policy =>
@@ -34,7 +52,8 @@ static Action<AuthorizationPolicyBuilder> RequirePermission(string key) => polic
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("settings:manage",   RequirePermission("settings:manage"));
+    options.AddPolicy("settings:manage",     RequirePermission("settings:manage"));
+    options.AddPolicy("conversations:read",  RequirePermission("conversations:read"));
 });
 
 builder.Services.AddControllers()
@@ -45,6 +64,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddChatApplication();
 builder.Services.AddChatInfrastructure(builder.Configuration);
+builder.Services.AddChatRealtime(builder.Configuration);
 builder.Services.AddAiProviders();
 
 var app = builder.Build();
@@ -57,6 +77,8 @@ app.UseAuthorization();
 app.UseNexConvoSwagger();
 app.UseNexConvoExceptionHandling();
 app.MapControllers();
+// Deny-by-default at the endpoint too (defense in depth on top of the hub's [Authorize]).
+app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");
 

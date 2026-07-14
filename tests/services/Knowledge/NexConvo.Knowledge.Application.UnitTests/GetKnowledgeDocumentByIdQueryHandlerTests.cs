@@ -81,4 +81,28 @@ public class GetKnowledgeDocumentByIdQueryHandlerTests
 
         result.Value!.Chunks.Should().HaveCount(100);
     }
+
+    [Fact]
+    public async Task Handle_AlwaysPopulatesVersionHistory_IncludingSupersededVersions()
+    {
+        // Regression guard: the frontend detail page renders doc.versionHistory.map(...) directly
+        // and crashes (TypeError: Cannot read properties of undefined) if this field is ever
+        // missing — it was previously omitted entirely from the DTO. A re-embedded document's
+        // prior-version chunks are soft-deactivated (D4-5), not deleted, so both versions' history
+        // must be reconstructible from knowledge_chunks alone.
+        var document = new KnowledgeDocument(_tenantId, "handbook.pdf", "hash");
+        document.SetReady(1, "BAAI/bge-m3", 1024);
+        var v1Chunk = new KnowledgeChunk(_tenantId, document.Id, "v1 chunk", 0, 3, documentVersion: 1);
+        v1Chunk.SetActive(false);
+        var v2Chunk = new KnowledgeChunk(_tenantId, document.Id, "v2 chunk", 0, 3, documentVersion: 2);
+        SetupDb([document], [v1Chunk, v2Chunk]);
+
+        var handler = new GetKnowledgeDocumentByIdQueryHandler(_dbMock);
+        var result = await handler.Handle(
+            new GetKnowledgeDocumentByIdQuery(document.Id, ChunkPage: 1, ChunkPageSize: 20), CancellationToken.None);
+
+        result.Value!.VersionHistory.Should().HaveCount(2);
+        result.Value.VersionHistory.Should().Contain(v => v.Version == 1 && v.ChunkCount == 1);
+        result.Value.VersionHistory.Should().Contain(v => v.Version == 2 && v.ChunkCount == 1);
+    }
 }

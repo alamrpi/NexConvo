@@ -34,10 +34,9 @@ public sealed class ReplyOrchestrator(
     IGroundedPromptAssembler promptAssembler,
     ITokenBudgeter tokenBudgeter,
     IPublishEndpoint publisher,
+    IReplyStreamSink streamSink,
     ILogger<ReplyOrchestrator> logger) : IReplyOrchestrator
 {
-    private const string AbstentionMarker = "[[NO_ANSWER]]";
-
     public async Task<ReplyOutcome> RunAsync(Guid tenantId, Guid conversationId, CancellationToken cancellationToken)
     {
         await using var db = dbFactory.CreateForTenant(tenantId);
@@ -72,7 +71,7 @@ public sealed class ReplyOrchestrator(
         var aiConfig = JsonSerializer.Deserialize<CachedAiConfig>(Encoding.UTF8.GetString(cachedBytes))!;
 
         var matches = await knowledge.SearchAsync(
-            lastInbound.Body, ChannelProfile.Chat.TopK, ChannelProfile.Chat.MinScore, cancellationToken);
+            tenantId, lastInbound.Body, ChannelProfile.Chat.TopK, ChannelProfile.Chat.MinScore, cancellationToken);
 
         var contributions = matches
             .Select((m, i) => new ContextContribution(i + 1, m.ChunkId, m.DocumentId, m.Content, m.Score))
@@ -92,10 +91,24 @@ public sealed class ReplyOrchestrator(
         {
             cancellationToken.ThrowIfCancellationRequested();
             replyBuilder.Append(chunk.Content);
+
+            // Unbuffered fan-out: each token reaches live viewers as it arrives. This runs BEFORE
+            // the confidence gate below, so on a low-confidence outcome viewers have already seen
+            // the draft — the subsequent handoff notification is their signal to discard it.
+            if (!string.IsNullOrEmpty(chunk.Content))
+            {
+                await streamSink.OnTokenAsync(tenantId, conversationId, chunk.Content, cancellationToken);
+            }
         }
 
         var replyText = replyBuilder.ToString();
-        var abstained = replyText.TrimStart().StartsWith(AbstentionMarker, StringComparison.Ordinal);
+
+        // Substring + case-insensitive, not a strict prefix match: models sometimes preface or
+        // wrap the marker (e.g. "I'm sorry, but [[NO_ANSWER]]") rather than emitting it bare, and
+        // a strict Ordinal prefix check misses that. GroundedPromptAssembler additionally instructs
+        // the model to never translate/localize the marker, so this check stays valid even when
+        // the surrounding answer is in the user's own language (D4-3).
+        var abstained = replyText.Contains(GroundedPromptAssembler.AbstentionMarker, StringComparison.OrdinalIgnoreCase);
         var topScore = matches.Count > 0 ? matches.Max(m => m.Score) : 0d;
         var confidence = RagConfidence.FromRetrievalAndAbstention(topScore, abstained);
 
@@ -113,6 +126,18 @@ public sealed class ReplyOrchestrator(
             $"conversationId={conversationId},messageId={message.Id},confidenceBand={confidence.Band},confidenceScore={confidence.Score:F2}",
             DateTimeOffset.UtcNow));
         await db.SaveChangesAsync(cancellationToken);
+
+        // Persistence is authoritative and already committed; the completion signal carries the
+        // real message id + citations so clients can reconcile the streamed draft with the record.
+        await streamSink.OnCompletedAsync(
+            tenantId,
+            conversationId,
+            new ReplyCompletedNotification(
+                message.Id,
+                replyText,
+                confidence,
+                fittedContext.Select(c => new ReplyCitation(c.Index, c.ChunkId, c.DocumentId, c.Score)).ToList()),
+            cancellationToken);
 
         logger.LogInformation(
             "AI reply appended to conversation {ConversationId}, message {MessageId}, confidence {ConfidenceScore}",
@@ -139,6 +164,17 @@ public sealed class ReplyOrchestrator(
         await publisher.Publish(
             new ConversationHandoffRequestedIntegrationEvent(
                 conversation.TenantId, conversation.Id, reason.ToString(), DateTimeOffset.UtcNow),
+            cancellationToken);
+
+        // Real-time ping AFTER persist + outbox publish. A crash in this window loses only the
+        // live notification (the persisted escalation still shows on dashboard load); the
+        // integration event above remains the reliable cross-service contract. A direct sink call
+        // (vs consuming that event) keeps the agent-facing ping exactly-once — broker redelivery
+        // would re-toast every agent dashboard.
+        await streamSink.OnHandoffAsync(
+            conversation.TenantId,
+            conversation.Id,
+            new HandoffNotification(escalation.Id, reason.ToString(), DateTimeOffset.UtcNow),
             cancellationToken);
 
         logger.LogInformation(

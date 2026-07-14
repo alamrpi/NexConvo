@@ -152,8 +152,11 @@ public sealed class KnowledgeIngestionJob : IKnowledgeIngestionJobRunner
             var chunkWriter = _chunkWriterFactory(tenantId);
             await chunkWriter.WriteChunksAsync(document.Id, document.Version, chunkWrites, cancellationToken);
 
-            // Transition: Processing → Ready
-            document.SetReady(chunkWrites.Count, document.EmbeddingModel, provider.Dimensions);
+            // Transition: Processing → Ready. Report the model that ACTUALLY embedded these
+            // chunks, not document.EmbeddingModel's stale constructor default (e.g. "BAAI/bge-m3"
+            // even when Cohere is configured as the active provider) — otherwise the UI's Model
+            // column and version history are wrong for any tenant not running the default provider.
+            document.SetReady(chunkWrites.Count, provider.ModelId, provider.Dimensions);
             await db.SaveChangesAsync(cancellationToken);
 
             await _publishEndpoint.Publish(
@@ -167,8 +170,8 @@ public sealed class KnowledgeIngestionJob : IKnowledgeIngestionJobRunner
                 cancellationToken);
 
             _logger.LogInformation(
-                "Knowledge document {DocumentId} ingestion completed with {ChunkCount} chunks for tenant {TenantId}",
-                documentId, document.ChunkCount, tenantId);
+                "Knowledge document {DocumentId} ingestion completed with {ChunkCount} chunks using {EmbeddingModel} for tenant {TenantId}",
+                documentId, document.ChunkCount, provider.ModelId, tenantId);
         }
         catch (OperationCanceledException)
         {

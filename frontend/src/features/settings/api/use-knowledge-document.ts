@@ -17,7 +17,7 @@ export function useKnowledgeDocument(id: string) {
     },
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === 'pending' || status === 'processing' ? 3_000 : false;
+      return status === 'Pending' || status === 'Processing' ? 3_000 : false;
     },
   });
 }

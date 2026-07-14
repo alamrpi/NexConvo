@@ -69,4 +69,21 @@ public class KnowledgeSchemaTests(KnowledgePostgresFixture fixture)
         indexDef.Should().StartWith("CREATE UNIQUE INDEX");
         indexDef.Should().Contain("tenant_id").And.Contain("content_hash");
     }
+
+    [Fact]
+    public async Task ContentHashDedupIndex_IsPartial_ScopedToActiveRowsOnly()
+    {
+        // Regression guard: a plain (non-partial) unique index covers soft-deleted rows too, so
+        // re-uploading identical content after a document was deleted throws a raw
+        // DbUpdateException (surfaced as an unhandled 500) even though the application-level
+        // dedup check in UploadKnowledgeDocumentCommandHandler already ignores inactive rows.
+        var indexDef = await ScalarAsync<string>(@"
+            SELECT indexdef FROM pg_indexes
+            WHERE tablename = 'knowledge_documents'
+              AND indexname = 'idx_knowledge_documents_content_hash'");
+
+        indexDef.Should().NotBeNull();
+        indexDef.Should().Contain("WHERE", "the index must be partial so soft-deleted rows don't block a content hash from being reused");
+        indexDef.Should().Contain("is_active");
+    }
 }

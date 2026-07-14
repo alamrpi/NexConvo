@@ -85,4 +85,19 @@ public class GetKnowledgeDocumentsPagedQueryHandlerTests
 
         result.Value!.Items.Should().ContainSingle(d => d.Title == "site");
     }
+
+    [Fact]
+    public async Task Handle_PopulatesUpdatedAt_OnEverySummary()
+    {
+        // Regression guard: the frontend list page renders doc.updatedAt directly and crashes
+        // (RangeError: Invalid time value) if it's ever missing from the DTO — this DTO field
+        // was previously omitted entirely from the projection.
+        var doc = MakeDocument(_tenantId, "a.pdf", DocumentStatus.Ready);
+        SetupDb([doc]);
+
+        var handler = new GetKnowledgeDocumentsPagedQueryHandler(_dbMock);
+        var result = await handler.Handle(new GetKnowledgeDocumentsPagedQuery(1, 20), CancellationToken.None);
+
+        result.Value!.Items.Should().ContainSingle(d => d.UpdatedAt == doc.UpdatedAt);
+    }
 }

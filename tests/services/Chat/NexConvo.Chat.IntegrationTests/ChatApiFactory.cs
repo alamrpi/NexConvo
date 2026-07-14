@@ -1,17 +1,25 @@
+using System.Security.Claims;
+using System.Text;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 using NexConvo.BuildingBlocks.Ai.Models;
 using NexConvo.BuildingBlocks.Ai.Services;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Chat.Application.Common.Interfaces;
 using NexConvo.Chat.Domain.Entities;
 using NexConvo.Chat.Domain.Enums;
+using NexConvo.Chat.Domain.ValueObjects;
 using NexConvo.Chat.Infrastructure.Persistence;
 using NexConvo.Contracts.Enums;
 using NSubstitute;
@@ -35,6 +43,15 @@ namespace NexConvo.Chat.IntegrationTests;
 public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private const string ServicePassword = "svc_pw";
+
+    /// <summary>
+    /// Symmetric key for test-issued JWTs. Production validates via the Identity authority's JWKS;
+    /// tests have no Identity service, so ConfigureWebHost swaps validation to this key while
+    /// keeping the rest of the JwtBearer pipeline (including the /hubs access_token query-string
+    /// hook from Program.cs) fully real.
+    /// </summary>
+    private static readonly SymmetricSecurityKey TestSigningKey =
+        new(Encoding.UTF8.GetBytes("nexconvo-chat-integration-test-signing-key-48ch!"));
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16")
@@ -106,7 +123,7 @@ public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifet
 
     private void ConfigureDefaultDoubles()
     {
-        KnowledgeMock.SearchAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+        KnowledgeMock.SearchAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
             .Returns([new KnowledgeChunkMatch("chunk-1", "doc-1", "Refunds are processed within 5 business days.", 0.9)]);
 
         var aiProvider = Substitute.For<IAiProviderService>();
@@ -176,6 +193,62 @@ public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifet
     }
 
     /// <summary>
+    /// Seeds an open AiHandling conversation so hub tests can join it and so a later
+    /// MessageReceivedIntegrationEvent with the same Channel + ExternalSenderId appends to this
+    /// exact conversation (MessageReceivedConsumer matches on that channel-thread identity).
+    /// </summary>
+    public async Task<Guid> SeedConversationAsync(Guid tenantId, string externalSenderId)
+    {
+        await using var db = CreateSeedContext(tenantId);
+        var conversation = Conversation.StartAiHandling(
+            tenantId, new ChannelIdentity(LeadSourceChannel.WhatsApp, externalSenderId), contactId: null);
+        db.Conversations.Add(conversation);
+        await db.SaveChangesAsync();
+        return conversation.Id;
+    }
+
+    /// <summary>Mints an HS256 JWT with the same claim names Identity's JwtTokenIssuer uses.</summary>
+    public static string CreateAccessToken(Guid tenantId, Guid userId, params string[] permissions)
+    {
+        var claims = new List<Claim>
+        {
+            new("sub", userId.ToString()),
+            new("tenant_id", tenantId.ToString()),
+        };
+        claims.AddRange(permissions.Select(p => new Claim("permission", p)));
+
+        return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddMinutes(10),
+            SigningCredentials = new SigningCredentials(TestSigningKey, SecurityAlgorithms.HmacSha256),
+        });
+    }
+
+    /// <summary>
+    /// A hub connection through the in-memory TestServer. The token rides the access_token query
+    /// parameter (not AccessTokenProvider) to deliberately exercise Program.cs's OnMessageReceived
+    /// hook — the same path a browser WebSocket handshake uses. LongPolling is pinned because the
+    /// WebSocket transport bypasses HttpMessageHandlerFactory and can't reach the TestServer.
+    /// </summary>
+    public HubConnection CreateHubConnection(string? accessToken)
+    {
+        var url = "http://localhost/hubs/chat";
+        if (!string.IsNullOrEmpty(accessToken))
+        {
+            url += $"?access_token={Uri.EscapeDataString(accessToken)}";
+        }
+
+        return new HubConnectionBuilder()
+            .WithUrl(url, options =>
+            {
+                options.HttpMessageHandlerFactory = _ => Server.CreateHandler();
+                options.Transports = HttpTransportType.LongPolling;
+            })
+            .Build();
+    }
+
+    /// <summary>
     /// Publishes directly via IBus (not the scoped IPublishEndpoint) so the call goes straight to
     /// the transport instead of being buffered by the EF outbox — the outbox only intercepts
     /// publishes made inside a unit of work that later calls ChatDbContext.SaveChangesAsync, which
@@ -198,6 +271,27 @@ public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         {
             services.AddSingleton(KnowledgeMock);
             services.AddSingleton(AiProviderFactoryMock);
+
+            // Production JwtBearer validates against the Identity authority (OIDC discovery +
+            // JWKS), which isn't running here. This Configure runs AFTER Program.cs's own
+            // AddJwtBearer callback (registration order) but BEFORE the framework's
+            // JwtBearerPostConfigureOptions — which would otherwise reject the http:// authority
+            // outright (RequireHttpsMetadata is true outside Development). It mutates the options
+            // in place, so Program.cs's Events (the /hubs access_token hook) survive; only the
+            // validation source is swapped to the local symmetric test key.
+            services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.Authority = null;
+                options.ConfigurationManager = null;
+                options.RequireHttpsMetadata = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = TestSigningKey,
+                };
+            });
 
             // Real Redis isn't running for this test host. AddChatInfrastructure already
             // registered a Redis-backed IDistributedCache (via AddStackExchangeRedisCache, which

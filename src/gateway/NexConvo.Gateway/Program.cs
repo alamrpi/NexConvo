@@ -23,6 +23,25 @@ builder.Services
     {
         builder.Configuration.GetSection("Jwt").Bind(options);
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.Events = new JwtBearerEvents
+        {
+            // The /hubs/{**catch-all} route enforces AuthorizationPolicy "default", but browsers
+            // cannot set an Authorization header on a WebSocket handshake — SignalR clients send
+            // the JWT as an access_token query parameter instead. Honor it for hub paths only;
+            // YARP forwards the query string, and the Chat service re-authenticates with the same
+            // hook. The token never reaches the access log: Serilog request logging records
+            // RequestPath only, not the query string.
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization();
 

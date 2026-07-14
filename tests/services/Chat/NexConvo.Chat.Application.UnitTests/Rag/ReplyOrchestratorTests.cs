@@ -29,7 +29,8 @@ public class ReplyOrchestratorTests
         IAiProviderFactory AiFactory,
         IDistributedCache Cache,
         IAiProviderService AiProvider,
-        IPublishEndpoint Publisher);
+        IPublishEndpoint Publisher,
+        IReplyStreamSink StreamSink);
 
     private static async IAsyncEnumerable<AiStreamChunk> StreamOf(params string[] chunks)
     {
@@ -57,7 +58,7 @@ public class ReplyOrchestratorTests
         db.SaveChangesAsync(Arg.Any<CancellationToken>()).Returns(1);
 
         var knowledge = Substitute.For<IKnowledgeRetrievalClient>();
-        knowledge.SearchAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+        knowledge.SearchAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
             .Returns([new KnowledgeChunkMatch("chunk-1", "doc-1", "Refunds are processed within 5 business days.", 0.9)]);
 
         var aiProvider = Substitute.For<IAiProviderService>();
@@ -80,12 +81,14 @@ public class ReplyOrchestratorTests
         var dbFactory = Substitute.For<IChatDbContextFactory>();
         dbFactory.CreateForTenant(conversation.TenantId).Returns(db);
 
+        var streamSink = Substitute.For<IReplyStreamSink>();
+
         var sut = new ReplyOrchestrator(
             dbFactory, knowledge, aiFactory, cache, aes,
-            new GroundedPromptAssembler(), new TokenBudgeter(), publisher,
+            new GroundedPromptAssembler(), new TokenBudgeter(), publisher, streamSink,
             Substitute.For<ILogger<ReplyOrchestrator>>());
 
-        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher);
+        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher, streamSink);
     }
 
     private static string CachedAiConfigJson(Guid tenantId) => JsonSerializer.Serialize(new
@@ -157,6 +160,23 @@ public class ReplyOrchestratorTests
     }
 
     [Fact]
+    public async Task RunAsync_GroundedQuestion_PassesRunAsyncTenantIdToKnowledgeSearch()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        // Finding 2 regression guard: the tenant sent to Knowledge must be the caller-supplied
+        // RunAsync tenantId, never resolved from an ambient/HTTP-scoped context.
+        await ctx.Knowledge.Received(1).SearchAsync(
+            tenantId, Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task RunAsync_ModelAbstains_ReturnsHandoffOutcomeLowConfidence()
     {
         var tenantId = Guid.NewGuid();
@@ -167,6 +187,29 @@ public class ReplyOrchestratorTests
         ctx.AiProvider.GenerateStreamAsync(
                 Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(StreamOf("[[NO_ANSWER]]"));
+
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        outcome.Should().BeOfType<HandoffOutcome>();
+        ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.LowConfidence);
+    }
+
+    [Theory]
+    [InlineData("I'm sorry, but [[NO_ANSWER]]")]
+    [InlineData("[[no_answer]]")]
+    [InlineData("\"[[NO_ANSWER]]\"")]
+    public async Task RunAsync_ModelAbstainsWithWrappedOrCasedMarker_ReturnsHandoffOutcomeLowConfidence(string reply)
+    {
+        // D4-3 regression guard: abstention detection must not be a strict, case-sensitive prefix
+        // match — models sometimes preface, quote, or vary the case of the marker.
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "What is your CEO's home address?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.AiProvider.GenerateStreamAsync(
+                Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(StreamOf(reply));
 
         var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
 
@@ -187,7 +230,7 @@ public class ReplyOrchestratorTests
 
         outcome.Should().BeOfType<HandoffOutcome>();
         ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.TriggerPhrase);
-        await ctx.Knowledge.DidNotReceive().SearchAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>());
+        await ctx.Knowledge.DidNotReceive().SearchAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>());
         ctx.AiFactory.DidNotReceive().GetProvider(Arg.Any<AiProviderType>());
     }
 
@@ -243,6 +286,152 @@ public class ReplyOrchestratorTests
 
         await act.Should().ThrowAsync<OperationCanceledException>();
         ctx.Db.Messages.DidNotReceive().Add(Arg.Any<Message>());
+    }
+
+    [Fact]
+    public async Task RunAsync_StreamedChunks_AreFannedToSinkPerChunkInOrder()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.AiProvider.GenerateStreamAsync(
+                Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(StreamOf("Refunds ", "take 5 days.", " [1]"));
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        Received.InOrder(() =>
+        {
+            ctx.StreamSink.OnTokenAsync(tenantId, conversation.Id, "Refunds ", Arg.Any<CancellationToken>());
+            ctx.StreamSink.OnTokenAsync(tenantId, conversation.Id, "take 5 days.", Arg.Any<CancellationToken>());
+            ctx.StreamSink.OnTokenAsync(tenantId, conversation.Id, " [1]", Arg.Any<CancellationToken>());
+        });
+        await ctx.StreamSink.Received(3).OnTokenAsync(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_AnsweredReply_CallsOnCompletedAfterSaveWithCitationsAndConfidence()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        var answered = outcome.Should().BeOfType<AnsweredOutcome>().Subject;
+        await ctx.StreamSink.Received(1).OnCompletedAsync(
+            tenantId,
+            conversation.Id,
+            Arg.Is<ReplyCompletedNotification>(n =>
+                n.MessageId == answered.MessageId &&
+                n.Text == answered.Text &&
+                n.Confidence == answered.Confidence &&
+                n.Citations.Count == 1 &&
+                n.Citations[0].Index == 1 &&
+                n.Citations[0].ChunkId == "chunk-1" &&
+                n.Citations[0].DocumentId == "doc-1" &&
+                n.Citations[0].Score == 0.9),
+            Arg.Any<CancellationToken>());
+        Received.InOrder(() =>
+        {
+            ctx.Db.SaveChangesAsync(Arg.Any<CancellationToken>());
+            ctx.StreamSink.OnCompletedAsync(
+                Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<ReplyCompletedNotification>(), Arg.Any<CancellationToken>());
+        });
+        await ctx.StreamSink.DidNotReceive().OnHandoffAsync(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<HandoffNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_RetrievalOverBudget_CitationsReflectOnlyTheFittedContextSentToTheLlm()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+
+        // ChannelProfile.Chat's budget is MaxAnswerTokens(600) * 4 = 2400 tokens. Five ~700-token
+        // chunks (~3500 total) forces TokenBudgeter.Fit to drop the lowest-scored ones. D4-2
+        // regression guard: the client-facing citations must reflect only what survived Fit
+        // (chunk-1/chunk-2, the two highest-scored), never the full pre-budget retrieval list.
+        var oversizedContent = string.Join(" ", Enumerable.Repeat("refund policy details", 350));
+        ctx.Knowledge.SearchAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .Returns(
+            [
+                new KnowledgeChunkMatch("chunk-1", "doc-1", oversizedContent, 0.95),
+                new KnowledgeChunkMatch("chunk-2", "doc-2", oversizedContent, 0.90),
+                new KnowledgeChunkMatch("chunk-3", "doc-3", oversizedContent, 0.85),
+                new KnowledgeChunkMatch("chunk-4", "doc-4", oversizedContent, 0.80),
+                new KnowledgeChunkMatch("chunk-5", "doc-5", oversizedContent, 0.75),
+            ]);
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        await ctx.StreamSink.Received(1).OnCompletedAsync(
+            tenantId,
+            conversation.Id,
+            Arg.Is<ReplyCompletedNotification>(n =>
+                n.Citations.Count < 5 &&
+                n.Citations.All(c => c.ChunkId != "chunk-4" && c.ChunkId != "chunk-5")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_LowConfidence_CallsOnHandoffAfterPersistNotOnCompleted()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "What is your CEO's home address?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.AiProvider.GenerateStreamAsync(
+                Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(StreamOf("[[NO_ANSWER]]"));
+
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        var handoff = outcome.Should().BeOfType<HandoffOutcome>().Subject;
+        await ctx.StreamSink.Received(1).OnHandoffAsync(
+            tenantId,
+            conversation.Id,
+            Arg.Is<HandoffNotification>(n =>
+                n.EscalationId == handoff.EscalationId && n.Reason == "LowConfidence"),
+            Arg.Any<CancellationToken>());
+        Received.InOrder(() =>
+        {
+            ctx.Db.SaveChangesAsync(Arg.Any<CancellationToken>());
+            ctx.Publisher.Publish(Arg.Any<ConversationHandoffRequestedIntegrationEvent>(), Arg.Any<CancellationToken>());
+            ctx.StreamSink.OnHandoffAsync(
+                Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<HandoffNotification>(), Arg.Any<CancellationToken>());
+        });
+        await ctx.StreamSink.DidNotReceive().OnCompletedAsync(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<ReplyCompletedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunAsync_EmptyContentChunks_AreNotFannedToSink()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "How long do refunds take?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.AiProvider.GenerateStreamAsync(
+                Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(StreamOf("", "Refunds take 5 business days. [1]"));
+
+        await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        await ctx.StreamSink.Received(1).OnTokenAsync(
+            tenantId, conversation.Id, "Refunds take 5 business days. [1]", Arg.Any<CancellationToken>());
+        await ctx.StreamSink.DidNotReceive().OnTokenAsync(
+            Arg.Any<Guid>(), Arg.Any<Guid>(), "", Arg.Any<CancellationToken>());
     }
 
     private static async IAsyncEnumerable<AiStreamChunk> ThrowingStream(

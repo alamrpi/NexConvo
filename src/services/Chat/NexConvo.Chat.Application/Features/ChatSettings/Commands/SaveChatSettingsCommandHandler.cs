@@ -27,6 +27,14 @@ public sealed class SaveChatSettingsCommandHandler(
 
         if (settings is null)
         {
+            // D4-8: only at first-create, and only when the caller sent no phrases of their own,
+            // seed the built-in defaults so a tenant who never touches this field still gets
+            // trigger-phrase handoff out of the box. Any later save — even an intentional empty
+            // list — is persisted as sent via the Update branch below, never re-seeded.
+            var firstCreatePhrasesJson = cmd.TriggerPhrases.Count > 0
+                ? phrasesJson
+                : JsonSerializer.Serialize(DefaultTriggerPhrases.Values);
+
             settings = new WorkspaceChatSettings(
                 tenantId,
                 cmd.PrimaryProvider,
@@ -36,7 +44,7 @@ public sealed class SaveChatSettingsCommandHandler(
                 cmd.HandoffConfidenceThreshold,
                 cmd.SentimentEscalationEnabled,
                 cmd.SentimentSensitivity,
-                phrasesJson,
+                firstCreatePhrasesJson,
                 cmd.MaxUnansweredMessages,
                 cmd.PiiMaskingLevel,
                 cmd.DataRetentionDays);

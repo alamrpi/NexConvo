@@ -19,6 +19,19 @@ public class GroundedPromptAssemblerTests
     }
 
     [Fact]
+    public void BuildSystemPrompt_InstructsMarkerMustNeverBeTranslatedOrLocalized()
+    {
+        // D4-3: the prompt also tells the model to reply in the user's own language, which would
+        // otherwise conflict with emitting an English-only abstention marker for non-English
+        // conversations. The instruction must explicitly carve out the marker from that rule.
+        var prompt = _sut.BuildSystemPrompt(ChannelProfile.Chat, tenantSystemPromptOverride: null);
+
+        prompt.Should().Contain("Never translate or localize");
+        prompt.Should().Contain("[[NO_ANSWER]]");
+        prompt.Should().Contain("verbatim");
+    }
+
+    [Fact]
     public void BuildSystemPrompt_VoiceProfile_OmitsCitationInstructionAndCapsLength()
     {
         var prompt = _sut.BuildSystemPrompt(ChannelProfile.Voice, tenantSystemPromptOverride: null);

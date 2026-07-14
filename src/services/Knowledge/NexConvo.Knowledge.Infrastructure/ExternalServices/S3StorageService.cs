@@ -62,21 +62,31 @@ internal sealed class S3StorageService : IS3StorageService
         var (client, bucketName, objectKey) = await ResolveAsync(tenantId, key, ct);
         try
         {
-            var response = await client.GetObjectAsync(new GetObjectRequest
+            using var response = await client.GetObjectAsync(new GetObjectRequest
             {
                 BucketName = bucketName,
                 Key = objectKey,
             }, ct);
 
+            // The AWS SDK wraps ResponseStream in a checksum-validating HashStream that does not
+            // support seeking (Position getter throws NotSupportedException) — true for every S3
+            // endpoint, not just MinIO. PdfPig (and any other format parser that needs to read a
+            // trailing cross-reference table) requires a seekable stream, so the response is
+            // buffered into memory here rather than returned as-is. The client/response are
+            // disposed as soon as the copy finishes; the caller only ever sees a plain, seekable
+            // MemoryStream.
+            var buffer = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(buffer, ct);
+            buffer.Position = 0;
+
             _logger.LogInformation(
                 "Knowledge source object {ObjectKey} read from S3 for tenant {TenantId}", objectKey, tenantId);
 
-            return new S3ObjectDisposingStream(response.ResponseStream, client);
+            return buffer;
         }
-        catch
+        finally
         {
             client.Dispose();
-            throw;
         }
     }
 
@@ -108,36 +118,6 @@ internal sealed class S3StorageService : IS3StorageService
             : $"{config.PathPrefix.TrimEnd('/')}/{key}";
 
         return (client, config.BucketName, objectKey);
-    }
-
-    /// <summary>Disposes the per-call <see cref="IAmazonS3"/> client alongside the response stream it owns.</summary>
-    private sealed class S3ObjectDisposingStream(Stream inner, IAmazonS3 client) : Stream
-    {
-        public override bool CanRead => inner.CanRead;
-        public override bool CanSeek => inner.CanSeek;
-        public override bool CanWrite => false;
-        public override long Length => inner.Length;
-        public override long Position { get => inner.Position; set => inner.Position = value; }
-
-        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => inner.ReadAsync(buffer, offset, count, cancellationToken);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            => inner.ReadAsync(buffer, cancellationToken);
-        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override void Flush() => inner.Flush();
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                inner.Dispose();
-                client.Dispose();
-            }
-            base.Dispose(disposing);
-        }
     }
 }
 

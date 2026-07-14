@@ -139,9 +139,6 @@ public class KnowledgeChunkRepositoryTests(KnowledgePostgresFixture fixture)
         var (document, writer) = await SeedDocumentAsync(db, tenantId, $"hash-{Guid.NewGuid():N}");
         await writer.WriteChunksAsync(document.Id, 1,
             [new KnowledgeChunkWrite("v1 chunk", 0, 3, queryVector)], CancellationToken.None);
-        // Re-embedding as version 2 marks version 1 chunks inactive via the document's normal flow;
-        // simulate directly by writing a new version — the writer only replaces same-version rows,
-        // so flip IsActive on the v1 rows to prove the repository respects it.
         var v1Chunk = await db.KnowledgeChunks.SingleAsync(c => c.DocumentId == document.Id);
         v1Chunk.SetActive(false);
         await db.SaveChangesAsync();
@@ -150,5 +147,30 @@ public class KnowledgeChunkRepositoryTests(KnowledgePostgresFixture fixture)
         var results = await repository.SimilaritySearchAsync(queryVector, topK: 10, minScore: 0.0, CancellationToken.None);
 
         results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SimilaritySearch_AfterReEmbedToNewVersion_NeverReturnsThePriorVersionsStaleChunk()
+    {
+        // D4-5 regression guard: re-embedding writes a NEW DocumentVersion rather than replacing
+        // the same version, so this exercises the writer's own version-cutover deactivation
+        // end-to-end (not a manual IsActive flip) — proving a stale chunk from a corrected/updated
+        // document can no longer surface in retrieval once the new version is written.
+        var tenantId = Guid.NewGuid();
+        var queryVector = Embedding();
+
+        await using var db = fixture.CreateTenantContext(tenantId);
+        var (document, writer) = await SeedDocumentAsync(db, tenantId, $"hash-{Guid.NewGuid():N}");
+
+        await writer.WriteChunksAsync(document.Id, documentVersion: 1,
+            [new KnowledgeChunkWrite("stale v1 chunk", 0, 3, queryVector)], CancellationToken.None);
+        await writer.WriteChunksAsync(document.Id, documentVersion: 2,
+            [new KnowledgeChunkWrite("current v2 chunk", 0, 3, queryVector)], CancellationToken.None);
+
+        var repository = new KnowledgeChunkRepository(db);
+        var results = await repository.SimilaritySearchAsync(queryVector, topK: 10, minScore: 0.0, CancellationToken.None);
+
+        results.Should().ContainSingle();
+        results[0].Content.Should().Be("current v2 chunk");
     }
 }

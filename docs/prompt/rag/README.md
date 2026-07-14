@@ -122,6 +122,12 @@ Every slice invokes the **`nexconvo-enterprise-standards`** skill + superpowers 
 
 ---
 
+## After Slice 6 — audit before selling
+
+- **`audit-enterprise-readiness.md`** — a read-only act prompt (run in a fresh session) that audits Slices 1-6 against the 22 enterprise standards + the CHATBOT-ARCHITECTURE design across 7 dimensions (tenant isolation, security, reliability, RAG quality, observability/compliance, scale, test rigor & drift). Produces `docs/audits/…` with a verdict, evidence-cited findings, and a remediation backlog of slice-sized fix prompts. Run it before P1 — its Blockers/Highs jump the queue below.
+
+---
+
 ## Backlog after Slice 6
 
 - **Voice consumer:** wire the Voice service (Vapi custom LLM endpoint) to the same Knowledge gRPC + `BuildingBlocks.Rag` with `ChannelProfile.Voice` (STT in → retrieve → ground → LLM → TTS out).

@@ -33,7 +33,7 @@ public sealed class GetKnowledgeDocumentsPagedQueryHandler(IKnowledgeDbContext d
             .ToListAsync(cancellationToken);
 
         var items = documents.Select(d => new KnowledgeDocumentSummaryDto(
-            d.Id, d.Title, d.FileName, d.SourceType, d.Status, d.ChunkCount, d.FailureReason, d.Version, d.CreatedAt))
+            d.Id, d.Title, d.FileName, d.SourceType, d.Status, d.ChunkCount, d.FailureReason, d.Version, d.CreatedAt, d.UpdatedAt))
             .ToList();
 
         return Result.Success(new PagedResult<KnowledgeDocumentSummaryDto>(items, total, page, size));

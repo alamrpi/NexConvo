@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="NexConvo.Knowledge.IntegrationTests" />
+    <InternalsVisibleTo Include="NexConvo.Knowledge.Infrastructure.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

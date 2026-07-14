@@ -39,11 +39,30 @@ public sealed class GetKnowledgeDocumentByIdQueryHandler(IKnowledgeDbContext db)
             .Select(c => new KnowledgeChunkPreviewDto(c.Id, c.Ordinal, c.Content, c.TokenCount))
             .ToList();
 
+        // Version history: every DocumentVersion that ever had chunks written for this document,
+        // not just the currently-active one (D4-5's writer soft-deactivates superseded versions'
+        // chunks rather than deleting them, so this data survives a re-embed).
+        var versionHistory = await db.KnowledgeChunks
+            .Where(c => c.DocumentId == document.Id)
+            .GroupBy(c => c.DocumentVersion)
+            .Select(g => new
+            {
+                Version = g.Key,
+                ChunkCount = g.Count(),
+                CreatedAt = g.Min(c => c.CreatedAt),
+            })
+            .OrderByDescending(v => v.Version)
+            .ToListAsync(cancellationToken);
+
+        var versionDtos = versionHistory
+            .Select(v => new KnowledgeDocumentVersionDto(v.Version, document.EmbeddingModel, v.ChunkCount, v.CreatedAt))
+            .ToList();
+
         var dto = new KnowledgeDocumentDetailDto(
             document.Id, document.Title, document.FileName, document.SourceType, document.SourceUrl,
             document.Status, document.ChunkCount, document.FailureReason, document.Version,
             document.EmbeddingModel, document.EmbeddingDimensions, document.CreatedAt,
-            chunkDtos, chunkTotal);
+            chunkDtos, chunkTotal, versionDtos);
 
         return Result.Success(dto);
     }

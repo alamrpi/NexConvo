@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  KnowledgeDocumentDto,
   KnowledgeDocumentPagedResult,
   KnowledgeDocumentDetailDto,
 } from '@/features/settings/model/knowledge-document.types';
@@ -14,10 +15,10 @@ export const MOCK_KNOWLEDGE_LIST: KnowledgeDocumentPagedResult = {
     {
       id: '1',
       title: 'Product Catalog 2026',
-      sourceType: 'file',
-      status: 'active',
+      fileName: 'Product Catalog 2026',
+      sourceType: 'File',
+      status: 'Ready',
       chunkCount: 142,
-      embeddingModel: 'text-embedding-3-large',
       failureReason: null,
       version: 3,
       createdAt: '2026-06-25T08:00:00.000Z',
@@ -26,10 +27,10 @@ export const MOCK_KNOWLEDGE_LIST: KnowledgeDocumentPagedResult = {
     {
       id: '2',
       title: 'Return Policy FAQ',
-      sourceType: 'faq_pairs',
-      status: 'active',
+      fileName: 'Return Policy FAQ',
+      sourceType: 'Faq',
+      status: 'Ready',
       chunkCount: 24,
-      embeddingModel: 'text-embedding-3-large',
       failureReason: null,
       version: 1,
       createdAt: '2026-06-27T14:30:00.000Z',
@@ -38,10 +39,10 @@ export const MOCK_KNOWLEDGE_LIST: KnowledgeDocumentPagedResult = {
     {
       id: '3',
       title: 'Warranty Terms 2026',
-      sourceType: 'url',
-      status: 'processing',
+      fileName: 'Warranty Terms 2026',
+      sourceType: 'Url',
+      status: 'Processing',
       chunkCount: 0,
-      embeddingModel: 'text-embedding-3-large',
       failureReason: null,
       version: 1,
       createdAt: '2026-06-30T09:00:00.000Z',
@@ -54,19 +55,30 @@ export const MOCK_KNOWLEDGE_LIST: KnowledgeDocumentPagedResult = {
 };
 
 export const MOCK_KNOWLEDGE_DETAIL: KnowledgeDocumentDetailDto = {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  ...MOCK_KNOWLEDGE_LIST.items[0]!,
+  id: '1',
+  title: 'Product Catalog 2026',
+  fileName: 'Product Catalog 2026',
+  sourceType: 'File',
+  sourceUrl: null,
+  status: 'Ready',
+  chunkCount: 142,
+  failureReason: null,
+  version: 3,
+  embeddingModel: 'text-embedding-3-large',
+  embeddingDimensions: 1024,
+  createdAt: '2026-06-25T08:00:00.000Z',
+  chunkTotal: 2,
   chunks: [
     {
       id: 'c1',
       ordinal: 1,
-      contentPreview: 'Our return policy allows customers to return unused items within 30 days…',
+      content: 'Our return policy allows customers to return unused items within 30 days…',
       tokenCount: 198,
     },
     {
       id: 'c2',
       ordinal: 2,
-      contentPreview: 'Delivery times vary by region: Dhaka 1–2 days, Chittagong 2–3 days…',
+      content: 'Delivery times vary by region: Dhaka 1–2 days, Chittagong 2–3 days…',
       tokenCount: 215,
     },
   ],
@@ -111,15 +123,15 @@ export const handleCreateKnowledge = http.post(BASE, () =>
     {
       id: 'new-1',
       title: 'New Document',
-      sourceType: 'file',
-      status: 'pending',
+      fileName: 'New Document',
+      sourceType: 'File',
+      status: 'Pending',
       chunkCount: 0,
-      embeddingModel: 'text-embedding-3-large',
       failureReason: null,
       version: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    },
+    } satisfies KnowledgeDocumentDto,
     { status: 201 },
   ),
 );

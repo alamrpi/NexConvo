@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using NexConvo.Chat.Domain.Enums;
 using NexConvo.Contracts.Enums;
 using NexConvo.Contracts.Events.Chat;
+using NSubstitute;
 
 namespace NexConvo.Chat.IntegrationTests;
 
@@ -41,6 +42,12 @@ public class RagReplyEndToEndTests(ChatApiFactory factory)
 
         var escalations = await db.Escalations.ToListAsync();
         escalations.Should().BeEmpty();
+
+        // Finding 2 regression guard: the consumer-path gRPC call must carry the message's own
+        // tenant, never one resolved from an ambient/HTTP-scoped context (there is no HttpContext
+        // on this path).
+        await factory.KnowledgeMock.Received(1).SearchAsync(
+            tenantId, Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

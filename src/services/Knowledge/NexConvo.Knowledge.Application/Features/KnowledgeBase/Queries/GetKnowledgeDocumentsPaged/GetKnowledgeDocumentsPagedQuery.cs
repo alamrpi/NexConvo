@@ -13,7 +13,8 @@ public sealed record KnowledgeDocumentSummaryDto(
     int ChunkCount,
     string? FailureReason,
     int Version,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
 
 /// <summary>A page of the current tenant's knowledge documents (Standard 17 — capped, bounded).</summary>
 public sealed record GetKnowledgeDocumentsPagedQuery(

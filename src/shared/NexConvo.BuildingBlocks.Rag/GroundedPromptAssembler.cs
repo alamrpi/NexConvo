@@ -4,13 +4,19 @@ namespace NexConvo.BuildingBlocks.Rag;
 
 public sealed class GroundedPromptAssembler : IGroundedPromptAssembler
 {
-    private const string AbstentionMarker = "[[NO_ANSWER]]";
+    /// <summary>
+    /// The literal token the model must emit verbatim to abstain. Shared with
+    /// ReplyOrchestrator's abstention check — kept as a single constant so the instruction given
+    /// to the model and the string the Chat side looks for can never drift apart.
+    /// </summary>
+    public const string AbstentionMarker = "[[NO_ANSWER]]";
 
     public string BuildSystemPrompt(ChannelProfile profile, string? tenantSystemPromptOverride)
     {
         var sb = new StringBuilder();
         sb.AppendLine("You are a support assistant. Answer only from the numbered context provided below.");
         sb.AppendLine($"If the context does not contain the answer, respond with exactly {AbstentionMarker} and nothing else.");
+        sb.AppendLine($"Never translate or localize {AbstentionMarker} — emit it verbatim in every language, even though your answer text itself should follow the instruction below.");
         sb.AppendLine("Always reply in the same language the user wrote in.");
 
         if (profile.EmitCitations)

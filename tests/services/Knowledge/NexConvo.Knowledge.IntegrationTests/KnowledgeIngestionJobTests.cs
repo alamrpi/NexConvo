@@ -28,10 +28,15 @@ namespace NexConvo.Knowledge.IntegrationTests;
 [Collection("knowledge-postgres")]
 public class KnowledgeIngestionJobTests(KnowledgePostgresFixture fixture)
 {
+    /// <summary>Deliberately different from KnowledgeDocument's constructor default ("BAAI/bge-m3")
+    /// so tests can prove SetReady reports the ACTIVE provider's model, not a stale default.</summary>
+    private const string TestProviderModelId = "test-provider/embed-v1";
+
     private static IEmbeddingProviderFactory BuildEmbeddingProviderFactory()
     {
         var provider = Substitute.For<IEmbeddingProviderService>();
         provider.Dimensions.Returns(1024);
+        provider.ModelId.Returns(TestProviderModelId);
         provider
             .EmbedBatchAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<EmbeddingInputType>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
@@ -119,6 +124,11 @@ public class KnowledgeIngestionJobTests(KnowledgePostgresFixture fixture)
             var document = await db.KnowledgeDocuments.SingleAsync(d => d.Id == documentId);
             document.Status.Should().Be(DocumentStatus.Ready);
             document.ChunkCount.Should().BeGreaterThan(0);
+
+            // Regression guard: SetReady must report the ACTIVE embedding provider's model, not
+            // KnowledgeDocument's constructor default — otherwise the UI shows "BAAI/bge-m3" for
+            // documents a different provider (e.g. Cohere) actually embedded.
+            document.EmbeddingModel.Should().Be(TestProviderModelId);
 
             var chunks = await db.KnowledgeChunks.Where(c => c.DocumentId == documentId).ToListAsync();
             chunks.Should().HaveCount(document.ChunkCount);

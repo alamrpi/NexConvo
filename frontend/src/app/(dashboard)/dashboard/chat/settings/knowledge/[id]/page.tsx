@@ -56,28 +56,26 @@ function formatDateShort(iso: string): string {
 function StatusBadge({ status }: { status: IngestionStatus }) {
   const cls = cn(
     'font-medium gap-1',
-    status === 'active'     && 'text-chatConfidence-high border-chatConfidence-high/40',
-    status === 'pending'    && 'text-amber-600 border-amber-600/40 dark:text-amber-400 dark:border-amber-400/40',
-    status === 'processing' && 'text-blue-600 border-blue-600/40 dark:text-blue-400 dark:border-blue-400/40',
-    status === 'failed'     && 'text-destructive border-destructive/40',
-    status === 'inactive'   && 'text-muted-foreground border-border',
+    status === 'Ready'      && 'text-chatConfidence-high border-chatConfidence-high/40',
+    status === 'Pending'    && 'text-amber-600 border-amber-600/40 dark:text-amber-400 dark:border-amber-400/40',
+    status === 'Processing' && 'text-blue-600 border-blue-600/40 dark:text-blue-400 dark:border-blue-400/40',
+    status === 'Failed'     && 'text-destructive border-destructive/40',
   );
   return (
     <Badge variant="outline" className={cls}>
-      {(status === 'pending' || status === 'processing') && (
+      {(status === 'Pending' || status === 'Processing') && (
         <span
           className={cn(
             'h-1.5 w-1.5 rounded-full animate-pulse',
-            status === 'pending'    && 'bg-amber-600 dark:bg-amber-400',
-            status === 'processing' && 'bg-blue-600 dark:bg-blue-400',
+            status === 'Pending'    && 'bg-amber-600 dark:bg-amber-400',
+            status === 'Processing' && 'bg-blue-600 dark:bg-blue-400',
           )}
         />
       )}
-      {status === 'active'     && 'Active'}
-      {status === 'pending'    && 'Pending'}
-      {status === 'processing' && 'Processing'}
-      {status === 'failed'     && 'Failed'}
-      {status === 'inactive'   && 'Inactive'}
+      {status === 'Ready'      && 'Active'}
+      {status === 'Pending'    && 'Pending'}
+      {status === 'Processing' && 'Processing'}
+      {status === 'Failed'     && 'Failed'}
     </Badge>
   );
 }
@@ -88,9 +86,9 @@ const STEPS = ['upload', 'extract', 'chunk', 'embed', 'index'] as const;
 type StepKey = (typeof STEPS)[number];
 
 function statusToStep(status: IngestionStatus): number {
-  if (status === 'pending')    return 0;
-  if (status === 'processing') return 2;
-  if (status === 'active')     return 4;
+  if (status === 'Pending')    return 0;
+  if (status === 'Processing') return 2;
+  if (status === 'Ready')      return 4;
   return -1;
 }
 
@@ -166,13 +164,13 @@ function ChunksTab({
   chunks,
   status,
 }: {
-  chunks: Array<{ id: string; ordinal: number; contentPreview: string; tokenCount: number }>;
+  chunks: Array<{ id: string; ordinal: number; content: string; tokenCount: number }>;
   status: IngestionStatus;
 }) {
   const t        = useTranslations('chat');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  if (status !== 'active') {
+  if (status !== 'Ready') {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
         Chunks will appear here once processing completes.
@@ -196,9 +194,9 @@ function ChunksTab({
           {chunks.map((chunk) => {
             const isExpanded = expanded[chunk.id] ?? false;
             const preview = isExpanded
-              ? chunk.contentPreview
-              : chunk.contentPreview.slice(0, 40) +
-                (chunk.contentPreview.length > 40 ? '…' : '');
+              ? chunk.content
+              : chunk.content.slice(0, 40) +
+                (chunk.content.length > 40 ? '…' : '');
             return (
               <TableRow key={chunk.id}>
                 <TableCell className="tabular-nums text-sm text-muted-foreground">
@@ -207,7 +205,7 @@ function ChunksTab({
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-sm leading-relaxed text-foreground">{preview}</p>
-                    {chunk.contentPreview.length > 40 && (
+                    {chunk.content.length > 40 && (
                       <button
                         type="button"
                         className="text-xs text-primary hover:underline focus-visible:outline-none focus-visible:underline"
@@ -536,12 +534,12 @@ export default function KnowledgeDetailPage({
       </dl>
 
       {/* ── Processing steps (only when in-flight) ── */}
-      {(doc.status === 'pending' || doc.status === 'processing') && (
+      {(doc.status === 'Pending' || doc.status === 'Processing') && (
         <ProcessingSteps status={doc.status} />
       )}
 
       {/* ── Failure reason ── */}
-      {doc.status === 'failed' && doc.failureReason && (
+      {doc.status === 'Failed' && doc.failureReason && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
           <p className="text-sm font-medium text-destructive">Ingestion failed</p>
           <p className="mt-1 text-sm text-destructive/80">{doc.failureReason}</p>

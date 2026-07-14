@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Infrastructure.Security;
-using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.BuildingBlocks.Resilience;
 using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
@@ -66,10 +65,9 @@ public static class DependencyInjection
             o.Address = new Uri(knowledgeGrpcAddress))
             .AddNexConvoResilience();
 
-        services.AddScoped<IKnowledgeRetrievalClient>(sp =>
+        services.AddSingleton<IKnowledgeRetrievalClient>(sp =>
             new KnowledgeRetrievalClient(
                 sp.GetRequiredService<KnowledgeRetrieval.KnowledgeRetrievalClient>(),
-                sp.GetRequiredService<ITenantContext>(),
                 internalApiKey));
 
         services.AddSingleton<NexConvo.BuildingBlocks.Rag.IGroundedPromptAssembler, NexConvo.BuildingBlocks.Rag.GroundedPromptAssembler>();

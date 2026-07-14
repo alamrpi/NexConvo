@@ -13,7 +13,7 @@ namespace NexConvo.BuildingBlocks.Ai.Services;
 /// </summary>
 public class CohereEmbeddingProviderService : IEmbeddingProviderService
 {
-    private const string ModelId = "embed-multilingual-v3.0";
+    private const string ModelIdValue = "embed-multilingual-v3.0";
     private const string EmbedEndpoint = "https://api.cohere.com/v2/embed";
     private const int EmbeddingDimensions = 1024;
 
@@ -32,6 +32,8 @@ public class CohereEmbeddingProviderService : IEmbeddingProviderService
     }
 
     public int Dimensions => EmbeddingDimensions;
+
+    public string ModelId => ModelIdValue;
 
     public async Task<float[]> EmbedAsync(string text, EmbeddingInputType inputType, CancellationToken cancellationToken)
     {
@@ -113,6 +115,8 @@ public class CohereEmbeddingProviderService : IEmbeddingProviderService
                 : null;
 
         // Never log the API key or the embedded text (Standards 13 & 9); context attaches via LogContext.
-        _logger.LogInformation("Embedded {Count} texts with {Provider} ({TokenCount} tokens)", count, "Cohere", tokens);
+        _logger.LogInformation(
+            "Embedded {Count} texts with {Provider} model {ModelId} ({TokenCount} tokens)",
+            count, "Cohere", ModelId, tokens);
     }
 }

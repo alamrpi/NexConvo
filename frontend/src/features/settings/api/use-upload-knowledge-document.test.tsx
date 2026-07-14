@@ -9,10 +9,10 @@ import type { KnowledgeDocumentDto } from '../model/knowledge-document.types';
 const mockDocument: KnowledgeDocumentDto = {
   id: 'doc-1',
   title: 'Product FAQ',
-  sourceType: 'text',
-  status: 'pending',
+  fileName: 'Product FAQ',
+  sourceType: 'Text',
+  status: 'Pending',
   chunkCount: 0,
-  embeddingModel: 'text-embedding-3-large',
   failureReason: null,
   version: 1,
   createdAt: '2026-01-01T00:00:00Z',
@@ -31,12 +31,12 @@ describe('useUploadKnowledgeDocument', () => {
 
     const returned = await result.current.mutateAsync({
       title: 'Product FAQ',
-      sourceType: 'text',
+      sourceType: 'Text',
       content: 'Some FAQ content here.',
     });
 
     expect(returned).toEqual(mockDocument);
-    expect(returned.status).toBe('pending');
+    expect(returned.status).toBe('Pending');
   });
 
   it('exposes progressRef for callers to wire upload progress callbacks', async () => {
@@ -64,7 +64,7 @@ describe('useUploadKnowledgeDocument', () => {
     const { result } = renderHook(() => useUploadKnowledgeDocument(), { wrapper: createWrapper() });
 
     await expect(
-      result.current.mutateAsync({ title: 'Test', sourceType: 'text', content: 'test' }),
+      result.current.mutateAsync({ title: 'Test', sourceType: 'Text', content: 'test' }),
     ).rejects.toBeDefined();
   });
 });
