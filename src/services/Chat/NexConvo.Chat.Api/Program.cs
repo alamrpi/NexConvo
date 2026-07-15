@@ -79,6 +79,7 @@ app.UseNexConvoExceptionHandling();
 app.MapControllers();
 // Deny-by-default at the endpoint too (defense in depth on top of the hub's [Authorize]).
 app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
+app.MapHub<PlaygroundHub>("/hubs/playground").RequireAuthorization();
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");
 

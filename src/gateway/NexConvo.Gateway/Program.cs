@@ -12,6 +12,17 @@ builder.Host.UseNexConvoSerilog(serviceName);
 builder.Services.AddNexConvoOpenTelemetry(builder.Configuration, serviceName);
 
 // YARP reverse proxy — routes/clusters from configuration.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LocalDevCors", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3003", "http://localhost:3007")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -69,6 +80,11 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("LocalDevCors");
+}
 
 app.UseNexConvoRequestLogging();
 app.UseRateLimiter();

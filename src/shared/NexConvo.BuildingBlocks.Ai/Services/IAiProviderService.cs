@@ -24,4 +24,16 @@ public interface IAiProviderService
         string model,
         string? baseUrl = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a list of available models from the provider.
+    /// </summary>
+    /// <param name="apiKey">The decrypted API key for the provider</param>
+    /// <param name="baseUrl">Optional custom Base URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>A list of available models</returns>
+    Task<IReadOnlyList<ModelDto>> GetAvailableModelsAsync(
+        string apiKey,
+        string? baseUrl = null,
+        CancellationToken cancellationToken = default);
 }
