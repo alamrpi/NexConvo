@@ -15,4 +15,8 @@ export interface WorkspaceChatSettingsDto {
   maxUnansweredMessages: number;
   piiMaskingLevel: PiiMaskingLevel;
   dataRetentionDays: number | null;
+  widgetIconUrl: string | null;
+  widgetPrimaryColor: string;
+  widgetSecondaryColor: string;
+  widgetWelcomeMessage: string;
 }

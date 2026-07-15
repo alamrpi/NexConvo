@@ -21,7 +21,9 @@ import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Badge } from '@/shared/ui/badge';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { cn } from '@/shared/lib/cn';
+import { useSessionStore } from '@/features/auth/model/session.store';
 import {
   saveChannelConnectionSchema,
   type SaveChannelConnectionValues,
@@ -36,6 +38,8 @@ import { useSaveChannelConnection, ChannelConnectionError } from '@/features/set
 import { useDeleteChannelConnection } from '@/features/settings/api/use-delete-channel-connection';
 import { useTestChannelConnection } from '@/features/settings/api/use-test-channel-connection';
 import { useRelativeTime } from '@/features/settings/components/health-badge';
+import { useChatSettings } from '@/features/settings/api/use-chat-settings';
+import { useUpdateChatSettings } from '@/features/settings/api/use-update-chat-settings';
 
 // ── Static channel metadata (no server data — these are always the same 5) ──────
 
@@ -182,127 +186,206 @@ type WidgetPosition = 'bottom-right' | 'bottom-left';
 
 function WebWidgetConfig({ connectionId }: { connectionId: string }) {
   const t = useTranslations('settings.channels.widget');
+  const user = useSessionStore((s) => s.user);
+  const currentTenantId = user?.tenantId || 'YOUR_WORKSPACE_ID';
+
+  const { data: settings, isLoading, isError } = useChatSettings();
+  const update = useUpdateChatSettings();
+
   const [color, setColor] = React.useState('#6366f1');
   const [welcomeMsg, setWelcomeMsg] = React.useState('');
   const [position, setPosition] = React.useState<WidgetPosition>('bottom-right');
 
-  // Widget config is workspace-local UI state — no backend endpoint yet.
-  // When the backend exposes widget config, wire it up via a dedicated hook here.
-  const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
 
-  function handleSave() {
-    setSaving(true);
+  const embedCode = `<script\n  src="http://localhost:5173/src/main.tsx"\n  data-tenant="${currentTenantId}"\n  defer\n></script>`;
+
+  // Initialize values when settings load
+  React.useEffect(() => {
+    if (settings) {
+      setColor(settings.widgetPrimaryColor || '#6366f1');
+      setWelcomeMsg(settings.widgetWelcomeMessage || 'Hi there! How can I help you today?');
+    }
+  }, [settings]);
+  async function handleSave() {
+    if (!settings) return;
     setSaved(false);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await update.mutateAsync({
+        ...settings,
+        widgetPrimaryColor: color || '#6366f1',
+        widgetSecondaryColor: settings.widgetSecondaryColor || '#3B82F6',
+        widgetWelcomeMessage: welcomeMsg || 'Hi there! How can I help you today?',
+        widgetIconUrl: settings.widgetIconUrl ? settings.widgetIconUrl : null,
+      });
       setSaved(true);
-    }, 600);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  function handleCopy() {
+    navigator.clipboard.writeText(embedCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   // Suppress unused variable warning for connectionId until backend wires up
   void connectionId;
 
+  if (isLoading) {
+    return (
+      <div className="space-y-4 p-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !settings) {
+    return (
+      <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        Couldn&apos;t load widget settings. Please try again.
+      </p>
+    );
+  }
+
   return (
-    <div className="rounded-lg border border-border bg-muted/40 p-4">
-      <h3 className="mb-4 text-sm font-semibold text-foreground">{t('title')}</h3>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="widget-color">{t('color')}</Label>
-            <div className="flex items-center gap-2">
-              <input
-                id="widget-color"
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="h-8 w-12 cursor-pointer rounded border border-border p-0.5"
-                aria-label="Widget accent color"
+    <div className="space-y-6">
+      <div className="rounded-lg border border-border bg-muted/40 p-4">
+        <h3 className="mb-4 text-sm font-semibold text-foreground">{t('title')}</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="widget-color">{t('color')}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="widget-color"
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="h-8 w-12 cursor-pointer rounded border border-border p-0.5"
+                  aria-label="Widget accent color"
+                />
+                <span className="text-sm text-muted-foreground">{color}</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="widget-welcome">{t('welcomeMessage')}</Label>
+              <Input
+                id="widget-welcome"
+                placeholder={t('welcomeMessagePlaceholder')}
+                value={welcomeMsg}
+                onChange={(e) => setWelcomeMsg(e.target.value)}
               />
-              <span className="text-sm text-muted-foreground">{color}</span>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="widget-welcome">{t('welcomeMessage')}</Label>
-            <Input
-              id="widget-welcome"
-              placeholder={t('welcomeMessagePlaceholder')}
-              value={welcomeMsg}
-              onChange={(e) => setWelcomeMsg(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('position')}</Label>
-            <div className="flex gap-2">
-              {(
-                [
-                  { value: 'bottom-right' as WidgetPosition, labelKey: 'positionBottomRight' },
-                  { value: 'bottom-left' as WidgetPosition, labelKey: 'positionBottomLeft' },
-                ] as const
-              ).map(({ value, labelKey }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setPosition(value)}
-                  aria-pressed={position === value}
-                  className={cn(
-                    'flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    position === value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-background text-muted-foreground hover:border-ring/50 hover:text-foreground',
-                  )}
-                >
-                  {t(labelKey)}
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <Label>{t('position')}</Label>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { value: 'bottom-right' as WidgetPosition, labelKey: 'positionBottomRight' },
+                    { value: 'bottom-left' as WidgetPosition, labelKey: 'positionBottomLeft' },
+                  ] as const
+                ).map(({ value, labelKey }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPosition(value)}
+                    aria-pressed={position === value}
+                    className={cn(
+                      'flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      position === value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-ring/50 hover:text-foreground',
+                    )}
+                  >
+                    {t(labelKey)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3 pt-1">
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
-                  {t('saving')}
-                </>
-              ) : (
-                t('save')
-              )}
-            </Button>
-            {saved && (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Check className="h-3 w-3 text-chatConfidence-high" aria-hidden />
-                {t('saved')}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Live preview */}
-        <div className="space-y-1.5">
-          <Label>{t('preview')}</Label>
-          <div className="overflow-hidden rounded-lg border border-border bg-background">
-            <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2" aria-hidden>
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-              <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-            </div>
-            <div className="relative h-48">
-              <div
-                className={cn(
-                  'absolute bottom-3 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-transform',
-                  position === 'bottom-right' ? 'right-3' : 'left-3',
+            <div className="flex items-center gap-3 pt-1">
+              <Button size="sm" onClick={handleSave} disabled={update.isPending}>
+                {update.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden />
+                    {t('saving')}
+                  </>
+                ) : (
+                  t('save')
                 )}
-                style={{ backgroundColor: color }}
-                aria-label="Chat bubble preview"
-              >
-                <MessageSquare className="h-5 w-5 text-white" aria-hidden />
+              </Button>
+              {saved && (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Check className="h-3 w-3 text-chatConfidence-high" aria-hidden />
+                  {t('saved')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Live preview */}
+          <div className="space-y-1.5">
+            <Label>{t('preview')}</Label>
+            <div className="overflow-hidden rounded-lg border border-border bg-background">
+              <div className="flex items-center gap-1.5 border-b border-border bg-muted/60 px-3 py-2" aria-hidden>
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+              </div>
+              <div className="relative h-48">
+                <div
+                  className={cn(
+                    'absolute bottom-3 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-transform',
+                    position === 'bottom-right' ? 'right-3' : 'left-3',
+                  )}
+                  style={{ backgroundColor: color }}
+                  aria-label="Chat bubble preview"
+                >
+                  <MessageSquare className="h-5 w-5 text-white" aria-hidden />
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Embed Guide */}
+      <div className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground">How to Embed</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Copy and paste this script tag into the HTML of your website (e.g. right before the closing &lt;/body&gt; tag).
+          </p>
+        </div>
+        <div className="relative">
+          <pre className="rounded-lg bg-muted p-4 pr-20 text-xs font-mono text-muted-foreground overflow-x-auto select-all border">
+            {embedCode}
+          </pre>
+          <Button
+            size="sm"
+            variant="outline"
+            className="absolute right-2 top-2 h-7 px-2"
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3 mr-1 text-chatConfidence-high" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3 mr-1" />
+                Copy
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
@@ -908,11 +991,11 @@ function ChannelRow({
         </p>
       )}
 
-      {/* Web widget expandable config — only when connected */}
-      {isWeb && connection && isWidgetExpanded && (
-        <div className="border-t border-border px-4 pb-4 pt-4">
-          <WebWidgetConfig connectionId={connection.id} />
-        </div>
+      {/* Inline error message for errored connections */}
+      {status === 'error' && connection?.errorMessage && (
+        <p className="px-4 pb-3 pl-[3.25rem] text-xs text-destructive">
+          {connection.errorMessage}
+        </p>
       )}
     </div>
   );
@@ -930,7 +1013,7 @@ export function ChannelConnectionsPage() {
     connection: ChannelConnectionDto | null;
   } | null>(null);
 
-  const [widgetExpanded, setWidgetExpanded] = React.useState(false);
+  const [configureWidgetId, setConfigureWidgetId] = React.useState<string | null>(null);
 
   function openDrawer(meta: ChannelMeta, connection: ChannelConnectionDto | null) {
     setActiveChannel({ channel: meta.channel, meta, connection });
@@ -964,8 +1047,8 @@ export function ChannelConnectionsPage() {
                   connection={connection}
                   onConnect={() => openDrawer(meta, null)}
                   onConfigure={() => openDrawer(meta, connection ?? null)}
-                  isWidgetExpanded={widgetExpanded && meta.channel === 'web'}
-                  onWidgetToggle={() => setWidgetExpanded((v) => !v)}
+                  isWidgetExpanded={false}
+                  onWidgetToggle={() => setConfigureWidgetId(connection?.id ?? null)}
                 />
               </div>
             );
@@ -982,6 +1065,16 @@ export function ChannelConnectionsPage() {
           onClose={() => setActiveChannel(null)}
         />
       )}
+
+      {/* Configure Widget Modal */}
+      <Dialog open={!!configureWidgetId} onOpenChange={(open) => !open && setConfigureWidgetId(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('widget.title')}</DialogTitle>
+          </DialogHeader>
+          {configureWidgetId && <WebWidgetConfig connectionId={configureWidgetId} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -62,6 +62,16 @@ builder.Services.AddControllers()
 builder.Services.AddNexConvoSwagger("Chat API");
 builder.Services.AddHealthChecks();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("WidgetCorsPolicy", policy =>
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .SetIsOriginAllowed(_ => true) // Allow any origin for the public widget
+              .AllowCredentials();
+    });
+});
 builder.Services.AddChatApplication();
 builder.Services.AddChatInfrastructure(builder.Configuration);
 builder.Services.AddChatRealtime(builder.Configuration);
@@ -78,8 +88,10 @@ app.UseNexConvoSwagger();
 app.UseNexConvoExceptionHandling();
 app.MapControllers();
 // Deny-by-default at the endpoint too (defense in depth on top of the hub's [Authorize]).
-app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization();
+app.MapHub<ChatHub>("/hubs/chat").RequireAuthorization().RequireCors("WidgetCorsPolicy");
 app.MapHub<PlaygroundHub>("/hubs/playground").RequireAuthorization();
+// Public widget hub — no JWT required; tenant identity injected from ?tenantId= query param.
+app.MapHub<WidgetHub>("/hubs/widget").AllowAnonymous().RequireCors("WidgetCorsPolicy");
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");
 

@@ -50,9 +50,14 @@ public sealed class GetChatSettingsQueryHandler(
             settings.SentimentEscalationEnabled,
             settings.SentimentSensitivity,
             phrases,
+            settings.WidgetToken,
             settings.MaxUnansweredMessages,
             settings.PiiMaskingLevel,
             settings.DataRetentionDays,
+            settings.WidgetIconUrl,
+            settings.WidgetPrimaryColor,
+            settings.WidgetSecondaryColor,
+            settings.WidgetWelcomeMessage,
             settings.UpdatedAt);
     }
 
@@ -66,8 +71,13 @@ public sealed class GetChatSettingsQueryHandler(
         true,
         SentimentSensitivity.Medium,
         Array.Empty<string>(),
+        Guid.Empty,
         3,
         PiiMaskingLevel.Standard,
         null,
+        null,
+        "#0F172A",
+        "#3B82F6",
+        "Hi there! How can I help you today?",
         null);
 }

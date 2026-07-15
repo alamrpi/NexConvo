@@ -13,7 +13,12 @@ public sealed record WorkspaceChatSettingsDto(
     bool SentimentEscalationEnabled,
     SentimentSensitivity SentimentSensitivity,
     IReadOnlyList<string> TriggerPhrases,
+    Guid WidgetToken,
     int MaxUnansweredMessages,
     PiiMaskingLevel PiiMaskingLevel,
     int? DataRetentionDays,
+    string? WidgetIconUrl,
+    string WidgetPrimaryColor,
+    string WidgetSecondaryColor,
+    string WidgetWelcomeMessage,
     DateTimeOffset? UpdatedAt);

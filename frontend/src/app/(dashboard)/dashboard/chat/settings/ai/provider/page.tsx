@@ -210,6 +210,10 @@ export default function AiProviderPage() {
         maxUnansweredMessages: chatSettings?.maxUnansweredMessages ?? 3,
         piiMaskingLevel: chatSettings?.piiMaskingLevel ?? 'standard',
         dataRetentionDays: chatSettings?.dataRetentionDays ?? null,
+        widgetIconUrl: chatSettings?.widgetIconUrl ?? null,
+        widgetPrimaryColor: chatSettings?.widgetPrimaryColor ?? '#0F172A',
+        widgetSecondaryColor: chatSettings?.widgetSecondaryColor ?? '#3B82F6',
+        widgetWelcomeMessage: chatSettings?.widgetWelcomeMessage ?? 'Hi there! How can I help you today?',
       })
       .catch(() => undefined);
     setSaveStatus(update.isError ? 'idle' : 'saved');

@@ -565,6 +565,24 @@ namespace NexConvo.Chat.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("WidgetIconUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("WidgetPrimaryColor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("WidgetSecondaryColor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WidgetToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("WidgetWelcomeMessage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()

@@ -910,7 +910,7 @@ function ComparePaneConfig({
         onValueChange={(v) => {
           setProvider(v);
           const p = providers.find(x => x.providerId === v);
-          if (p && p.models && p.models.length > 0) setModel(p.models[0].modelId);
+          if (p && p.models && p.models.length > 0) setModel(p.models[0]?.modelId ?? '');
         }}
         disabled={providers.length <= 1}
       >
@@ -1140,13 +1140,13 @@ export default function PlaygroundPage() {
     setInputText('');
 
     const userMsg: PlaygroundMessage = {
-      id: nextId(),
+      id: crypto.randomUUID(),
       role: 'user',
       body,
       sentAt: new Date().toISOString(),
     };
 
-    const aiId = nextId();
+    const aiId = crypto.randomUUID();
     const aiStreamMsg: PlaygroundMessage = {
       id: aiId,
       role: 'ai',
@@ -1157,7 +1157,7 @@ export default function PlaygroundPage() {
 
     if (compareMode) {
       setCompareLeftMessages((prev) => [...prev, userMsg, aiStreamMsg]);
-      const rightAiId = nextId();
+      const rightAiId = crypto.randomUUID();
       setCompareRightMessages((prev) => [
         ...prev,
         userMsg,

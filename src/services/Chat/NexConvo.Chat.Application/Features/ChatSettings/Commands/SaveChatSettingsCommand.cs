@@ -21,4 +21,8 @@ public sealed record SaveChatSettingsCommand(
     int MaxUnansweredMessages,
     PiiMaskingLevel PiiMaskingLevel,
     int? DataRetentionDays,
+    string? WidgetIconUrl,
+    string WidgetPrimaryColor,
+    string WidgetSecondaryColor,
+    string WidgetWelcomeMessage,
     Guid ActorUserId) : IRequest<Result<Guid>>;

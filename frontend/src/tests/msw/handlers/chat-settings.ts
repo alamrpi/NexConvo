@@ -9,10 +9,14 @@ const mockChatSettings: WorkspaceChatSettingsDto = {
   handoffConfidenceThreshold: 0.65,
   sentimentEscalationEnabled: true,
   sentimentSensitivity: 'medium',
-  triggerPhrases: ['আমি মানুষের সাথে কথা বলতে চাই', 'speak to a manager', 'human agent'],
-  maxUnansweredMessages: 3,
+  triggerPhrases: ['operator', 'human', 'speak to a person'],
+  maxUnansweredMessages: 5,
   piiMaskingLevel: 'standard',
   dataRetentionDays: 90,
+  widgetIconUrl: null,
+  widgetPrimaryColor: '#0F172A',
+  widgetSecondaryColor: '#3B82F6',
+  widgetWelcomeMessage: 'Hi there! How can I help you today?',
 };
 
 /**

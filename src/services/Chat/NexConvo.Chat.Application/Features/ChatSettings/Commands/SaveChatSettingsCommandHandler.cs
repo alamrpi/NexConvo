@@ -47,7 +47,11 @@ public sealed class SaveChatSettingsCommandHandler(
                 firstCreatePhrasesJson,
                 cmd.MaxUnansweredMessages,
                 cmd.PiiMaskingLevel,
-                cmd.DataRetentionDays);
+                cmd.DataRetentionDays,
+                cmd.WidgetIconUrl,
+                cmd.WidgetPrimaryColor,
+                cmd.WidgetSecondaryColor,
+                cmd.WidgetWelcomeMessage);
 
             settings.CreatedByUserId = cmd.ActorUserId;
             db.WorkspaceChatSettings.Add(settings);
@@ -72,7 +76,11 @@ public sealed class SaveChatSettingsCommandHandler(
                 phrasesJson,
                 cmd.MaxUnansweredMessages,
                 cmd.PiiMaskingLevel,
-                cmd.DataRetentionDays);
+                cmd.DataRetentionDays,
+                cmd.WidgetIconUrl,
+                cmd.WidgetPrimaryColor,
+                cmd.WidgetSecondaryColor,
+                cmd.WidgetWelcomeMessage);
 
             db.ChatAuditLogs.Add(new ChatAuditLog(
                 "chat.settings.update",

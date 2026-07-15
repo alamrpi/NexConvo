@@ -48,6 +48,12 @@ public class WorkspaceChatSettings : BaseAggregateRoot
     public PiiMaskingLevel PiiMaskingLevel { get; private set; }
     public int? DataRetentionDays { get; private set; }
 
+    // Widget Configuration
+    public Guid WidgetToken { get; private set; } = Guid.NewGuid();
+    public string? WidgetIconUrl { get; private set; }
+    public string WidgetPrimaryColor { get; private set; } = "#0F172A";
+    public string WidgetSecondaryColor { get; private set; } = "#3B82F6";
+    public string WidgetWelcomeMessage { get; private set; } = "Hi there! How can I help you today?";
     private WorkspaceChatSettings() { }
 
     public WorkspaceChatSettings(
@@ -62,7 +68,11 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         string triggerPhrases,
         int maxUnansweredMessages,
         PiiMaskingLevel piiMaskingLevel,
-        int? dataRetentionDays)
+        int? dataRetentionDays,
+        string? widgetIconUrl = null,
+        string widgetPrimaryColor = "#0F172A",
+        string widgetSecondaryColor = "#3B82F6",
+        string widgetWelcomeMessage = "Hi there! How can I help you today?")
     {
         TenantId = tenantId;
         PrimaryProvider = primaryProvider;
@@ -76,6 +86,10 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         MaxUnansweredMessages = maxUnansweredMessages;
         PiiMaskingLevel = piiMaskingLevel;
         DataRetentionDays = dataRetentionDays;
+        WidgetIconUrl = widgetIconUrl;
+        WidgetPrimaryColor = widgetPrimaryColor;
+        WidgetSecondaryColor = widgetSecondaryColor;
+        WidgetWelcomeMessage = widgetWelcomeMessage;
     }
 
     public void Update(
@@ -89,7 +103,11 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         string triggerPhrases,
         int maxUnansweredMessages,
         PiiMaskingLevel piiMaskingLevel,
-        int? dataRetentionDays)
+        int? dataRetentionDays,
+        string? widgetIconUrl,
+        string widgetPrimaryColor,
+        string widgetSecondaryColor,
+        string widgetWelcomeMessage)
     {
         PrimaryProvider = primaryProvider;
         PrimaryModel = primaryModel;
@@ -102,5 +120,9 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         MaxUnansweredMessages = maxUnansweredMessages;
         PiiMaskingLevel = piiMaskingLevel;
         DataRetentionDays = dataRetentionDays;
+        WidgetIconUrl = widgetIconUrl;
+        WidgetPrimaryColor = widgetPrimaryColor;
+        WidgetSecondaryColor = widgetSecondaryColor;
+        WidgetWelcomeMessage = widgetWelcomeMessage;
     }
 }

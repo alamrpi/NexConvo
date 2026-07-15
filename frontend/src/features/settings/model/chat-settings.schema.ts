@@ -31,6 +31,10 @@ export const chatSettingsSchema = z.object({
   maxUnansweredMessages: z.number().int().min(1, 'minOneMessage').max(20, 'maxTwentyMessages'),
   piiMaskingLevel: piiMaskingLevelSchema,
   dataRetentionDays: z.number().int().min(7, 'minSevenDays').nullable().optional(),
+  widgetIconUrl: z.string().url('invalidUrl').nullable().optional(),
+  widgetPrimaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'invalidColor'),
+  widgetSecondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'invalidColor'),
+  widgetWelcomeMessage: z.string().min(1, 'welcomeMessageRequired').max(500, 'welcomeMessageTooLong'),
 });
 
 export type ChatSettingsValues = z.infer<typeof chatSettingsSchema>;

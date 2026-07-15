@@ -36,6 +36,10 @@ public sealed class ChatSettingsController(ISender sender) : ControllerBase
                 body.MaxUnansweredMessages,
                 body.PiiMaskingLevel,
                 body.DataRetentionDays,
+                body.WidgetIconUrl,
+                body.WidgetPrimaryColor,
+                body.WidgetSecondaryColor,
+                body.WidgetWelcomeMessage,
                 actor),
             ct);
 

@@ -18,4 +18,8 @@ public sealed record SaveChatSettingsRequest(
     List<string> TriggerPhrases,
     int MaxUnansweredMessages,
     PiiMaskingLevel PiiMaskingLevel,
-    int? DataRetentionDays);
+    int? DataRetentionDays,
+    string? WidgetIconUrl = null,
+    string WidgetPrimaryColor = "#0F172A",
+    string WidgetSecondaryColor = "#3B82F6",
+    string WidgetWelcomeMessage = "Hi there! How can I help you today?");

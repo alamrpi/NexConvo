@@ -197,10 +197,14 @@ const E2E_CHAT_SETTINGS: WorkspaceChatSettingsDto = {
   handoffConfidenceThreshold: 0.65,
   sentimentEscalationEnabled: true,
   sentimentSensitivity: 'medium',
-  triggerPhrases: ['speak to a manager', 'human agent'],
+  triggerPhrases: ['speak to agent', 'help'],
   maxUnansweredMessages: 3,
-  piiMaskingLevel: 'standard',
-  dataRetentionDays: 90,
+  piiMaskingLevel: 'off',
+  dataRetentionDays: null,
+  widgetIconUrl: null,
+  widgetPrimaryColor: '#0F172A',
+  widgetSecondaryColor: '#3B82F6',
+  widgetWelcomeMessage: 'Hi there! How can I help you today?',
 };
 
 export const e2eChatSettingsGet = () => NextResponse.json(E2E_CHAT_SETTINGS);

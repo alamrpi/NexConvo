@@ -12,7 +12,14 @@ import type { ChannelConnectionDto } from '@/features/settings/model/channel-con
  */
 export const GET = withBff(async (_req, { api }) => {
   const { data } = await api.get<ChannelConnectionDto[]>('/api/v1/channel-connections');
-  return NextResponse.json(data);
+  if (!Array.isArray(data)) {
+    return NextResponse.json([]);
+  }
+  const normalized = data.map((conn) => ({
+    ...conn,
+    channel: typeof conn?.channel === 'string' ? (conn.channel.toLowerCase() as any) : conn?.channel,
+  }));
+  return NextResponse.json(normalized);
 }, e2eChannelsGet);
 
 export const POST = withBff(async (req, { api }) => {
@@ -23,8 +30,18 @@ export const POST = withBff(async (req, { api }) => {
   }
 
   try {
-    const { data } = await api.post('/api/v1/channel-connections', parsed.data);
-    return NextResponse.json(data);
+    const { displayName, accessToken, ...rest } = parsed.data;
+    const payload = {
+      ...rest,
+      accountName: displayName,
+      accessToken: accessToken ?? '',
+    };
+    const { data } = await api.post<ChannelConnectionDto>('/api/v1/channel-connections', payload);
+    const normalized = {
+      ...data,
+      channel: typeof data?.channel === 'string' ? (data.channel.toLowerCase() as any) : data?.channel,
+    };
+    return NextResponse.json(normalized);
   } catch (error) {
     // Surface the backend's optimistic-concurrency conflict (S17) as a stable code.
     if (axios.isAxiosError(error) && error.response?.status === 409) {

@@ -39,7 +39,7 @@ public sealed record ChannelConnectionDto(
         MaskToken(connection.EncryptedAccessToken),
         connection.IsActive,
         connection.CreatedAt,
-        ToStatus(connection.LastTestStatus),
+        ToStatus(connection.Channel, connection.LastTestStatus),
         connection.LastTestStatus is ConnectionStatus.Failed or ConnectionStatus.Degraded
             ? connection.LastTestError
             : null,
@@ -49,12 +49,19 @@ public sealed record ChannelConnectionDto(
         connection.LastTestLatencyMs);
 
     /// <summary>Maps the health enum to the frontend's 3-value union string.</summary>
-    private static string ToStatus(ConnectionStatus status) => status switch
+    private static string ToStatus(ChatChannel channel, ConnectionStatus status)
     {
-        ConnectionStatus.Healthy => "connected",
-        ConnectionStatus.Failed or ConnectionStatus.Degraded => "error",
-        _ => "disconnected",
-    };
+        if (channel == ChatChannel.Web)
+        {
+            return "connected";
+        }
+        return status switch
+        {
+            ConnectionStatus.Healthy => "connected",
+            ConnectionStatus.Failed or ConnectionStatus.Degraded => "error",
+            _ => "disconnected",
+        };
+    }
 
     /// <summary>Shows "●●●●{last4}" so the UI can confirm a token is set without exposing it.</summary>
     private static string MaskToken(string encryptedToken)

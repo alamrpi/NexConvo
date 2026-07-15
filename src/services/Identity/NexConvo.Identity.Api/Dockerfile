@@ -23,7 +23,7 @@ RUN dotnet restore src/services/Identity/NexConvo.Identity.Api/NexConvo.Identity
 COPY src/ src/
 RUN dotnet publish src/services/Identity/NexConvo.Identity.Api/NexConvo.Identity.Api.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS runtime
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080

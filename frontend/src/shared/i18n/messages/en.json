@@ -764,6 +764,7 @@
       "label": "Settings sections",
       "email": "Email",
       "channels": "Channels",
+      "chatWidget": "Chat Widget",
       "ai": "AI Config",
       "s3": "S3 Storage",
       "general": "General",
@@ -1155,7 +1156,10 @@
         "preview": "Preview",
         "save": "Save widget settings",
         "saving": "Saving…",
-        "saved": "Widget settings saved."
+        "saved": "Widget settings saved.",
+        "errors": {
+          "invalidUrl": "Please enter a valid URL."
+        }
       },
       "errors": {
         "displayNameRequired": "Display name is required.",
