@@ -201,6 +201,7 @@ const E2E_CHAT_SETTINGS: WorkspaceChatSettingsDto = {
   maxUnansweredMessages: 3,
   piiMaskingLevel: 'off',
   dataRetentionDays: null,
+  widgetToken: '22222222-2222-2222-2222-222222222222',
   widgetIconUrl: null,
   widgetPrimaryColor: '#0F172A',
   widgetSecondaryColor: '#3B82F6',

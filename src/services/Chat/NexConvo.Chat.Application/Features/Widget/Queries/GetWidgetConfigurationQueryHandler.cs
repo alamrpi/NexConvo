@@ -5,18 +5,19 @@ using NexConvo.Chat.Application.Features.Widget.Dtos;
 
 namespace NexConvo.Chat.Application.Features.Widget.Queries;
 
-public sealed class GetWidgetConfigurationQueryHandler(IChatDbContext db)
+/// <summary>
+/// Reads a tenant's public widget configuration. The caller (an anonymous widget) has already had
+/// its token resolved to a tenant id, but there's no ambient HTTP tenant context — so the read runs
+/// through <see cref="IChatDbContextFactory"/> which pins the connection to the tenant and lets RLS
+/// enforce isolation (Standard 6). This handler never bypasses RLS.
+/// </summary>
+public sealed class GetWidgetConfigurationQueryHandler(IChatDbContextFactory dbContextFactory)
     : IRequestHandler<GetWidgetConfigurationQuery, WidgetConfigurationDto?>
 {
     public async Task<WidgetConfigurationDto?> Handle(GetWidgetConfigurationQuery request, CancellationToken ct)
     {
-        // Query bypasses RLS since it's a public endpoint finding a tenant by token.
-        // It relies on EntityFramework configuration allowing querying across tenants
-        // when we don't apply the interceptor, or since the interceptor requires tenant id,
-        // we might need to bypass it. Wait, the RLS interceptor applies automatically.
-        // If TenantId is not set in TenantContext, the interceptor might fail or filter nothing.
-        // Let's use IgnoreQueryFilters() if needed, but RLS is at the DB level via SET LOCAL.
-        // We will just execute the query. If it fails due to RLS, we'll need to use a system connection.
+        await using var db = dbContextFactory.CreateForTenant(request.TenantId);
+
         var settings = await db.WorkspaceChatSettings
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.TenantId == request.TenantId, ct);
@@ -24,7 +25,6 @@ public sealed class GetWidgetConfigurationQueryHandler(IChatDbContext db)
         if (settings is null) return null;
 
         return new WidgetConfigurationDto(
-            settings.TenantId,
             settings.WidgetIconUrl,
             settings.WidgetPrimaryColor,
             settings.WidgetSecondaryColor,

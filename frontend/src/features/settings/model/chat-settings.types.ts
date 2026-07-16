@@ -15,6 +15,8 @@ export interface WorkspaceChatSettingsDto {
   maxUnansweredMessages: number;
   piiMaskingLevel: PiiMaskingLevel;
   dataRetentionDays: number | null;
+  /** Unguessable public token the embed snippet uses to identify the tenant (never the tenant id). */
+  widgetToken: string;
   widgetIconUrl: string | null;
   widgetPrimaryColor: string;
   widgetSecondaryColor: string;

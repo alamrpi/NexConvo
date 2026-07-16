@@ -32,6 +32,7 @@ public static class DependencyInjection
 
         services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
         services.AddSingleton<IChatDbContextFactory, TenantChatDbContextFactory>();
+        services.AddSingleton<IWidgetTenantResolver, WidgetTenantResolver>();
 
         var redisConn = configuration.GetConnectionString("Redis") ?? "localhost:6379";
         services.AddStackExchangeRedisCache(o => o.Configuration = redisConn);

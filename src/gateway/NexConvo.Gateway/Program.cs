@@ -75,6 +75,22 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true,
         });
     });
+
+    // Tighter per-IP limiter for the anonymous public widget (config fetch + hub connect). The
+    // widget is unauthenticated and drives a tenant's paid LLM, so it needs a stricter cap than the
+    // global policy (audit C4). Applied to the widget routes via "RateLimiterPolicy" in YARP config.
+    options.AddPolicy("widget-public", httpContext =>
+    {
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        return RateLimitPartition.GetTokenBucketLimiter(partitionKey, _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 30,
+            TokensPerPeriod = 30,
+            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true,
+        });
+    });
 });
 
 builder.Services.AddHealthChecks();

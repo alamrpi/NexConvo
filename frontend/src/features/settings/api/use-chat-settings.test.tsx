@@ -18,6 +18,11 @@ const mockSettings: WorkspaceChatSettingsDto = {
   maxUnansweredMessages: 3,
   piiMaskingLevel: 'standard',
   dataRetentionDays: 90,
+  widgetToken: '11111111-1111-1111-1111-111111111111',
+  widgetIconUrl: null,
+  widgetPrimaryColor: '#0F172A',
+  widgetSecondaryColor: '#3B82F6',
+  widgetWelcomeMessage: 'Hi there! How can I help you today?',
 };
 
 describe('useChatSettings', () => {

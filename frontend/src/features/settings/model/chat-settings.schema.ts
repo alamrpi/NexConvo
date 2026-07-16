@@ -31,9 +31,15 @@ export const chatSettingsSchema = z.object({
   maxUnansweredMessages: z.number().int().min(1, 'minOneMessage').max(20, 'maxTwentyMessages'),
   piiMaskingLevel: piiMaskingLevelSchema,
   dataRetentionDays: z.number().int().min(7, 'minSevenDays').nullable().optional(),
-  widgetIconUrl: z.string().url('invalidUrl').nullable().optional(),
-  widgetPrimaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'invalidColor'),
-  widgetSecondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'invalidColor'),
+  // Widget config is rendered on public sites — mirror the backend validator exactly (S10/S19):
+  // #RGB/#RRGGBB/#RRGGBBAA hex colors, and an https-only icon URL (blocks javascript:/data:/http:).
+  widgetIconUrl: z
+    .string()
+    .refine((v) => !v || /^https:\/\/.+/i.test(v), 'invalidUrl')
+    .nullable()
+    .optional(),
+  widgetPrimaryColor: z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'invalidColor'),
+  widgetSecondaryColor: z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'invalidColor'),
   widgetWelcomeMessage: z.string().min(1, 'welcomeMessageRequired').max(500, 'welcomeMessageTooLong'),
 });
 

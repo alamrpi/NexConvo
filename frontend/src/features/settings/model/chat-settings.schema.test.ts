@@ -101,4 +101,52 @@ describe('chatSettingsSchema', () => {
       expect(messages).toContain('minSevenDays');
     }
   });
+
+  // ── Widget fields (audit H1: previously untested) ──────────────────────────
+  it.each(['#0F172A', '#3B82F6', '#FFF', '#11223344'])('accepts hex color %s', (color) => {
+    expect(chatSettingsSchema.safeParse({ ...valid, widgetPrimaryColor: color }).success).toBe(true);
+  });
+
+  it.each(['0F172A', '#12345', 'red', '#GGGGGG', ''])('rejects invalid color %s', (color) => {
+    const result = chatSettingsSchema.safeParse({ ...valid, widgetPrimaryColor: color });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.message)).toContain('invalidColor');
+    }
+  });
+
+  it('validates the secondary color too', () => {
+    expect(chatSettingsSchema.safeParse({ ...valid, widgetSecondaryColor: 'nope' }).success).toBe(false);
+  });
+
+  it.each(['https://example.com/i.png', null])('accepts icon url %s', (url) => {
+    expect(chatSettingsSchema.safeParse({ ...valid, widgetIconUrl: url }).success).toBe(true);
+  });
+
+  it.each(['http://example.com/i.png', 'javascript:alert(1)', 'data:image/png;base64,AA', 'nope'])(
+    'rejects non-https / malformed icon url %s',
+    (url) => {
+      const result = chatSettingsSchema.safeParse({ ...valid, widgetIconUrl: url });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.map((i) => i.message)).toContain('invalidUrl');
+      }
+    },
+  );
+
+  it('rejects an empty welcome message', () => {
+    const result = chatSettingsSchema.safeParse({ ...valid, widgetWelcomeMessage: '' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.message)).toContain('welcomeMessageRequired');
+    }
+  });
+
+  it('rejects a welcome message over 500 chars', () => {
+    const result = chatSettingsSchema.safeParse({ ...valid, widgetWelcomeMessage: 'a'.repeat(501) });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.message)).toContain('welcomeMessageTooLong');
+    }
+  });
 });

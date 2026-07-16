@@ -11,19 +11,21 @@ import { Label } from '@/shared/ui/label';
 import { Card, CardContent } from '@/shared/ui/card';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useSessionStore } from '@/features/auth/model/session.store';
+import { publicEnv } from '@/shared/lib/env';
 import { chatSettingsSchema, type ChatSettingsValues } from '../model/chat-settings.schema';
 import type { WorkspaceChatSettingsDto } from '../model/chat-settings.types';
 import { useChatSettings } from '../api/use-chat-settings';
-import { useUpdateChatSettings } from '../api/use-update-chat-settings';
+import { useUpdateChatSettings, ChatSettingsError } from '../api/use-update-chat-settings';
 
 export function ChatWidgetSettingsForm() {
+  const t = useTranslations('settings.channels.widget');
   const canManage = useSessionStore((s) => s.hasPermission('settings:manage'));
   const { data, isLoading, isError } = useChatSettings();
 
   if (!canManage) {
     return (
       <p role="status" className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        You do not have permission to manage these settings.
+        {t('noPermission')}
       </p>
     );
   }
@@ -35,7 +37,7 @@ export function ChatWidgetSettingsForm() {
   if (isError || !data) {
     return (
       <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-        Couldn&apos;t load widget settings. Please try again.
+        {t('loadError')}
       </p>
     );
   }
@@ -83,14 +85,22 @@ function ChatWidgetFields({ settings }: { settings: WorkspaceChatSettingsDto }) 
   const busy = isSubmitting || update.isPending;
 
   const onSubmit = handleSubmit(async (values) => {
-    // Convert empty string back to null for URL
-    if (!values.widgetIconUrl) values.widgetIconUrl = null;
-    await update.mutateAsync(values).catch(() => null);
+    // Copy so we never mutate RHF's live form state; normalize empty icon URL back to null.
+    const payload = { ...values, widgetIconUrl: values.widgetIconUrl ? values.widgetIconUrl : null };
+    // Swallow the rejection here so it doesn't bubble as an unhandled promise — the mutation's
+    // error state (below) drives the UI, distinguishing a 409 conflict from a generic failure (S17).
+    await update.mutateAsync(payload).catch(() => undefined);
   });
 
-  const user = useSessionStore((s) => s.user);
-  const currentTenantId = user?.tenantId || 'YOUR_WORKSPACE_ID';
-  const embedCode = `<script\n  src="http://localhost:5173/src/main.tsx"\n  data-tenant="${currentTenantId}"\n  defer\n></script>`;
+  // 409 optimistic-concurrency conflict gets its own message; anything else is generic (S17).
+  const saveErrorText =
+    update.error instanceof ChatSettingsError && update.error.code === 'conflict'
+      ? t('conflict')
+      : t('saveError');
+
+  // Embed snippet: real widget-host origin + the tenant's unguessable WidgetToken — never localhost
+  // and never the enumerable tenant id (audit M4/C2).
+  const embedCode = `<script\n  src="${publicEnv.NEXT_PUBLIC_WIDGET_URL}/nexconvo-widget.js"\n  data-token="${settings.widgetToken}"\n  defer\n></script>`;
 
   return (
     <div className="space-y-6">
@@ -104,33 +114,33 @@ function ChatWidgetFields({ settings }: { settings: WorkspaceChatSettingsDto }) 
             )}
             {update.isError && (
               <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                Couldn&apos;t save widget settings. Please try again.
+                {saveErrorText}
               </p>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="widgetPrimaryColor" label={t('color')} error={errorText(errors.widgetPrimaryColor?.message)}>
-                <Input type="color" id="widgetPrimaryColor" {...register('widgetPrimaryColor')} aria-invalid={!!errors.widgetPrimaryColor} className="h-12 w-24 cursor-pointer p-1" />
+                <Input type="color" id="widgetPrimaryColor" {...register('widgetPrimaryColor')} aria-invalid={!!errors.widgetPrimaryColor} aria-describedby={errors.widgetPrimaryColor ? 'widgetPrimaryColor-error' : undefined} className="h-12 w-24 cursor-pointer p-1" />
               </Field>
-              
-              <Field id="widgetSecondaryColor" label="Secondary Color" error={errorText(errors.widgetSecondaryColor?.message)}>
-                <Input type="color" id="widgetSecondaryColor" {...register('widgetSecondaryColor')} aria-invalid={!!errors.widgetSecondaryColor} className="h-12 w-24 cursor-pointer p-1" />
+
+              <Field id="widgetSecondaryColor" label={t('secondaryColor')} error={errorText(errors.widgetSecondaryColor?.message)}>
+                <Input type="color" id="widgetSecondaryColor" {...register('widgetSecondaryColor')} aria-invalid={!!errors.widgetSecondaryColor} aria-describedby={errors.widgetSecondaryColor ? 'widgetSecondaryColor-error' : undefined} className="h-12 w-24 cursor-pointer p-1" />
               </Field>
             </div>
 
-            <Field id="widgetIconUrl" label="Widget Icon URL (Optional)" error={errorText(errors.widgetIconUrl?.message)}>
-              <Input id="widgetIconUrl" placeholder="https://example.com/icon.png" {...register('widgetIconUrl')} aria-invalid={!!errors.widgetIconUrl} />
+            <Field id="widgetIconUrl" label={t('iconUrl')} error={errorText(errors.widgetIconUrl?.message)}>
+              <Input id="widgetIconUrl" placeholder={t('iconUrlPlaceholder')} {...register('widgetIconUrl')} aria-invalid={!!errors.widgetIconUrl} aria-describedby={errors.widgetIconUrl ? 'widgetIconUrl-error' : undefined} />
             </Field>
 
             <Field id="widgetWelcomeMessage" label={t('welcomeMessage')} error={errorText(errors.widgetWelcomeMessage?.message)}>
-              <Input id="widgetWelcomeMessage" placeholder={t('welcomeMessagePlaceholder')} {...register('widgetWelcomeMessage')} aria-invalid={!!errors.widgetWelcomeMessage} />
+              <Input id="widgetWelcomeMessage" placeholder={t('welcomeMessagePlaceholder')} {...register('widgetWelcomeMessage')} aria-invalid={!!errors.widgetWelcomeMessage} aria-describedby={errors.widgetWelcomeMessage ? 'widgetWelcomeMessage-error' : undefined} />
             </Field>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start pt-2">
               <Button type="submit" size="sm" disabled={busy}>
                 {busy ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                     {t('saving')}
                   </>
                 ) : (
@@ -148,10 +158,8 @@ function ChatWidgetFields({ settings }: { settings: WorkspaceChatSettingsDto }) 
       <Card>
         <CardContent className="p-5 space-y-3">
           <div>
-            <h3 className="text-sm font-semibold tracking-tight text-foreground">How to Embed</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Copy and paste this script tag into the HTML of your website (e.g., right before the closing &lt;/body&gt; tag).
-            </p>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">{t('embedTitle')}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('embedDescription')}</p>
           </div>
           <div className="relative">
             <pre className="rounded-lg bg-muted p-4 text-xs font-mono text-muted-foreground overflow-x-auto select-all border">

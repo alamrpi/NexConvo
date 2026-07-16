@@ -28,6 +28,10 @@ public class SaveChatSettingsCommandHandlerTests
             MaxUnansweredMessages: 3,
             PiiMaskingLevel.Off,
             DataRetentionDays: null,
+            WidgetIconUrl: null,
+            WidgetPrimaryColor: "#0F172A",
+            WidgetSecondaryColor: "#3B82F6",
+            WidgetWelcomeMessage: "Hi there! How can I help you today?",
             actorUserId);
 
     private static (SaveChatSettingsCommandHandler Handler, IChatDbContext Db) BuildSut(
@@ -71,6 +75,23 @@ public class SaveChatSettingsCommandHandlerTests
 
         var expectedJson = JsonSerializer.Serialize(new[] { "custom phrase" });
         db.WorkspaceChatSettings.Received(1).Add(Arg.Is<WorkspaceChatSettings>(s => s.TriggerPhrases == expectedJson));
+    }
+
+    [Fact]
+    public async Task Handle_WhenConcurrentUpdateConflicts_ReturnsConflict_NotUnhandled()
+    {
+        var tenantId = Guid.NewGuid();
+        var existing = new WorkspaceChatSettings(
+            tenantId, AiProviderType.OpenAI, "gpt-4o-mini", "[]", null, 0.5, false,
+            SentimentSensitivity.Medium, "[]", 3, PiiMaskingLevel.Off, null);
+        var (handler, db) = BuildSut(tenantId, existing);
+        db.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<int>(_ => throw new DbUpdateConcurrencyException("stale row"));
+
+        var result = await handler.Handle(NewCommand(Guid.NewGuid(), triggerPhrases: []), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Status.Should().Be(NexConvo.BuildingBlocks.Results.ResultStatus.Conflict);
     }
 
     [Fact]

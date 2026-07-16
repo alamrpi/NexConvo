@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 interface UseWidgetSignalROptions {
     apiUrl: string;
-    tenantId: string;
+    token: string;
     enabled: boolean;
 }
 
@@ -22,8 +22,7 @@ interface UseWidgetSignalRResult {
     sendMessage: (text: string) => Promise<void>;
 }
 
-export function useWidgetSignalR({ apiUrl, tenantId, enabled }: UseWidgetSignalROptions): UseWidgetSignalRResult {
-    const isMock = !tenantId || tenantId === '00000000-0000-0000-0000-000000000000' || tenantId === 'mock';
+export function useWidgetSignalR({ apiUrl, token, enabled }: UseWidgetSignalROptions): UseWidgetSignalRResult {
     const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const connectionRef = useRef<signalR.HubConnection | null>(null);
@@ -66,15 +65,12 @@ export function useWidgetSignalR({ apiUrl, tenantId, enabled }: UseWidgetSignalR
             return;
         }
 
-        if (isMock) {
-            setConnectionState('connected');
-            return;
-        }
-
+        // Prefer WebSockets but allow the negotiate handshake so SignalR can fall back to
+        // long-polling where WebSockets are blocked (audit M6 — matches the documented design).
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`${apiUrl}/hubs/widget?tenantId=${tenantId}`, {
-                skipNegotiation: true,
-                transport: signalR.HttpTransportType.WebSockets,
+            .withUrl(`${apiUrl}/hubs/widget?token=${encodeURIComponent(token)}`, {
+                transport:
+                    signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
             })
             .withAutomaticReconnect([0, 2000, 5000, 10000])
             .configureLogging(signalR.LogLevel.Warning)
@@ -105,7 +101,7 @@ export function useWidgetSignalR({ apiUrl, tenantId, enabled }: UseWidgetSignalR
             connection.stop();
             connectionRef.current = null;
         };
-    }, [enabled, tenantId, apiUrl, appendToken, finalizeStreaming, appendError, isMock]);
+    }, [enabled, token, apiUrl, appendToken, finalizeStreaming, appendError]);
 
     // ── Send Message (handles both real hub and local mock simulation) ─────────
     const sendMessage = useCallback(async (text: string) => {
@@ -128,26 +124,11 @@ export function useWidgetSignalR({ apiUrl, tenantId, enabled }: UseWidgetSignalR
 
         setMessages(prev => [...prev, userMsg, aiMsg]);
 
-        if (isMock) {
-            // Simulate AI token streaming response locally
-            const responseText = `This is a mock streamed response to test the widget UI. You said: "${text}". SignalR is not connected because you are using the local developer UUID.`;
-            const words = responseText.split(' ');
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (index < words.length) {
-                    appendToken(words[index] + ' ');
-                    index++;
-                } else {
-                    clearInterval(interval);
-                    finalizeStreaming();
-                }
-            }, 80);
+        const conn = connectionRef.current;
+        if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+            appendError('Not connected. Please try again in a moment.');
             return;
         }
-
-        const conn = connectionRef.current;
-        if (!conn || conn.state !== signalR.HubConnectionState.Connected) return;
 
         try {
             await conn.invoke('SendMessageAsync', text);
@@ -155,7 +136,7 @@ export function useWidgetSignalR({ apiUrl, tenantId, enabled }: UseWidgetSignalR
             console.error('[NexConvo Widget] Failed to send message:', err);
             appendError('Failed to send message. Please try again.');
         }
-    }, [appendError, isMock, appendToken, finalizeStreaming]);
+    }, [appendError]);
 
     return { connectionState, messages, sendMessage };
 }

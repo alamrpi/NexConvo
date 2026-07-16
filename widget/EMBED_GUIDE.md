@@ -11,7 +11,7 @@ Copy and paste the following snippet before the closing `</body>` tag of your we
 ```html
 <script
   src="https://cdn.nexconvo.io/widget/nexconvo-widget.js"
-  data-tenant="YOUR_TENANT_ID"
+  data-token="YOUR_WIDGET_TOKEN"
   data-api-url="https://api.nexconvo.io"
   defer
 ></script>
@@ -21,14 +21,16 @@ Replace the placeholder values:
 
 | Attribute      | Required | Description                                                  |
 |----------------|----------|--------------------------------------------------------------|
-| `data-tenant`  | ✅ Yes   | Your NexConvo Workspace/Tenant UUID                          |
-| `data-api-url` | ✅ Yes   | Base URL of your NexConvo Chat API (without trailing slash)  |
+| `data-token`   | ✅ Yes   | Your workspace's **Widget Token** — an unguessable public identifier (NOT your tenant id) |
+| `data-api-url` | ⬜ No    | Base URL of the NexConvo API gateway. If omitted, inferred from the script's origin |
 
-## Finding Your Tenant ID
+## Finding Your Widget Token
 
 1. Log in to your NexConvo dashboard.
-2. Navigate to **Settings → Workspace → General**.
-3. Copy the **Workspace ID** field.
+2. Navigate to **Settings → Communication → Chat Widget**.
+3. Copy the ready-made embed snippet — it already contains your Widget Token.
+
+The Widget Token identifies your workspace to the public widget without exposing your internal tenant id. If it is ever leaked or abused, it can be rotated from the dashboard without affecting anything else.
 
 ## Customization
 
@@ -47,7 +49,7 @@ If you are self-hosting NexConvo, copy `dist/nexconvo-widget.js` (produced by `n
 ```html
 <script
   src="https://your-cdn.example.com/static/nexconvo-widget.js"
-  data-tenant="YOUR_TENANT_ID"
+  data-token="YOUR_WIDGET_TOKEN"
   data-api-url="https://chat.your-domain.com"
   defer
 ></script>
@@ -59,8 +61,8 @@ If you are self-hosting NexConvo, copy `dist/nexconvo-widget.js` (produced by `n
 Visitor opens chat
        │
        ▼
-WebSocket connection → /hubs/widget?tenantId=<uuid>
-       │
+Connection → /hubs/widget?token=<WidgetToken>   (WebSockets, falls back to long-polling)
+       │  (server resolves the token → tenant; rejects unknown/inactive)
        ▼
 Visitor types a message → SendMessageAsync("Hello")
        │
@@ -88,9 +90,11 @@ The widget uses automatic exponential-backoff reconnection (0 s → 2 s → 5 s 
 
 ## Security Notes
 
-- The widget makes **no authenticated requests** — your `tenant_id` is public by design (it identifies your workspace, not grants access).
+- The widget authenticates with a **Widget Token** — an unguessable, rotatable public identifier that maps to your workspace server-side. Your internal tenant id is never exposed to the browser.
+- The server resolves the token to a tenant only when your **Web widget channel is active**, and enforces per-tenant row-level security on everything the widget reads.
+- The public widget endpoints are rate-limited per IP to protect against abuse.
 - All AI processing happens server-side; no API keys are ever exposed to the browser.
-- Responses are streamed over WebSockets using the standard SignalR protocol.
+- Responses are streamed over WebSockets (with long-polling fallback) using the standard SignalR protocol.
 - The Shadow DOM isolates all widget CSS/JS from the host page.
 
 ## Browser Support

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
@@ -7,31 +6,35 @@ using Microsoft.Extensions.Caching.Distributed;
 using NexConvo.BuildingBlocks.Ai.Services;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Rag;
+using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
-using NexConvo.Chat.Domain.Enums;
-using NexConvo.Chat.Domain.ValueObjects;
 using NexConvo.Contracts.Enums;
 
 namespace NexConvo.Chat.Api.Realtime;
 
 /// <summary>
 /// Public-facing SignalR hub for web widget visitors.
-/// Authentication: the caller supplies their <c>tenant_id</c> as a query-string
-/// parameter (no JWT required), which is validated and injected as a synthetic
-/// ClaimsPrincipal so the rest of the pipeline sees a normal tenant context.
 ///
-/// No per-user identity is asserted — every widget visitor is anonymous.
-/// The hub relays user messages through the same RAG → LLM pipeline used by the
-/// Playground but without debug data, and streams tokens back to the caller only.
+/// Authentication: the caller supplies an unguessable public <c>token</c> (the tenant's
+/// <c>WidgetToken</c>) as a query-string parameter — never the enumerable tenant id. On connect the
+/// token is resolved to its owning tenant via <see cref="IWidgetTenantResolver"/> (the single
+/// RLS-exempt lookup, which also requires an active Web channel); the resolved tenant is stashed on
+/// the connection. Every subsequent read runs through <see cref="IChatDbContextFactory"/> so RLS is
+/// actually enforced (Standard 6) — the hub never touches the DI-scoped, tenant-less DbContext.
+///
+/// No per-user identity is asserted — every widget visitor is anonymous. The hub relays user
+/// messages through the same RAG → LLM pipeline as the Playground (without debug data) and streams
+/// tokens back to the caller only.
 /// </summary>
 public sealed class WidgetHub(
+    IWidgetTenantResolver tenantResolver,
+    IChatDbContextFactory dbContextFactory,
     IKnowledgeRetrievalClient knowledge,
     IAiProviderFactory aiProviderFactory,
     IDistributedCache cache,
     IAesEncryptionService aes,
     IGroundedPromptAssembler promptAssembler,
     ITokenBudgeter tokenBudgeter,
-    IChatDbContext db,
     ILogger<WidgetHub> logger) : Hub
 {
     // ─── Client method names ───────────────────────────────────────────────────
@@ -39,29 +42,31 @@ public sealed class WidgetHub(
     public const string ReceiveCompleted = "receiveCompleted";
     public const string ReceiveError     = "receiveError";
 
+    // Key under which the resolved tenant is stored on the connection for its lifetime.
+    private const string TenantItemKey = "widget.tenantId";
+
     // ─── Hub overrides ─────────────────────────────────────────────────────────
 
     public override async Task OnConnectedAsync()
     {
-        var tenantId = GetTenantId();
-        if (tenantId == Guid.Empty)
+        var token = GetWidgetToken();
+        var tenantId = token == Guid.Empty
+            ? (Guid?)null
+            : await tenantResolver.ResolveAsync(token, Context.ConnectionAborted);
+
+        if (tenantId is null)
         {
-            logger.LogWarning("Widget connection rejected — missing or invalid tenant_id. ConnectionId={ConnectionId}", Context.ConnectionId);
-            // HubException closes the connection cleanly without a 500
-            throw new HubException("Invalid or missing tenant identifier.");
+            logger.LogWarning(
+                "Widget connection rejected — unknown token or inactive Web channel. ConnectionId={ConnectionId}",
+                Context.ConnectionId);
+            // HubException closes the connection cleanly without a 500. The message is deliberately
+            // generic — it never reveals whether the token exists or the channel is inactive.
+            throw new HubException("This chat widget is not available.");
         }
 
-        // Enforce that the Web Widget channel must be connected and active for this tenant
-        var isChannelConnected = await db.ChannelConnections.AsNoTracking()
-            .AnyAsync(x => x.TenantId == tenantId && x.Channel == ChatChannel.Web && x.IsActive);
-
-        if (!isChannelConnected)
-        {
-            logger.LogWarning("Widget connection rejected — Web channel not connected/active. Tenant={TenantId}, ConnectionId={ConnectionId}", tenantId, Context.ConnectionId);
-            throw new HubException("Web widget channel is not active or connected for this workspace.");
-        }
-
-        logger.LogInformation("Widget visitor connected. Tenant={TenantId}, ConnectionId={ConnectionId}", tenantId, Context.ConnectionId);
+        Context.Items[TenantItemKey] = tenantId.Value;
+        logger.LogInformation(
+            "Widget visitor connected. Tenant={TenantId}, ConnectionId={ConnectionId}", tenantId.Value, Context.ConnectionId);
         await base.OnConnectedAsync();
     }
 
@@ -73,8 +78,7 @@ public sealed class WidgetHub(
     /// </summary>
     public async Task SendMessageAsync(string userMessage)
     {
-        var tenantId = GetTenantId();
-        if (tenantId == Guid.Empty)
+        if (Context.Items[TenantItemKey] is not Guid tenantId)
         {
             await Clients.Caller.SendAsync(ReceiveError, "Tenant not identified.", Context.ConnectionAborted);
             return;
@@ -117,10 +121,14 @@ public sealed class WidgetHub(
             return;
         }
 
-        // 3. Load widget-specific system prompt override if available
-        var chatSettings = await db.WorkspaceChatSettings.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId, Context.ConnectionAborted);
-        var systemPromptOverride = chatSettings?.SystemPromptOverride;
+        // 3. Load widget-specific system prompt override — via a tenant-scoped context so RLS applies.
+        string? systemPromptOverride;
+        await using (var db = dbContextFactory.CreateForTenant(tenantId))
+        {
+            var chatSettings = await db.WorkspaceChatSettings.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.TenantId == tenantId, Context.ConnectionAborted);
+            systemPromptOverride = chatSettings?.SystemPromptOverride;
+        }
 
         // 4. Resolve provider
         if (!Enum.TryParse<AiProviderType>(aiConfig.Provider, true, out var providerType))
@@ -171,16 +179,13 @@ public sealed class WidgetHub(
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
-    private Guid GetTenantId()
+    /// <summary>
+    /// The public widget token from the <c>?token=</c> query parameter (SignalR strips it from the
+    /// negotiate/connect URL). Returns <see cref="Guid.Empty"/> if absent or malformed.
+    /// </summary>
+    private Guid GetWidgetToken()
     {
-        // The tenant_id claim is set by the WidgetHubMiddleware/filter via the
-        // query-string parameter before OnConnectedAsync fires.
-        var claim = Context.User?.FindFirst("tenant_id")?.Value
-                 ?? Context.GetHttpContext()?.Request.Query["tenantId"].ToString();
-        return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+        var raw = Context.GetHttpContext()?.Request.Query["token"].ToString();
+        return Guid.TryParse(raw, out var token) ? token : Guid.Empty;
     }
-
-    private sealed record CachedAiConfig(
-        Guid TenantId, string Provider, string EncryptedApiKey, string? BaseUrl,
-        string DefaultModel, string? SystemPrompt, string? Parameters, bool IsActive);
 }

@@ -13,6 +13,7 @@ const mockChatSettings: WorkspaceChatSettingsDto = {
   maxUnansweredMessages: 5,
   piiMaskingLevel: 'standard',
   dataRetentionDays: 90,
+  widgetToken: '33333333-3333-3333-3333-333333333333',
   widgetIconUrl: null,
   widgetPrimaryColor: '#0F172A',
   widgetSecondaryColor: '#3B82F6',

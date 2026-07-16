@@ -3,7 +3,6 @@ import { MessageCircle, X, Send, Wifi, WifiOff, Loader } from 'lucide-react';
 import { useWidgetSignalR } from './useWidgetSignalR';
 
 interface WidgetConfig {
-    tenantId: string;
     widgetIconUrl: string | null;
     widgetPrimaryColor: string;
     widgetSecondaryColor: string;
@@ -11,45 +10,88 @@ interface WidgetConfig {
 }
 
 interface ChatWidgetProps {
-    tenantId: string;
+    token: string;
     apiUrl: string;
 }
 
-export function ChatWidget({ tenantId, apiUrl }: ChatWidgetProps) {
+const DEFAULT_CONFIG: WidgetConfig = {
+    widgetIconUrl: null,
+    widgetPrimaryColor: '#0F172A',
+    widgetSecondaryColor: '#3B82F6',
+    widgetWelcomeMessage: 'Hi there! How can I help you today?',
+};
+
+export function ChatWidget({ token, apiUrl }: ChatWidgetProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [config, setConfig] = useState<WidgetConfig | null>(null);
     const [inputText, setInputText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const windowRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const launcherRef = useRef<HTMLButtonElement>(null);
 
     // Only connect once the user has opened the widget
     const { connectionState, messages, sendMessage } = useWidgetSignalR({
         apiUrl,
-        tenantId,
+        token,
         enabled: isOpen,
     });
 
-    // ── Fetch config once ──────────────────────────────────────────────────────
+    // ── Fetch config once, by public token ─────────────────────────────────────
     useEffect(() => {
-        const isRealTenant = tenantId && tenantId !== '00000000-0000-0000-0000-000000000000';
-
-        if (isRealTenant) {
-            fetch(`${apiUrl}/api/v1/widget/config/${tenantId}`)
-                .then(r => r.ok ? r.json() : Promise.reject(r.status))
-                .then((data: WidgetConfig) => setConfig(data))
-                .catch(err => {
-                    console.error('[NexConvo Widget] Could not fetch config:', err);
-                    // Fall back to defaults so the widget is still usable
-                    setConfig({ tenantId, widgetIconUrl: null, widgetPrimaryColor: '#0F172A', widgetSecondaryColor: '#3B82F6', widgetWelcomeMessage: 'Hi! How can I help?' });
-                });
-        } else {
-            setConfig({ tenantId: 'mock', widgetIconUrl: null, widgetPrimaryColor: '#0F172A', widgetSecondaryColor: '#3B82F6', widgetWelcomeMessage: 'Hi there! How can I help you today?' });
-        }
-    }, [tenantId, apiUrl]);
+        let cancelled = false;
+        fetch(`${apiUrl}/api/v1/widget/config/${encodeURIComponent(token)}`)
+            .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+            .then((data: WidgetConfig) => { if (!cancelled) setConfig(data); })
+            .catch(err => {
+                console.error('[NexConvo Widget] Could not fetch config:', err);
+                // Fall back to sane defaults so the widget is still usable.
+                if (!cancelled) setConfig(DEFAULT_CONFIG);
+            });
+        return () => { cancelled = true; };
+    }, [token, apiUrl]);
 
     // ── Auto-scroll messages ───────────────────────────────────────────────────
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // ── A11y: move focus into the dialog on open, restore to launcher on close,
+    //         Escape closes, and Tab is trapped inside the dialog (audit M8). ─────
+    useEffect(() => {
+        if (!isOpen) return;
+        inputRef.current?.focus();
+
+        const onKeyDown = (e: globalThis.KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsOpen(false);
+                return;
+            }
+            if (e.key !== 'Tab' || !windowRef.current) return;
+            const focusable = windowRef.current.querySelectorAll<HTMLElement>(
+                'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+            );
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const active = windowRef.current.getRootNode() as ShadowRoot | Document;
+            if (e.shiftKey && active.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && active.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        };
+
+        const node = windowRef.current;
+        node?.addEventListener('keydown', onKeyDown);
+        return () => {
+            node?.removeEventListener('keydown', onKeyDown);
+            launcherRef.current?.focus();
+        };
+    }, [isOpen]);
 
     // ── Guards ─────────────────────────────────────────────────────────────────
     if (!config) return null;
@@ -82,7 +124,7 @@ export function ChatWidget({ tenantId, apiUrl }: ChatWidgetProps) {
         <div className="nc-widget-container">
             {/* ── Chat Window ──────────────────────────────────────────────────── */}
             {isOpen && (
-                <div className="nc-chat-window" role="dialog" aria-label="Chat with us" aria-modal="true">
+                <div ref={windowRef} className="nc-chat-window" role="dialog" aria-label="Chat with us" aria-modal="true">
                     {/* Header */}
                     <div className="nc-chat-header" style={{ backgroundColor: primaryColor }}>
                         <div className="nc-chat-header-info">
@@ -153,6 +195,7 @@ export function ChatWidget({ tenantId, apiUrl }: ChatWidgetProps) {
                     {/* Input */}
                     <div className="nc-chat-input-area">
                         <input
+                            ref={inputRef}
                             type="text"
                             className="nc-chat-input"
                             placeholder={isConnected ? 'Type a message…' : 'Connecting…'}
@@ -178,6 +221,7 @@ export function ChatWidget({ tenantId, apiUrl }: ChatWidgetProps) {
 
             {/* ── Launcher Button ───────────────────────────────────────────────── */}
             <button
+                ref={launcherRef}
                 className="nc-launcher-btn"
                 style={{ backgroundColor: primaryColor }}
                 onClick={toggleOpen}

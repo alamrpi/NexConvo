@@ -550,45 +550,6 @@
         }
       }
     },
-    "channels": {
-      "title": "চ্যানেল সংযোগ",
-      "subtitle": "কথোপকথন পেতে আপনার মেসেজিং চ্যানেলগুলো সংযুক্ত করুন।",
-      "status": {
-        "connected": "সংযুক্ত",
-        "notConnected": "সংযুক্ত নয়",
-        "error": "সংযোগ ত্রুটি"
-      },
-      "connect": "সংযুক্ত করুন",
-      "configure": "কনফিগার করুন",
-      "disconnect": "সংযোগ বিচ্ছিন্ন করুন",
-      "drawer": {
-        "steps": {
-          "credentials": "ক্রেডেনশিয়াল",
-          "verify": "যাচাই",
-          "webhook": "ওয়েবহুক",
-          "test": "পরীক্ষা",
-          "done": "সম্পন্ন"
-        },
-        "verifyCredentials": "ক্রেডেনশিয়াল যাচাই",
-        "verifying": "যাচাই হচ্ছে…",
-        "copyWebhook": "URL কপি",
-        "copied": "কপি হয়েছে!",
-        "sendTest": "টেস্ট বার্তা পাঠান",
-        "sending": "পাঠানো হচ্ছে…",
-        "testSuccess": "টেস্ট বার্তা পাঠানো হয়েছে!",
-        "close": "বন্ধ করুন",
-        "success": "সফলভাবে সংযুক্ত হয়েছে!"
-      },
-      "widget": {
-        "title": "উইজেট চেহারা",
-        "color": "রং",
-        "welcomeMessage": "স্বাগত বার্তা",
-        "position": "অবস্থান",
-        "positionBottomRight": "নিচে ডানে",
-        "positionBottomLeft": "নিচে বামে",
-        "preview": "প্রিভিউ"
-      }
-    },
     "aiSettings": {
       "title": "এআই কনফিগারেশন",
       "sections": {
@@ -1147,7 +1108,14 @@
       },
       "widget": {
         "title": "উইজেটের চেহারা",
-        "color": "অ্যাকসেন্ট রং",
+        "noPermission": "এই সেটিংস পরিচালনার অনুমতি আপনার নেই।",
+        "loadError": "উইজেট সেটিংস লোড করা যায়নি। আবার চেষ্টা করুন।",
+        "saveError": "উইজেট সেটিংস সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
+        "conflict": "অন্য কেউ এই সেটিংস পরিবর্তন করেছেন। পুনরায় লোড করে চেষ্টা করুন।",
+        "color": "প্রধান রং",
+        "secondaryColor": "গৌণ রং",
+        "iconUrl": "উইজেট আইকন ইউআরএল (ঐচ্ছিক)",
+        "iconUrlPlaceholder": "https://example.com/icon.png",
         "welcomeMessage": "স্বাগত বার্তা",
         "welcomeMessagePlaceholder": "হ্যালো! আমি কীভাবে সাহায্য করতে পারি?",
         "position": "অবস্থান",
@@ -1157,8 +1125,13 @@
         "save": "উইজেট সেটিংস সংরক্ষণ",
         "saving": "সংরক্ষণ হচ্ছে…",
         "saved": "উইজেট সেটিংস সংরক্ষিত।",
+        "embedTitle": "কীভাবে এম্বেড করবেন",
+        "embedDescription": "এই স্ক্রিপ্ট ট্যাগটি আপনার ওয়েবসাইটের HTML-এ, </body> ট্যাগের ঠিক আগে যুক্ত করুন।",
         "errors": {
-          "invalidUrl": "দয়া করে একটি সঠিক ইউআরএল (URL) লিখুন।"
+          "invalidUrl": "একটি সঠিক https ইউআরএল লিখুন।",
+          "invalidColor": "একটি হেক্স রং লিখুন, যেমন #0F172A।",
+          "welcomeMessageRequired": "একটি স্বাগত বার্তা আবশ্যক।",
+          "welcomeMessageTooLong": "স্বাগত বার্তা ৫০০ অক্ষরের বেশি হতে পারবে না।"
         }
       },
       "errors": {

@@ -76,6 +76,40 @@ public sealed class WorkspaceChatSettingsConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.DataRetentionDays)
             .HasColumnName("data_retention_days");
 
+        // ── Widget configuration ─────────────────────────────────────────────────
+        // Snake_case column names to match the rest of the table (Standard: consistent schema).
+        // WidgetToken is the unguessable public identifier the anonymous widget presents in place of
+        // the enumerable TenantId; it's uniquely indexed for the SECURITY DEFINER resolver lookup.
+        builder.Property(x => x.WidgetToken)
+            .HasColumnName("widget_token")
+            .IsRequired();
+
+        builder.HasIndex(x => x.WidgetToken)
+            .IsUnique()
+            .HasDatabaseName("idx_workspace_chat_settings_widget_token");
+
+        builder.Property(x => x.WidgetIconUrl)
+            .HasColumnName("widget_icon_url")
+            .HasMaxLength(2048);
+
+        builder.Property(x => x.WidgetPrimaryColor)
+            .HasColumnName("widget_primary_color")
+            .IsRequired()
+            .HasMaxLength(9)
+            .HasDefaultValue("#0F172A");
+
+        builder.Property(x => x.WidgetSecondaryColor)
+            .HasColumnName("widget_secondary_color")
+            .IsRequired()
+            .HasMaxLength(9)
+            .HasDefaultValue("#3B82F6");
+
+        builder.Property(x => x.WidgetWelcomeMessage)
+            .HasColumnName("widget_welcome_message")
+            .IsRequired()
+            .HasMaxLength(500)
+            .HasDefaultValue("Hi there! How can I help you today?");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
         builder.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");

@@ -561,45 +561,6 @@
         }
       }
     },
-    "channels": {
-      "title": "Channel Connections",
-      "subtitle": "Connect your messaging channels to start receiving conversations.",
-      "status": {
-        "connected": "Connected",
-        "notConnected": "Not connected",
-        "error": "Connection error"
-      },
-      "connect": "Connect",
-      "configure": "Configure",
-      "disconnect": "Disconnect",
-      "drawer": {
-        "steps": {
-          "credentials": "Credentials",
-          "verify": "Verify",
-          "webhook": "Webhook",
-          "test": "Test",
-          "done": "Done"
-        },
-        "verifyCredentials": "Verify Credentials",
-        "verifying": "Verifying…",
-        "copyWebhook": "Copy URL",
-        "copied": "Copied!",
-        "sendTest": "Send Test Message",
-        "sending": "Sending…",
-        "testSuccess": "Test message sent!",
-        "close": "Close",
-        "success": "Connected successfully!"
-      },
-      "widget": {
-        "title": "Widget Appearance",
-        "color": "Color",
-        "welcomeMessage": "Welcome message",
-        "position": "Position",
-        "positionBottomRight": "Bottom right",
-        "positionBottomLeft": "Bottom left",
-        "preview": "Preview"
-      }
-    },
     "aiSettings": {
       "title": "AI Configuration",
       "subtitle": "Configure how the AI assistant behaves in this workspace.",
@@ -1147,7 +1108,14 @@
       },
       "widget": {
         "title": "Widget Appearance",
-        "color": "Accent color",
+        "noPermission": "You don’t have permission to manage these settings.",
+        "loadError": "Couldn’t load widget settings. Please try again.",
+        "saveError": "Couldn’t save widget settings. Please try again.",
+        "conflict": "Someone else changed these settings. Reload and try again.",
+        "color": "Primary color",
+        "secondaryColor": "Secondary color",
+        "iconUrl": "Widget icon URL (optional)",
+        "iconUrlPlaceholder": "https://example.com/icon.png",
         "welcomeMessage": "Welcome message",
         "welcomeMessagePlaceholder": "Hi! How can I help you?",
         "position": "Position",
@@ -1157,8 +1125,13 @@
         "save": "Save widget settings",
         "saving": "Saving…",
         "saved": "Widget settings saved.",
+        "embedTitle": "How to embed",
+        "embedDescription": "Copy this script tag into your website’s HTML, just before the closing </body> tag.",
         "errors": {
-          "invalidUrl": "Please enter a valid URL."
+          "invalidUrl": "Enter a valid https URL.",
+          "invalidColor": "Enter a hex color, e.g. #0F172A.",
+          "welcomeMessageRequired": "A welcome message is required.",
+          "welcomeMessageTooLong": "Welcome message must be 500 characters or fewer."
         }
       },
       "errors": {

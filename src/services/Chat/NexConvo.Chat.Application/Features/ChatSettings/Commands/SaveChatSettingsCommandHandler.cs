@@ -90,7 +90,17 @@ public sealed class SaveChatSettingsCommandHandler(
                 DateTimeOffset.UtcNow));
         }
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Two admins edited the settings concurrently; the xmin token caught the stale write
+            // (Standard 16). Surface a clean 409 for the client to reload/retry — never a 500.
+            logger.LogWarning("Chat settings save conflicted for tenant {TenantId} (concurrent update)", tenantId);
+            return Result<Guid>.Conflict("Settings were changed by someone else. Reload and try again.");
+        }
 
         logger.LogInformation("Chat settings {SettingsId} saved for tenant {TenantId}", settings.Id, tenantId);
 

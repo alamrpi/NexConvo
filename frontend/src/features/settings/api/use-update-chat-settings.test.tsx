@@ -18,6 +18,10 @@ const values: ChatSettingsValues = {
   maxUnansweredMessages: 3,
   piiMaskingLevel: 'standard',
   dataRetentionDays: 90,
+  widgetIconUrl: null,
+  widgetPrimaryColor: '#0F172A',
+  widgetSecondaryColor: '#3B82F6',
+  widgetWelcomeMessage: 'Hi there! How can I help you today?',
 };
 
 describe('useUpdateChatSettings', () => {

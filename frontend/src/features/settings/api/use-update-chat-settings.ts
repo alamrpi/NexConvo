@@ -28,7 +28,7 @@ function mapError(error: unknown): ChatSettingsError {
 /** Persists workspace chat settings through the BFF, then refreshes the cached query (S7). */
 export function useUpdateChatSettings() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<void, ChatSettingsError, ChatSettingsValues>({
     mutationFn: async (values: ChatSettingsValues): Promise<void> => {
       try {
         await apiClient.put('/settings/chat-settings', values);
