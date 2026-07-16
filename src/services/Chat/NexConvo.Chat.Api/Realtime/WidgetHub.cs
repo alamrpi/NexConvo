@@ -1,13 +1,16 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using NexConvo.BuildingBlocks.Ai.Models;
 using NexConvo.BuildingBlocks.Ai.Services;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Rag;
 using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
+using NexConvo.Chat.Application.Rag;
 using NexConvo.Contracts.Enums;
 
 namespace NexConvo.Chat.Api.Realtime;
@@ -35,6 +38,8 @@ public sealed class WidgetHub(
     IAesEncryptionService aes,
     IGroundedPromptAssembler promptAssembler,
     ITokenBudgeter tokenBudgeter,
+    IGroundingGate groundingGate,
+    IAbstentionStreamFilter abstentionFilter,
     ILogger<WidgetHub> logger) : Hub
 {
     // ─── Client method names ───────────────────────────────────────────────────
@@ -122,13 +127,19 @@ public sealed class WidgetHub(
         }
 
         // 3. Load widget-specific system prompt override — via a tenant-scoped context so RLS applies.
+        // chatSettings is kept alive past this block: NoAnswerMessage is needed both by the grounding
+        // gate below and by the abstention-filter fallback further down.
         string? systemPromptOverride;
+        NexConvo.Chat.Domain.Entities.WorkspaceChatSettings? chatSettings;
         await using (var db = dbContextFactory.CreateForTenant(tenantId))
         {
-            var chatSettings = await db.WorkspaceChatSettings.AsNoTracking()
+            chatSettings = await db.WorkspaceChatSettings.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TenantId == tenantId, Context.ConnectionAborted);
             systemPromptOverride = chatSettings?.SystemPromptOverride;
         }
+
+        var noAnswerMessage = chatSettings?.NoAnswerMessage
+            ?? "Sorry, I don't have information about that. Please contact our support team for help.";
 
         // 4. Resolve provider
         if (!Enum.TryParse<AiProviderType>(aiConfig.Provider, true, out var providerType))
@@ -140,6 +151,15 @@ public sealed class WidgetHub(
         var matches = await knowledge.SearchAsync(
             tenantId, userMessage, ChannelProfile.Chat.TopK, ChannelProfile.Chat.MinScore, Context.ConnectionAborted);
 
+        // 5b. Grounding gate — if retrieval is too weak, never call the LLM at all.
+        if (!groundingGate.ShouldAnswer(matches, ChannelProfile.Chat))
+        {
+            logger.LogInformation("Widget query below grounding gate — returning fallback. Tenant={TenantId}", tenantId);
+            await Clients.Caller.SendAsync(ReceiveToken, noAnswerMessage, Context.ConnectionAborted);
+            await Clients.Caller.SendAsync(ReceiveCompleted, Context.ConnectionAborted);
+            return;
+        }
+
         var contributions = matches
             .Select((m, i) => new ContextContribution(i + 1, m.ChunkId, m.DocumentId, m.Content, m.Score))
             .ToList();
@@ -149,18 +169,35 @@ public sealed class WidgetHub(
         var systemPrompt = promptAssembler.BuildSystemPrompt(ChannelProfile.Chat, systemPromptOverride);
         var userPrompt   = promptAssembler.BuildUserPrompt(fittedContext, [], userMessage, ChannelProfile.Chat);
 
-        // 6. Stream LLM tokens to the caller only
+        // 6. Stream LLM tokens to the caller only, filtered so an abstention marker never leaks.
         try
         {
-            await foreach (var chunk in provider.GenerateStreamAsync(
-                userPrompt, systemPrompt, apiKey, aiConfig.DefaultModel, aiConfig.BaseUrl, Context.ConnectionAborted))
+            var tokenStream = ContentOf(
+                provider.GenerateStreamAsync(
+                    userPrompt, systemPrompt, apiKey, aiConfig.DefaultModel, aiConfig.BaseUrl, Context.ConnectionAborted),
+                Context.ConnectionAborted);
+
+            var abstained = false;
+            await foreach (var result in abstentionFilter.FilterAsync(tokenStream, Context.ConnectionAborted))
             {
                 Context.ConnectionAborted.ThrowIfCancellationRequested();
 
-                if (!string.IsNullOrEmpty(chunk.Content))
+                if (result.Abstained)
                 {
-                    await Clients.Caller.SendAsync(ReceiveToken, chunk.Content, Context.ConnectionAborted);
+                    abstained = true;
+                    break;
                 }
+
+                if (!string.IsNullOrEmpty(result.Token))
+                {
+                    await Clients.Caller.SendAsync(ReceiveToken, result.Token, Context.ConnectionAborted);
+                }
+            }
+
+            if (abstained)
+            {
+                logger.LogInformation("Widget reply abstained — returning fallback. Tenant={TenantId}", tenantId);
+                await Clients.Caller.SendAsync(ReceiveToken, noAnswerMessage, Context.ConnectionAborted);
             }
 
             await Clients.Caller.SendAsync(ReceiveCompleted, Context.ConnectionAborted);
@@ -175,6 +212,20 @@ public sealed class WidgetHub(
             logger.LogError(ex, "Error streaming AI response for widget. Tenant={TenantId}", tenantId);
             await Clients.Caller.SendAsync(ReceiveError, "An error occurred while generating a response.", Context.ConnectionAborted);
         }
+    }
+
+    /// <summary>
+    /// Adapts the provider's <see cref="AiStreamChunk"/> stream into a plain token stream for
+    /// <see cref="IAbstentionStreamFilter"/>. System.Linq.Async is not referenced in this repo, so a
+    /// LINQ <c>Select</c> over <see cref="IAsyncEnumerable{T}"/> is not available — this local
+    /// adapter is the manual equivalent.
+    /// </summary>
+    private static async IAsyncEnumerable<string> ContentOf(
+        IAsyncEnumerable<AiStreamChunk> chunks,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        await foreach (var c in chunks.WithCancellation(ct))
+            yield return c.Content;
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
