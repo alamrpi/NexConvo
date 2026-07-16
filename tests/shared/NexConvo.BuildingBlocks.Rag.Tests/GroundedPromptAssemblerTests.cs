@@ -82,4 +82,15 @@ public class GroundedPromptAssemblerTests
         firstIndex.Should().BeGreaterThan(-1);
         secondIndex.Should().BeGreaterThan(firstIndex);
     }
+
+    [Fact]
+    public void SystemPrompt_ForbidsOutsideKnowledgeAndInventedCitations()
+    {
+        var prompt = _sut.BuildSystemPrompt(ChannelProfile.Chat, tenantSystemPromptOverride: null);
+
+        prompt.Should().Contain("only");
+        prompt.Should().Contain(GroundedPromptAssembler.AbstentionMarker);
+        prompt.ToLowerInvariant().Should().Contain("prior knowledge");   // outside knowledge forbidden
+        prompt.ToLowerInvariant().Should().Contain("do not invent");     // no fabricated citations
+    }
 }

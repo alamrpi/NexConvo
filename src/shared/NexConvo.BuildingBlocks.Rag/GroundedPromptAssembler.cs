@@ -15,8 +15,9 @@ public sealed class GroundedPromptAssembler : IGroundedPromptAssembler
     {
         var sb = new StringBuilder();
         sb.AppendLine("You are a support assistant. Answer only from the numbered context provided below.");
-        sb.AppendLine($"If the context does not contain the answer, respond with exactly {AbstentionMarker} and nothing else.");
+        sb.AppendLine("Do not use any outside or prior knowledge, and do not guess. If the numbered context does not fully contain the answer, respond with exactly " + AbstentionMarker + " and nothing else.");
         sb.AppendLine($"Never translate or localize {AbstentionMarker} — emit it verbatim in every language, even though your answer text itself should follow the instruction below.");
+        sb.AppendLine("Do not invent or guess a citation number — only cite context entries that are actually present below.");
         sb.AppendLine("Always reply in the same language the user wrote in.");
 
         if (profile.EmitCitations)
