@@ -30,7 +30,8 @@ public class ReplyOrchestratorTests
         IDistributedCache Cache,
         IAiProviderService AiProvider,
         IPublishEndpoint Publisher,
-        IReplyStreamSink StreamSink);
+        IReplyStreamSink StreamSink,
+        IGroundingGate GroundingGate);
 
     private static async IAsyncEnumerable<AiStreamChunk> StreamOf(params string[] chunks)
     {
@@ -83,12 +84,15 @@ public class ReplyOrchestratorTests
 
         var streamSink = Substitute.For<IReplyStreamSink>();
 
+        var groundingGate = Substitute.For<IGroundingGate>();
+        groundingGate.ShouldAnswer(Arg.Any<IReadOnlyList<KnowledgeChunkMatch>>(), Arg.Any<ChannelProfile>()).Returns(true);
+
         var sut = new ReplyOrchestrator(
             dbFactory, knowledge, aiFactory, cache, aes,
             new GroundedPromptAssembler(), new TokenBudgeter(), publisher, streamSink,
-            Substitute.For<ILogger<ReplyOrchestrator>>());
+            groundingGate, Substitute.For<ILogger<ReplyOrchestrator>>());
 
-        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher, streamSink);
+        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher, streamSink, groundingGate);
     }
 
     private static string CachedAiConfigJson(Guid tenantId) => JsonSerializer.Serialize(new
@@ -265,6 +269,28 @@ public class ReplyOrchestratorTests
 
         outcome.Should().BeOfType<HandoffOutcome>();
         ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.NoAiConfig);
+    }
+
+    [Fact]
+    public async Task RunAsync_GroundingGateRejects_HandsOffAndNeverCallsProvider()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "What is your CEO's home address?");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.Knowledge.SearchAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .Returns([new KnowledgeChunkMatch("chunk-1", "doc-1", "Unrelated low-score content.", 0.1)]);
+        ctx.GroundingGate.ShouldAnswer(Arg.Any<IReadOnlyList<KnowledgeChunkMatch>>(), Arg.Any<ChannelProfile>()).Returns(false);
+
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        outcome.Should().BeOfType<HandoffOutcome>();
+        ((HandoffOutcome)outcome).Reason.Should().Be(EscalationReason.LowConfidence);
+        ctx.AiFactory.DidNotReceive().GetProvider(Arg.Any<AiProviderType>());
+        ctx.AiProvider.DidNotReceive().GenerateStreamAsync(
+            Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+        ctx.Db.Escalations.Received(1).Add(Arg.Is<Escalation>(e => e.Reason == EscalationReason.LowConfidence));
     }
 
     [Fact]

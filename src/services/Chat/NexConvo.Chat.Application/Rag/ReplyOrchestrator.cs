@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using NexConvo.BuildingBlocks.Ai.Services;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Rag;
+using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
 using NexConvo.Chat.Domain.Entities;
 using NexConvo.Chat.Domain.Enums;
@@ -35,6 +36,7 @@ public sealed class ReplyOrchestrator(
     ITokenBudgeter tokenBudgeter,
     IPublishEndpoint publisher,
     IReplyStreamSink streamSink,
+    IGroundingGate groundingGate,
     ILogger<ReplyOrchestrator> logger) : IReplyOrchestrator
 {
     public async Task<ReplyOutcome> RunAsync(Guid tenantId, Guid conversationId, CancellationToken cancellationToken)
@@ -72,6 +74,16 @@ public sealed class ReplyOrchestrator(
 
         var matches = await knowledge.SearchAsync(
             tenantId, lastInbound.Body, ChannelProfile.Chat.TopK, ChannelProfile.Chat.MinScore, cancellationToken);
+
+        if (!groundingGate.ShouldAnswer(matches, ChannelProfile.Chat))
+        {
+            // Below the grounding gate: never call the model. Hand off to a human instead — this
+            // is the hard guarantee that the assistant never answers from outside the knowledge
+            // base. Unlike the widget/playground SignalR hubs, this orchestrator has no direct
+            // client channel to push NoAnswerMessage over; HandoffAsync's escalation + integration
+            // event is the entire mandated behavior here.
+            return await HandoffAsync(db, conversation, EscalationReason.LowConfidence, cancellationToken);
+        }
 
         var contributions = matches
             .Select((m, i) => new ContextContribution(i + 1, m.ChunkId, m.DocumentId, m.Content, m.Score))
@@ -183,8 +195,4 @@ public sealed class ReplyOrchestrator(
 
         return new HandoffOutcome(escalation.Id, reason);
     }
-
-    private sealed record CachedAiConfig(
-        Guid TenantId, string Provider, string EncryptedApiKey, string? BaseUrl,
-        string DefaultModel, string? SystemPrompt, string? Parameters, bool IsActive);
 }
