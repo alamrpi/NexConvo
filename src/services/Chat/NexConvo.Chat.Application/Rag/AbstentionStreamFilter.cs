@@ -14,17 +14,10 @@ public sealed class AbstentionStreamFilter : IAbstentionStreamFilter
         IAsyncEnumerable<string> source, [EnumeratorCancellation] CancellationToken ct)
     {
         var buffer = new StringBuilder();
-        var released = false;
 
         await foreach (var chunk in source.WithCancellation(ct))
         {
             if (string.IsNullOrEmpty(chunk)) continue;
-
-            if (released)
-            {
-                yield return new AbstentionResult(chunk, false);
-                continue;
-            }
 
             buffer.Append(chunk);
             var text = buffer.ToString();
@@ -35,18 +28,27 @@ public sealed class AbstentionStreamFilter : IAbstentionStreamFilter
                 yield break;
             }
 
-            // Once the buffer exceeds the window and can no longer be the start of the marker,
-            // release it as a single token and stream freely thereafter.
+            // Once the buffer exceeds the window, release everything except a trailing tail of
+            // Marker.Length - 1 chars — the longest partial-marker prefix that could still be
+            // completed by a future chunk (e.g. buffer ends "...[[NO_", next chunk "ANSWER]]").
+            // Keeping that tail in the buffer means every subsequent chunk is re-scanned against
+            // it, so a marker straddling a release boundary is still caught (audit fix — the
+            // original release-and-stop design let such a split marker leak to the client).
             if (text.Length >= BufferWindow)
             {
-                released = true;
-                yield return new AbstentionResult(text, false);
+                var keep = Math.Min(Marker.Length - 1, text.Length);
+                var releasable = text[..^keep];
+                if (releasable.Length > 0)
+                {
+                    yield return new AbstentionResult(releasable, false);
+                }
                 buffer.Clear();
+                buffer.Append(text.AsSpan(text.Length - keep));
             }
         }
 
         // Stream ended while still buffering (short answer, no marker) — flush what we held.
-        if (!released && buffer.Length > 0)
+        if (buffer.Length > 0)
         {
             yield return new AbstentionResult(buffer.ToString(), false);
         }

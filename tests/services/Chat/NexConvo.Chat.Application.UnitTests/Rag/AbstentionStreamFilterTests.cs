@@ -65,4 +65,25 @@ public class AbstentionStreamFilterTests
         abstained.Should().BeFalse();
         text.Should().Be(new string('a', 100));
     }
+
+    [Fact]
+    public async Task MarkerStraddlingTheReleaseBoundary_StillDetected_NothingLeaks()
+    {
+        // Regression test (audit fix): the marker begins right at the 64-char release window and
+        // completes in the next chunk. The filter must not release the partial "[[NO_" prefix and
+        // then stream the rest unchecked — it must retain enough tail to still catch the marker.
+        var (text, abstained) = await Collect(Stream(new string('a', 60) + "[[NO_", "ANSWER]]"));
+        abstained.Should().BeTrue();
+        text.Should().NotContain("[[NO_");
+        text.Should().NotContain("ANSWER");
+    }
+
+    [Fact]
+    public async Task LongAnswerWithMarkerFarPastBuffer_StillDetected()
+    {
+        // A long grounded answer that later (incorrectly) contains the marker must still abstain,
+        // even though most of its content already crossed the release boundary.
+        var (text, abstained) = await Collect(Stream(new string('a', 200), "[[NO_ANSWER]]"));
+        abstained.Should().BeTrue();
+    }
 }
