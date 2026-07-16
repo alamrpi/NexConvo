@@ -21,4 +21,5 @@ public sealed record WorkspaceChatSettingsDto(
     string WidgetPrimaryColor,
     string WidgetSecondaryColor,
     string WidgetWelcomeMessage,
+    string NoAnswerMessage,
     DateTimeOffset? UpdatedAt);

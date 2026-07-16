@@ -25,4 +25,5 @@ public sealed record SaveChatSettingsCommand(
     string WidgetPrimaryColor,
     string WidgetSecondaryColor,
     string WidgetWelcomeMessage,
+    string NoAnswerMessage,
     Guid ActorUserId) : IRequest<Result<Guid>>;

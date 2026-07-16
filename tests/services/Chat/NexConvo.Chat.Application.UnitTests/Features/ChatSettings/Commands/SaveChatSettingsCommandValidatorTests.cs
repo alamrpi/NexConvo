@@ -18,7 +18,8 @@ public class SaveChatSettingsCommandValidatorTests
         string primaryColor = "#0F172A",
         string secondaryColor = "#3B82F6",
         string? iconUrl = null,
-        string welcome = "Hi there! How can I help you today?") =>
+        string welcome = "Hi there! How can I help you today?",
+        string noAnswer = "We don't have that info; please contact support.") =>
         new(
             AiProviderType.OpenAI, "gpt-4o-mini", FallbackProviders: [], SystemPromptOverride: null,
             HandoffConfidenceThreshold: 0.5, SentimentEscalationEnabled: false,
@@ -26,6 +27,7 @@ public class SaveChatSettingsCommandValidatorTests
             PiiMaskingLevel.Off, DataRetentionDays: null,
             WidgetIconUrl: iconUrl, WidgetPrimaryColor: primaryColor,
             WidgetSecondaryColor: secondaryColor, WidgetWelcomeMessage: welcome,
+            NoAnswerMessage: noAnswer,
             ActorUserId: Guid.NewGuid());
 
     [Theory]
@@ -98,6 +100,20 @@ public class SaveChatSettingsCommandValidatorTests
     {
         _validator.TestValidate(Valid(welcome: new string('a', 501)))
             .ShouldHaveValidationErrorFor(x => x.WidgetWelcomeMessage);
+    }
+
+    [Fact]
+    public void NoAnswerMessage_Empty_Fails()
+    {
+        _validator.TestValidate(Valid(noAnswer: ""))
+            .ShouldHaveValidationErrorFor(x => x.NoAnswerMessage);
+    }
+
+    [Fact]
+    public void NoAnswerMessage_TooLong_Fails()
+    {
+        _validator.TestValidate(Valid(noAnswer: new string('a', 501)))
+            .ShouldHaveValidationErrorFor(x => x.NoAnswerMessage);
     }
 
     [Fact]

@@ -110,6 +110,12 @@ public sealed class WorkspaceChatSettingsConfiguration : IEntityTypeConfiguratio
             .HasMaxLength(500)
             .HasDefaultValue("Hi there! How can I help you today?");
 
+        builder.Property(x => x.NoAnswerMessage)
+            .HasColumnName("no_answer_message")
+            .IsRequired()
+            .HasMaxLength(500)
+            .HasDefaultValue("Sorry, I don't have information about that. Please contact our support team for help.");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
         builder.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id");

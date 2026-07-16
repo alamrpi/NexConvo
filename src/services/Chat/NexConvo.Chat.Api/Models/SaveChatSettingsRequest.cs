@@ -22,4 +22,5 @@ public sealed record SaveChatSettingsRequest(
     string? WidgetIconUrl = null,
     string WidgetPrimaryColor = "#0F172A",
     string WidgetSecondaryColor = "#3B82F6",
-    string WidgetWelcomeMessage = "Hi there! How can I help you today?");
+    string WidgetWelcomeMessage = "Hi there! How can I help you today?",
+    string NoAnswerMessage = "Sorry, I don't have information about that. Please contact our support team for help.");

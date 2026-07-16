@@ -40,6 +40,7 @@ public sealed class ChatSettingsController(ISender sender) : ControllerBase
                 body.WidgetPrimaryColor,
                 body.WidgetSecondaryColor,
                 body.WidgetWelcomeMessage,
+                body.NoAnswerMessage,
                 actor),
             ct);
 

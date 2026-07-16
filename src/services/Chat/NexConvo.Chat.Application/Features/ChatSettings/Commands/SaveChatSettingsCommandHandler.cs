@@ -51,7 +51,8 @@ public sealed class SaveChatSettingsCommandHandler(
                 cmd.WidgetIconUrl,
                 cmd.WidgetPrimaryColor,
                 cmd.WidgetSecondaryColor,
-                cmd.WidgetWelcomeMessage);
+                cmd.WidgetWelcomeMessage,
+                cmd.NoAnswerMessage);
 
             settings.CreatedByUserId = cmd.ActorUserId;
             db.WorkspaceChatSettings.Add(settings);
@@ -80,7 +81,8 @@ public sealed class SaveChatSettingsCommandHandler(
                 cmd.WidgetIconUrl,
                 cmd.WidgetPrimaryColor,
                 cmd.WidgetSecondaryColor,
-                cmd.WidgetWelcomeMessage);
+                cmd.WidgetWelcomeMessage,
+                cmd.NoAnswerMessage);
 
             db.ChatAuditLogs.Add(new ChatAuditLog(
                 "chat.settings.update",

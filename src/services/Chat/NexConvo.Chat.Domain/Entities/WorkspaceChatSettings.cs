@@ -54,6 +54,9 @@ public class WorkspaceChatSettings : BaseAggregateRoot
     public string WidgetPrimaryColor { get; private set; } = "#0F172A";
     public string WidgetSecondaryColor { get; private set; } = "#3B82F6";
     public string WidgetWelcomeMessage { get; private set; } = "Hi there! How can I help you today?";
+
+    public string NoAnswerMessage { get; private set; } = "Sorry, I don't have information about that. Please contact our support team for help.";
+
     private WorkspaceChatSettings() { }
 
     public WorkspaceChatSettings(
@@ -72,7 +75,8 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         string? widgetIconUrl = null,
         string widgetPrimaryColor = "#0F172A",
         string widgetSecondaryColor = "#3B82F6",
-        string widgetWelcomeMessage = "Hi there! How can I help you today?")
+        string widgetWelcomeMessage = "Hi there! How can I help you today?",
+        string noAnswerMessage = "Sorry, I don't have information about that. Please contact our support team for help.")
     {
         TenantId = tenantId;
         PrimaryProvider = primaryProvider;
@@ -90,6 +94,7 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         WidgetPrimaryColor = widgetPrimaryColor;
         WidgetSecondaryColor = widgetSecondaryColor;
         WidgetWelcomeMessage = widgetWelcomeMessage;
+        NoAnswerMessage = noAnswerMessage;
     }
 
     public void Update(
@@ -107,7 +112,8 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         string? widgetIconUrl,
         string widgetPrimaryColor,
         string widgetSecondaryColor,
-        string widgetWelcomeMessage)
+        string widgetWelcomeMessage,
+        string noAnswerMessage)
     {
         PrimaryProvider = primaryProvider;
         PrimaryModel = primaryModel;
@@ -124,5 +130,6 @@ public class WorkspaceChatSettings : BaseAggregateRoot
         WidgetPrimaryColor = widgetPrimaryColor;
         WidgetSecondaryColor = widgetSecondaryColor;
         WidgetWelcomeMessage = widgetWelcomeMessage;
+        NoAnswerMessage = noAnswerMessage;
     }
 }

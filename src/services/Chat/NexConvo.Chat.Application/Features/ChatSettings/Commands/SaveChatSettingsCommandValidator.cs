@@ -48,6 +48,10 @@ public sealed class SaveChatSettingsCommandValidator : AbstractValidator<SaveCha
         RuleFor(x => x.WidgetWelcomeMessage)
             .NotEmpty().WithMessage("Welcome message is required.")
             .MaximumLength(500).WithMessage("Welcome message must not exceed 500 characters.");
+
+        RuleFor(x => x.NoAnswerMessage)
+            .NotEmpty().WithMessage("No-answer message is required.")
+            .MaximumLength(500).WithMessage("No-answer message must not exceed 500 characters.");
     }
 
     private static bool BeAnHttpsUrl(string? url) =>

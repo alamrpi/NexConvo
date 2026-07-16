@@ -32,6 +32,7 @@ public class SaveChatSettingsCommandHandlerTests
             WidgetPrimaryColor: "#0F172A",
             WidgetSecondaryColor: "#3B82F6",
             WidgetWelcomeMessage: "Hi there! How can I help you today?",
+            NoAnswerMessage: "Sorry, I don't have information about that. Please contact our support team for help.",
             actorUserId);
 
     private static (SaveChatSettingsCommandHandler Handler, IChatDbContext Db) BuildSut(

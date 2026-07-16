@@ -58,6 +58,7 @@ public sealed class GetChatSettingsQueryHandler(
             settings.WidgetPrimaryColor,
             settings.WidgetSecondaryColor,
             settings.WidgetWelcomeMessage,
+            settings.NoAnswerMessage,
             settings.UpdatedAt);
     }
 
@@ -79,5 +80,6 @@ public sealed class GetChatSettingsQueryHandler(
         "#0F172A",
         "#3B82F6",
         "Hi there! How can I help you today?",
+        "Sorry, I don't have information about that. Please contact our support team for help.",
         null);
 }
