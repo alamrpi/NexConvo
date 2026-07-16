@@ -27,6 +27,10 @@ public sealed record ChannelProfile(
         RagRegister.Chat, TopK: 5, MinScore: 0.55, AnswerGateScore: 0.62, MaxAnswerTokens: 600,
         EmitCitations: true, StreamGranularity.Token);
 
+    // Voice has no live text-chat measurement rig in this environment, so 0.65 is an approximation
+    // (not independently measured): a fixed +0.05 margin above Voice's own MinScore (0.6), mirroring
+    // the safety margin Chat's measured 0.62 keeps above ITS MinScore (0.55 + 0.07). Revisit with
+    // real Voice-channel data before relying on this number in production voice traffic.
     public static readonly ChannelProfile Voice = new(
         RagRegister.Voice, TopK: 3, MinScore: 0.6, AnswerGateScore: 0.65, MaxAnswerTokens: 80,
         EmitCitations: false, StreamGranularity.Sentence);
