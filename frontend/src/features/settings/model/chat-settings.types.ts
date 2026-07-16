@@ -21,4 +21,5 @@ export interface WorkspaceChatSettingsDto {
   widgetPrimaryColor: string;
   widgetSecondaryColor: string;
   widgetWelcomeMessage: string;
+  noAnswerMessage: string;
 }

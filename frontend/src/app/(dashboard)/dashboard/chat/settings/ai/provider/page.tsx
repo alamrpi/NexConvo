@@ -214,6 +214,9 @@ export default function AiProviderPage() {
         widgetPrimaryColor: chatSettings?.widgetPrimaryColor ?? '#0F172A',
         widgetSecondaryColor: chatSettings?.widgetSecondaryColor ?? '#3B82F6',
         widgetWelcomeMessage: chatSettings?.widgetWelcomeMessage ?? 'Hi there! How can I help you today?',
+        noAnswerMessage:
+          chatSettings?.noAnswerMessage ??
+          "Sorry, I don't have information about that. Please contact our support team for help.",
       })
       .catch(() => undefined);
     setSaveStatus(update.isError ? 'idle' : 'saved');

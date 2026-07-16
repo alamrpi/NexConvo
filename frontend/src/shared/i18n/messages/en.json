@@ -1118,6 +1118,8 @@
         "iconUrlPlaceholder": "https://example.com/icon.png",
         "welcomeMessage": "Welcome message",
         "welcomeMessagePlaceholder": "Hi! How can I help you?",
+        "noAnswerLabel": "Message when no answer is found",
+        "noAnswerPlaceholder": "Sorry, I don't have information about that…",
         "position": "Position",
         "positionBottomRight": "Bottom right",
         "positionBottomLeft": "Bottom left",
@@ -1131,7 +1133,9 @@
           "invalidUrl": "Enter a valid https URL.",
           "invalidColor": "Enter a hex color, e.g. #0F172A.",
           "welcomeMessageRequired": "A welcome message is required.",
-          "welcomeMessageTooLong": "Welcome message must be 500 characters or fewer."
+          "welcomeMessageTooLong": "Welcome message must be 500 characters or fewer.",
+          "noAnswerRequired": "A no-answer message is required.",
+          "noAnswerTooLong": "No-answer message must be 500 characters or fewer."
         }
       },
       "errors": {

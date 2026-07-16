@@ -17,6 +17,7 @@ const valid = {
   widgetPrimaryColor: '#0F172A',
   widgetSecondaryColor: '#3B82F6',
   widgetWelcomeMessage: 'Hi there! How can I help you today?',
+  noAnswerMessage: "We don't have that info; please contact support.",
 };
 
 describe('chatSettingsSchema', () => {
@@ -148,5 +149,18 @@ describe('chatSettingsSchema', () => {
     if (!result.success) {
       expect(result.error.issues.map((i) => i.message)).toContain('welcomeMessageTooLong');
     }
+  });
+
+  it('rejects an empty no-answer message', () => {
+    const result = chatSettingsSchema.safeParse({ ...valid, noAnswerMessage: '' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((i) => i.message)).toContain('noAnswerRequired');
+    }
+  });
+
+  it('rejects a no-answer message over 500 chars', () => {
+    const result = chatSettingsSchema.safeParse({ ...valid, noAnswerMessage: 'a'.repeat(501) });
+    expect(result.success).toBe(false);
   });
 });

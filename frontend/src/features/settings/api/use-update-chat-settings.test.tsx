@@ -22,6 +22,7 @@ const values: ChatSettingsValues = {
   widgetPrimaryColor: '#0F172A',
   widgetSecondaryColor: '#3B82F6',
   widgetWelcomeMessage: 'Hi there! How can I help you today?',
+  noAnswerMessage: "Sorry, I don't have information about that. Please contact our support team for help.",
 };
 
 describe('useUpdateChatSettings', () => {

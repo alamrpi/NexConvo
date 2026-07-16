@@ -41,6 +41,7 @@ export const chatSettingsSchema = z.object({
   widgetPrimaryColor: z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'invalidColor'),
   widgetSecondaryColor: z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, 'invalidColor'),
   widgetWelcomeMessage: z.string().min(1, 'welcomeMessageRequired').max(500, 'welcomeMessageTooLong'),
+  noAnswerMessage: z.string().min(1, 'noAnswerRequired').max(500, 'noAnswerTooLong'),
 });
 
 export type ChatSettingsValues = z.infer<typeof chatSettingsSchema>;

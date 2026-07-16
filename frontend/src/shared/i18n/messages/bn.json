@@ -1118,6 +1118,8 @@
         "iconUrlPlaceholder": "https://example.com/icon.png",
         "welcomeMessage": "স্বাগত বার্তা",
         "welcomeMessagePlaceholder": "হ্যালো! আমি কীভাবে সাহায্য করতে পারি?",
+        "noAnswerLabel": "উত্তর না পাওয়া গেলে যে বার্তা দেখানো হবে",
+        "noAnswerPlaceholder": "দুঃখিত, এই বিষয়ে আমার কাছে তথ্য নেই…",
         "position": "অবস্থান",
         "positionBottomRight": "নিচে ডানে",
         "positionBottomLeft": "নিচে বামে",
@@ -1131,7 +1133,9 @@
           "invalidUrl": "একটি সঠিক https ইউআরএল লিখুন।",
           "invalidColor": "একটি হেক্স রং লিখুন, যেমন #0F172A।",
           "welcomeMessageRequired": "একটি স্বাগত বার্তা আবশ্যক।",
-          "welcomeMessageTooLong": "স্বাগত বার্তা ৫০০ অক্ষরের বেশি হতে পারবে না।"
+          "welcomeMessageTooLong": "স্বাগত বার্তা ৫০০ অক্ষরের বেশি হতে পারবে না।",
+          "noAnswerRequired": "উত্তর না পাওয়া গেলের বার্তা আবশ্যক।",
+          "noAnswerTooLong": "এই বার্তা ৫০০ অক্ষরের বেশি হতে পারবে না।"
         }
       },
       "errors": {

@@ -78,6 +78,9 @@ function ChatWidgetFields({ settings }: { settings: WorkspaceChatSettingsDto }) 
       widgetPrimaryColor: settings.widgetPrimaryColor || '#0F172A',
       widgetSecondaryColor: settings.widgetSecondaryColor || '#3B82F6',
       widgetWelcomeMessage: settings.widgetWelcomeMessage || 'Hi there! How can I help you today?',
+      noAnswerMessage:
+        settings.noAnswerMessage ||
+        "Sorry, I don't have information about that. Please contact our support team for help.",
     },
   });
 
@@ -134,6 +137,10 @@ function ChatWidgetFields({ settings }: { settings: WorkspaceChatSettingsDto }) 
 
             <Field id="widgetWelcomeMessage" label={t('welcomeMessage')} error={errorText(errors.widgetWelcomeMessage?.message)}>
               <Input id="widgetWelcomeMessage" placeholder={t('welcomeMessagePlaceholder')} {...register('widgetWelcomeMessage')} aria-invalid={!!errors.widgetWelcomeMessage} aria-describedby={errors.widgetWelcomeMessage ? 'widgetWelcomeMessage-error' : undefined} />
+            </Field>
+
+            <Field id="noAnswerMessage" label={t('noAnswerLabel')} error={errorText(errors.noAnswerMessage?.message)}>
+              <Input id="noAnswerMessage" placeholder={t('noAnswerPlaceholder')} {...register('noAnswerMessage')} aria-invalid={!!errors.noAnswerMessage} aria-describedby={errors.noAnswerMessage ? 'noAnswerMessage-error' : undefined} />
             </Field>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start pt-2">
