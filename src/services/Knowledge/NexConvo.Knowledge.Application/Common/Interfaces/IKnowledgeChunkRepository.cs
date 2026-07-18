@@ -13,9 +13,11 @@ public sealed record ChunkMatch(Guid ChunkId, Guid DocumentId, string Content, d
 public interface IKnowledgeChunkRepository
 {
     /// <summary>
-    /// Returns the top <paramref name="topK"/> active chunks nearest to <paramref name="queryEmbedding"/>
-    /// by cosine similarity, excluding any below <paramref name="minScore"/>, ordered best-first.
+    /// Returns the top <paramref name="topK"/> active chunks matching <paramref name="queryText"/> /
+    /// <paramref name="queryEmbedding"/>, fusing lexical (full-text) and vector cosine-similarity
+    /// signals via Reciprocal Rank Fusion, excluding any below <paramref name="minScore"/> on the
+    /// fused score, ordered best-first.
     /// </summary>
     Task<IReadOnlyList<ChunkMatch>> SimilaritySearchAsync(
-        float[] queryEmbedding, int topK, double minScore, CancellationToken cancellationToken);
+        string queryText, float[] queryEmbedding, int topK, double minScore, CancellationToken cancellationToken);
 }

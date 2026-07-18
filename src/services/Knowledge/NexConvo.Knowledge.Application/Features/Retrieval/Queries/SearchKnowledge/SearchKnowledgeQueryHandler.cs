@@ -21,7 +21,7 @@ public sealed class SearchKnowledgeQueryHandler(
         var provider = embeddingProviderFactory.GetActiveProvider();
         var queryEmbedding = await provider.EmbedAsync(query.Text, EmbeddingInputType.Query, ct);
 
-        var matches = await chunkRepository.SimilaritySearchAsync(queryEmbedding, topK, query.MinScore, ct);
+        var matches = await chunkRepository.SimilaritySearchAsync(query.Text, queryEmbedding, topK, query.MinScore, ct);
 
         return Result.Success(matches);
     }

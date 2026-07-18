@@ -27,7 +27,7 @@ public class SearchKnowledgeQueryHandlerTests
             .EmbedAsync("refund policy", EmbeddingInputType.Query, Arg.Any<CancellationToken>())
             .Returns(embedding);
         _repositoryMock
-            .SimilaritySearchAsync(embedding, Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .SimilaritySearchAsync("refund policy", embedding, Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
             .Returns([new ChunkMatch(Guid.NewGuid(), Guid.NewGuid(), "refund chunk", 0.95)]);
 
         var result = await _handler.Handle(
@@ -46,13 +46,13 @@ public class SearchKnowledgeQueryHandlerTests
             .EmbedAsync(Arg.Any<string>(), Arg.Any<EmbeddingInputType>(), Arg.Any<CancellationToken>())
             .Returns(new float[] { 0.1f });
         _repositoryMock
-            .SimilaritySearchAsync(Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .SimilaritySearchAsync(Arg.Any<string>(), Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
         await _handler.Handle(new SearchKnowledgeQuery("q", TopK: 3, MinScore: 0.7), CancellationToken.None);
 
         await _repositoryMock.Received(1).SimilaritySearchAsync(
-            Arg.Any<float[]>(), topK: 3, minScore: 0.7, Arg.Any<CancellationToken>());
+            "q", Arg.Any<float[]>(), topK: 3, minScore: 0.7, Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -64,12 +64,12 @@ public class SearchKnowledgeQueryHandlerTests
             .EmbedAsync(Arg.Any<string>(), Arg.Any<EmbeddingInputType>(), Arg.Any<CancellationToken>())
             .Returns(new float[] { 0.1f });
         _repositoryMock
-            .SimilaritySearchAsync(Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
+            .SimilaritySearchAsync(Arg.Any<string>(), Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
         await _handler.Handle(new SearchKnowledgeQuery("q", TopK: requestedTopK, MinScore: 0.0), CancellationToken.None);
 
         await _repositoryMock.Received(1).SimilaritySearchAsync(
-            Arg.Any<float[]>(), topK: expectedTopK, minScore: Arg.Any<double>(), Arg.Any<CancellationToken>());
+            Arg.Any<string>(), Arg.Any<float[]>(), topK: expectedTopK, minScore: Arg.Any<double>(), Arg.Any<CancellationToken>());
     }
 }
