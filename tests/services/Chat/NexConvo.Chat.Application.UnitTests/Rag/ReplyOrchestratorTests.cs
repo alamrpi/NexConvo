@@ -31,7 +31,8 @@ public class ReplyOrchestratorTests
         IAiProviderService AiProvider,
         IPublishEndpoint Publisher,
         IReplyStreamSink StreamSink,
-        IGroundingGate GroundingGate);
+        IGroundingGate GroundingGate,
+        IGreetingDetector GreetingDetector);
 
     private static async IAsyncEnumerable<AiStreamChunk> StreamOf(params string[] chunks)
     {
@@ -87,12 +88,15 @@ public class ReplyOrchestratorTests
         var groundingGate = Substitute.For<IGroundingGate>();
         groundingGate.ShouldAnswer(Arg.Any<IReadOnlyList<KnowledgeChunkMatch>>(), Arg.Any<ChannelProfile>()).Returns(true);
 
+        var greetingDetector = Substitute.For<IGreetingDetector>();
+        greetingDetector.IsGreeting(Arg.Any<string>()).Returns(false);
+
         var sut = new ReplyOrchestrator(
             dbFactory, knowledge, aiFactory, cache, aes,
             new GroundedPromptAssembler(), new TokenBudgeter(), publisher, streamSink,
-            groundingGate, Substitute.For<ILogger<ReplyOrchestrator>>());
+            groundingGate, greetingDetector, Substitute.For<ILogger<ReplyOrchestrator>>());
 
-        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher, streamSink, groundingGate);
+        return new SutContext(sut, db, knowledge, aiFactory, cache, aiProvider, publisher, streamSink, groundingGate, greetingDetector);
     }
 
     private static string CachedAiConfigJson(Guid tenantId) => JsonSerializer.Serialize(new
@@ -161,6 +165,26 @@ public class ReplyOrchestratorTests
 
         ctx.Db.ChatAuditLogs.Received(1).Add(Arg.Is<ChatAuditLog>(a =>
             a.TenantId == tenantId && a.Action == "chat.rag.handoff-requested"));
+    }
+
+    [Fact]
+    public async Task RunAsync_Greeting_AnswersDirectlyWithoutCallingProviderOrKnowledge()
+    {
+        var tenantId = Guid.NewGuid();
+        var (conversation, inbound) = NewConversationWithInbound(tenantId, "hi");
+        var settings = NewSettings(tenantId);
+
+        var ctx = BuildSut(conversation, inbound, settings, CachedAiConfigJson(tenantId));
+        ctx.GreetingDetector.IsGreeting("hi").Returns(true);
+
+        var outcome = await ctx.Sut.RunAsync(tenantId, conversation.Id, CancellationToken.None);
+
+        outcome.Should().BeOfType<AnsweredOutcome>();
+        await ctx.Knowledge.DidNotReceive().SearchAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<CancellationToken>());
+        ctx.AiFactory.DidNotReceive().GetProvider(Arg.Any<AiProviderType>());
+        ctx.Db.ChatAuditLogs.Received(1).Add(Arg.Is<ChatAuditLog>(a =>
+            a.TenantId == tenantId && a.Action == "chat.rag.answered"));
     }
 
     [Fact]

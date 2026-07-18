@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using NexConvo.BuildingBlocks.Application.Behaviors;
+using NexConvo.BuildingBlocks.Rag;
 using NexConvo.Chat.Application.Rag;
 
 namespace NexConvo.Chat.Application;
@@ -20,6 +21,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IGroundingGate, GroundingGate>();
         services.AddSingleton<IAbstentionStreamFilter, AbstentionStreamFilter>();
+        services.AddSingleton<IGreetingDetector, GreetingDetector>();
 
         return services;
     }

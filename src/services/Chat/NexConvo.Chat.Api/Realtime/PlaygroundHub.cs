@@ -68,6 +68,7 @@ public sealed class PlaygroundHub(
     ITokenBudgeter tokenBudgeter,
     IGroundingGate groundingGate,
     IAbstentionStreamFilter abstentionFilter,
+    IGreetingDetector greetingDetector,
     ILogger<PlaygroundHub> logger) : Hub
 {
     // ─── Client method names (mirrors WidgetHub's error-channel convention) ────
@@ -78,6 +79,7 @@ public sealed class PlaygroundHub(
 
     private const string AccessDeniedMessage = "Access denied.";
     private const int MaxUserMessageLength = 4000;
+    private const string GreetingReply = "Hi! How can I help you today?";
 
     public async Task ExecuteScenarioAsync(PlaygroundRequest request)
     {
@@ -136,6 +138,16 @@ public sealed class PlaygroundHub(
 
         try
         {
+            // 0. Greeting/small-talk bypass — these have no retrievable KB score and would
+            // otherwise always trip the grounding gate below, which reads as broken to a user
+            // who just said hello.
+            if (greetingDetector.IsGreeting(request.UserMessage))
+            {
+                await Clients.Caller.SendAsync(ReceiveToken, GreetingReply, Context.ConnectionAborted);
+                await Clients.Caller.SendAsync(ReceiveCompleted, Context.ConnectionAborted);
+                return;
+            }
+
             // 1. Retrieval
             var swRetrieval = Stopwatch.StartNew();
             // Since we don't have separate Embed timing easily, we split the retrieval time arbitrarily for UI aesthetics or 0 it.

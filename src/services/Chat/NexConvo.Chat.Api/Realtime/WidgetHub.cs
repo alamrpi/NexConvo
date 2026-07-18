@@ -40,6 +40,7 @@ public sealed class WidgetHub(
     ITokenBudgeter tokenBudgeter,
     IGroundingGate groundingGate,
     IAbstentionStreamFilter abstentionFilter,
+    IGreetingDetector greetingDetector,
     ILogger<WidgetHub> logger) : Hub
 {
     // ─── Client method names ───────────────────────────────────────────────────
@@ -49,6 +50,7 @@ public sealed class WidgetHub(
 
     // Key under which the resolved tenant is stored on the connection for its lifetime.
     private const string TenantItemKey = "widget.tenantId";
+    private const string GreetingReply = "Hi! How can I help you today?";
 
     // ─── Hub overrides ─────────────────────────────────────────────────────────
 
@@ -96,6 +98,16 @@ public sealed class WidgetHub(
         }
 
         logger.LogInformation("Widget message received. Tenant={TenantId}, Length={Len}", tenantId, userMessage.Length);
+
+        // 0. Greeting/small-talk bypass — these have no retrievable KB score and would otherwise
+        // always trip the grounding gate below, which reads as broken to a visitor who just said
+        // hello. No AI config or retrieval needed for this reply.
+        if (greetingDetector.IsGreeting(userMessage))
+        {
+            await Clients.Caller.SendAsync(ReceiveToken, GreetingReply, Context.ConnectionAborted);
+            await Clients.Caller.SendAsync(ReceiveCompleted, Context.ConnectionAborted);
+            return;
+        }
 
         // 1. Load AI config from cache (same as PlaygroundHub)
         var cachedBytes = await cache.GetAsync($"AiConfig:{tenantId}", Context.ConnectionAborted);

@@ -37,8 +37,11 @@ public sealed class ReplyOrchestrator(
     IPublishEndpoint publisher,
     IReplyStreamSink streamSink,
     IGroundingGate groundingGate,
+    IGreetingDetector greetingDetector,
     ILogger<ReplyOrchestrator> logger) : IReplyOrchestrator
 {
+    private const string GreetingReply = "Hi! How can I help you today?";
+
     public async Task<ReplyOutcome> RunAsync(Guid tenantId, Guid conversationId, CancellationToken cancellationToken)
     {
         await using var db = dbFactory.CreateForTenant(tenantId);
@@ -62,6 +65,14 @@ public sealed class ReplyOrchestrator(
         if (triggerPhrases.Any(p => lastInbound.Body.Contains(p, StringComparison.OrdinalIgnoreCase)))
         {
             return await HandoffAsync(db, conversation, EscalationReason.TriggerPhrase, cancellationToken);
+        }
+
+        // Greeting/small-talk bypass — these have no retrievable KB score and would otherwise
+        // always trip the grounding gate below, handing off to a human for a simple "hi". No
+        // retrieval or LLM call needed for this reply.
+        if (greetingDetector.IsGreeting(lastInbound.Body))
+        {
+            return await AnswerDirectlyAsync(db, tenantId, conversationId, conversation, GreetingReply, cancellationToken);
         }
 
         var cachedBytes = await cache.GetAsync($"AiConfig:{conversation.TenantId}", cancellationToken);
@@ -154,6 +165,37 @@ public sealed class ReplyOrchestrator(
         logger.LogInformation(
             "AI reply appended to conversation {ConversationId}, message {MessageId}, confidence {ConfidenceScore}",
             conversationId, message.Id, confidence.Score);
+
+        return new AnsweredOutcome(message.Id, replyText, confidence);
+    }
+
+    /// <summary>
+    /// Persists and notifies a reply that bypassed retrieval/LLM entirely (currently: greetings).
+    /// Mirrors the persist-then-notify shape of the main RAG answer path above, minus citations.
+    /// </summary>
+    private async Task<ReplyOutcome> AnswerDirectlyAsync(
+        IChatDbContext db, Guid tenantId, Guid conversationId, Conversation conversation, string replyText, CancellationToken cancellationToken)
+    {
+        var confidence = new RagConfidence(1.0, ConfidenceBand.High);
+        var message = conversation.AppendAiReply(replyText, confidence, tokens: null);
+        db.Messages.Add(message);
+        db.ChatAuditLogs.Add(new ChatAuditLog(
+            "chat.rag.answered",
+            tenantId,
+            userId: null,
+            $"conversationId={conversationId},messageId={message.Id},confidenceBand={confidence.Band},confidenceScore={confidence.Score:F2}",
+            DateTimeOffset.UtcNow));
+        await db.SaveChangesAsync(cancellationToken);
+
+        await streamSink.OnCompletedAsync(
+            tenantId,
+            conversationId,
+            new ReplyCompletedNotification(message.Id, replyText, confidence, []),
+            cancellationToken);
+
+        logger.LogInformation(
+            "Greeting reply appended to conversation {ConversationId}, message {MessageId}",
+            conversationId, message.Id);
 
         return new AnsweredOutcome(message.Id, replyText, confidence);
     }
