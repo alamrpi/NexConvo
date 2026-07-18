@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -12,6 +13,7 @@ using NexConvo.Chat.Application.Common;
 using NexConvo.Chat.Application.Common.Interfaces;
 using NexConvo.Chat.Application.Rag;
 using NexConvo.Contracts.Enums;
+using NexConvo.Contracts.Events.Chat;
 
 namespace NexConvo.Chat.Api.Realtime;
 
@@ -41,6 +43,7 @@ public sealed class WidgetHub(
     IGroundingGate groundingGate,
     IAbstentionStreamFilter abstentionFilter,
     IGreetingDetector greetingDetector,
+    IBus bus,
     ILogger<WidgetHub> logger) : Hub
 {
     // ─── Client method names ───────────────────────────────────────────────────
@@ -98,6 +101,20 @@ public sealed class WidgetHub(
         }
 
         logger.LogInformation("Widget message received. Tenant={TenantId}, Length={Len}", tenantId, userMessage.Length);
+
+        // Inbox persistence (add-chat-inbox, Task 4): fire-and-forget publish of the inbound
+        // message so the durable MessageReceivedConsumer finds-or-creates the Conversation and
+        // persists this Message independently of the ephemeral RAG stream below. This is
+        // deliberately NOT awaited inline with the rest of the pipeline and never surfaces a
+        // failure to the visitor — a broker hiccup must not block or error out their live reply.
+        // KNOWN LIMITATION: ExternalSenderId is Context.ConnectionId, the only stable-for-the-
+        // life-of-this-connection identifier available on this anonymous hub today (no
+        // client-supplied visitor/session id exists yet — the embeddable widget script itself is
+        // still an open, unmerged change). This means a visitor who reconnects (page reload, brief
+        // network drop) gets a NEW Conversation in the inbox rather than continuing the same one.
+        // Revisit once the widget client can mint and persist (e.g. localStorage) a stable visitor
+        // id to send as the channel thread identity instead.
+        _ = PublishInboundMessageAsync(tenantId, userMessage, Context.ConnectionAborted);
 
         // 0. Greeting/small-talk bypass — these have no retrievable KB score and would otherwise
         // always trip the grounding gate below, which reads as broken to a visitor who just said
@@ -241,6 +258,47 @@ public sealed class WidgetHub(
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Publishes a <see cref="MessageReceivedIntegrationEvent"/> for this inbound visitor message so
+    /// the existing <c>MessageReceivedConsumer</c> persists the Conversation/Message rows, making the
+    /// widget conversation visible in the agent inbox (add-chat-inbox). Best-effort: any publish
+    /// failure is logged and swallowed — it must never fault or surface to the visitor's own
+    /// ephemeral AI-reply stream in <see cref="SendMessageAsync"/>.
+    ///
+    /// Publishes via <see cref="IBus"/>, NOT the scoped <c>IPublishEndpoint</c>: this codebase wires
+    /// MassTransit's EF outbox with <c>UseBusOutbox()</c> (see ChatInfrastructure's
+    /// DependencyInjection.cs), which buffers every <c>IPublishEndpoint.Publish</c> call made in a
+    /// DI scope and only flushes it to the transport when <c>ChatDbContext.SaveChangesAsync</c> is
+    /// called on a context in that SAME scope. WidgetHub never does that (by design — it only reads
+    /// tenant-scoped data here, per the RLS convention of not holding a DI-scoped ChatDbContext), so
+    /// an IPublishEndpoint publish here would be silently buffered and never delivered. IBus bypasses
+    /// the outbox entirely and sends straight to the transport, exactly like ChatApiFactory's own
+    /// test-only IBus.Publish helper does for the same reason.
+    /// </summary>
+    private async Task PublishInboundMessageAsync(Guid tenantId, string userMessage, CancellationToken ct)
+    {
+        try
+        {
+            await bus.Publish(new MessageReceivedIntegrationEvent
+            {
+                ConversationId = Guid.NewGuid(), // Not read by the consumer's find-or-create; required by the contract shape only.
+                TenantId = tenantId,
+                Channel = LeadSourceChannel.Web,
+                ExternalSenderId = Context.ConnectionId,
+                MessageRef = $"widget-{Context.ConnectionId}-{Guid.NewGuid():N}",
+                Body = userMessage,
+                ProviderMessageId = null,
+            }, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to publish MessageReceivedIntegrationEvent for widget inbox persistence. Tenant={TenantId}, ConnectionId={ConnectionId}",
+                tenantId, Context.ConnectionId);
+        }
+    }
 
     /// <summary>
     /// The public widget token from the <c>?token=</c> query parameter (SignalR strips it from the

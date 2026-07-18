@@ -59,6 +59,7 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("settings:manage",     RequirePermission("settings:manage"));
     options.AddPolicy("conversations:read",  RequirePermission("conversations:read"));
+    options.AddPolicy("conversations:write", RequirePermission("conversations:write"));
 });
 
 builder.Services.AddControllers()

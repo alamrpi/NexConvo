@@ -207,6 +207,38 @@ public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         return conversation.Id;
     }
 
+    /// <summary>
+    /// Seeds everything WidgetHub's anonymous connect path needs: WorkspaceChatSettings (for the
+    /// cached AI config + a deterministic WidgetToken) and an active Web ChannelConnection (required
+    /// by resolve_widget_tenant's SECURITY DEFINER gate — see WidgetTokenResolutionAndColumnFix).
+    /// Returns the WidgetToken to use as the hub's <c>?token=</c> query parameter.
+    /// </summary>
+    public async Task<Guid> SeedWidgetTenantAsync(Guid tenantId, double handoffThreshold = 0.3)
+    {
+        await using (var db = CreateSeedContext(tenantId))
+        {
+            db.WorkspaceChatSettings.Add(new WorkspaceChatSettings(
+                tenantId, AiProviderType.OpenAI, "gpt-4o-mini", "[]", null, handoffThreshold, false,
+                SentimentSensitivity.Medium, "[]", 3, PiiMaskingLevel.Off, null));
+            db.ChannelConnections.Add(new ChannelConnection(
+                tenantId, ChatChannel.Web, externalAccountId: "web", accountName: "Web",
+                encryptedAccessToken: "enc", isActive: true));
+            await db.SaveChangesAsync();
+        }
+
+        await CacheAiConfigAsync(tenantId);
+
+        // WidgetToken is assigned at random by the entity's default; read back the actual value
+        // rather than pinning it via a raw UPDATE (unlike WidgetTenantResolverTests, this factory
+        // has no need for a specific known token — any valid one works for the hub connection).
+        await using var read = CreateSeedContext(tenantId);
+        var widgetToken = await read.WorkspaceChatSettings
+            .Where(s => s.TenantId == tenantId)
+            .Select(s => s.WidgetToken)
+            .SingleAsync();
+        return widgetToken;
+    }
+
     /// <summary>Mints an HS256 JWT with the same claim names Identity's JwtTokenIssuer uses.</summary>
     public static string CreateAccessToken(Guid tenantId, Guid userId, params string[] permissions)
     {
@@ -238,6 +270,25 @@ public sealed class ChatApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         {
             url += $"?access_token={Uri.EscapeDataString(accessToken)}";
         }
+
+        return new HubConnectionBuilder()
+            .WithUrl(url, options =>
+            {
+                options.HttpMessageHandlerFactory = _ => Server.CreateHandler();
+                options.Transports = HttpTransportType.LongPolling;
+            })
+            .Build();
+    }
+
+    /// <summary>
+    /// A WidgetHub connection through the in-memory TestServer. WidgetHub is [AllowAnonymous] and
+    /// resolves its tenant from the <c>?token=</c> query parameter (the tenant's WidgetToken) rather
+    /// than a JWT — see WidgetHub.GetWidgetToken. LongPolling for the same TestServer reason as
+    /// CreateHubConnection above.
+    /// </summary>
+    public HubConnection CreateWidgetHubConnection(Guid widgetToken)
+    {
+        var url = $"http://localhost/hubs/widget?token={Uri.EscapeDataString(widgetToken.ToString())}";
 
         return new HubConnectionBuilder()
             .WithUrl(url, options =>

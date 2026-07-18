@@ -495,5 +495,6 @@ $RECYCLE.BIN/
 # Local dev / agent artifacts
 .claude/worktrees/
 frontend/screenshot*.mjs
+frontend/scratch/
 md2pdf.py
 docs/learning_notes.pdf

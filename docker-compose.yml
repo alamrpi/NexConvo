@@ -219,7 +219,8 @@ services:
       ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
       ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
       SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
-      Knowledge__GrpcAddress: http://knowledge:8080
+      # Dedicated Http2-only gRPC port (8081) — see Knowledge's Program.cs ConfigureKestrel comment.
+      Knowledge__GrpcAddress: http://knowledge:8081
       # Guards Chat's outbound call to Knowledge's internal-only KnowledgeRetrieval gRPC service.
       # Same value as Knowledge's own Internal__ApiKey (Standard 13 — env-only shared secret).
       Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
@@ -246,7 +247,8 @@ services:
       dockerfile: src/services/Knowledge/NexConvo.Knowledge.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      # No ASPNETCORE_URLS here — Program.cs's ConfigureKestrel is the single source of truth for
+      # ports (8080 REST/Http1, 8081 gRPC/Http2-only); setting both would fight each other.
       Seq__Url: http://seq
       Jwt__Authority: http://identity:8080
       Jwt__Audience: nexconvo-api
@@ -269,6 +271,7 @@ services:
       Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5019:8080"
+      - "5020:8081"
     depends_on:
       postgres:
         condition: service_healthy

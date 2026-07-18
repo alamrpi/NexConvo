@@ -1,4 +1,5 @@
 using NexConvo.Chat.Api.Realtime;
+using NexConvo.Chat.Application.Common.Interfaces;
 using NexConvo.Chat.Application.Rag;
 using StackExchange.Redis;
 
@@ -17,7 +18,12 @@ public static class RealtimeServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddChatRealtime(this IServiceCollection services, IConfiguration configuration)
     {
-        var signalR = services.AddSignalR();
+        var signalR = services.AddSignalR(options =>
+        {
+            // Playground/Widget hub methods carry a user-authored message straight into an LLM
+            // prompt; cap the inbound frame so a client can't drive an oversized/expensive call.
+            options.MaximumReceiveMessageSize = 64 * 1024;
+        });
 
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConnectionString))
@@ -33,6 +39,11 @@ public static class RealtimeServiceCollectionExtensions
         // Singleton: IHubContext<ChatHub> is a root singleton, and the sink is stateless. This also
         // lets MassTransit consumer scopes (where ReplyOrchestrator runs) resolve it directly.
         services.AddSingleton<IReplyStreamSink, SignalRReplyStreamSink>();
+
+        // Singleton for the same reason as IReplyStreamSink above: IHubContext<ChatHub> is a root
+        // singleton and this adapter is stateless. Consumed by the Conversations CQRS command
+        // handlers (add-chat-inbox), which run in the DI-scoped, HTTP-request lifetime.
+        services.AddSingleton<IChatEventPublisher, SignalRChatEventPublisher>();
 
         return services;
     }

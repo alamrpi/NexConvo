@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Bot,
   ChevronLeft,
@@ -17,14 +18,17 @@ import {
   Info,
 } from 'lucide-react';
 
-import {
-  MOCK_CONVERSATIONS,
-  MOCK_AGENT,
-  type Conversation,
-  type ConversationState,
-  type Channel,
-  type Message,
-} from '@/features/chat/mock-data';
+import type { Channel, Conversation, ConversationState, Message } from '@/features/chat/mock-data';
+
+import type { ConversationSummaryDto, MessageDto } from '@/features/inbox/model/inbox.types';
+import { useConversations } from '@/features/inbox/api/use-conversations';
+import { useConversationMessages } from '@/features/inbox/api/use-conversation-messages';
+import { useSendReply } from '@/features/inbox/api/use-send-reply';
+import { useTakeOver } from '@/features/inbox/api/use-take-over';
+import { useResolve } from '@/features/inbox/api/use-resolve';
+import { useReopen } from '@/features/inbox/api/use-reopen';
+import { useChatHub } from '@/features/inbox/api/use-chat-hub';
+import { useSessionStore } from '@/features/auth/model/session.store';
 
 import { ConversationListItem } from '@/shared/ui/chat/conversation-list-item';
 import { MessageBubble } from '@/shared/ui/chat/message-bubble';
@@ -44,41 +48,21 @@ import { cn } from '@/shared/lib/cn';
 
 type TabId = 'all' | 'ai' | 'pending' | 'mine' | 'resolved';
 
-interface ConvState {
-  state: ConversationState;
-  assignedAgentName?: string;
-}
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const ALL_CHANNELS: Channel[] = ['whatsapp', 'facebook', 'instagram', 'telegram', 'web'];
-const LIST_PAGE_SIZE = 12;
+const LIST_PAGE_SIZE = 25;
 
-function filterByTab(convs: Conversation[], tab: TabId): Conversation[] {
+/** Maps a UI tab to the server-side filters GetConversationsQuery understands (S7: server owns
+ * filtering/sorting/pagination — the client no longer filters the full mock array in memory). */
+function filtersForTab(tab: TabId): { state?: ConversationState; assignedToMe?: boolean } {
   switch (tab) {
-    case 'ai':       return convs.filter((c) => c.state === 'AiHandling');
-    case 'pending':  return convs.filter((c) => c.state === 'PendingHuman');
-    case 'mine':     return convs.filter((c) => c.assignedAgentName === MOCK_AGENT.name);
-    case 'resolved': return convs.filter((c) => c.state === 'Resolved' || c.state === 'Closed');
-    default:         return convs;
+    case 'ai':       return { state: 'AiHandling' };
+    case 'pending':  return { state: 'PendingHuman' };
+    case 'mine':     return { assignedToMe: true };
+    case 'resolved': return { state: 'Resolved' };
+    default:         return {};
   }
-}
-
-function sortConvs(convs: Conversation[], tab: TabId): Conversation[] {
-  if (tab === 'pending') {
-    return [...convs].sort((a, b) => {
-      if (!a.slaExpiresAt) return 1;
-      if (!b.slaExpiresAt) return -1;
-      return new Date(a.slaExpiresAt).getTime() - new Date(b.slaExpiresAt).getTime();
-    });
-  }
-  return [...convs].sort(
-    (a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime(),
-  );
-}
-
-function tabCount(convs: Conversation[], tab: TabId): number {
-  return filterByTab(convs, tab).length;
 }
 
 // ─── Channel filter pill ──────────────────────────────────────────────────────
@@ -115,31 +99,6 @@ function ChannelPill({ channel, active, onToggle }: {
   );
 }
 
-// ─── Streaming bubble ─────────────────────────────────────────────────────────
-
-function StreamingBubble({ message }: { message: Message }) {
-  const words = message.body.split(' ');
-  const [revealedCount, setRevealedCount] = useState(0);
-
-  useEffect(() => {
-    if (revealedCount >= words.length) return;
-    const id = setInterval(() => {
-      setRevealedCount((n) => {
-        if (n >= words.length) { clearInterval(id); return n; }
-        return n + 1;
-      });
-    }, 45);
-    return () => clearInterval(id);
-  }, [words.length, revealedCount]);
-
-  const syntheticMessage: Message = {
-    ...message,
-    body: words.slice(0, revealedCount).join(' ') || '▌',
-    isStreaming: revealedCount < words.length,
-  };
-  return <MessageBubble message={syntheticMessage} isCurrentAgent={false} />;
-}
-
 // ─── Left panel — conversation list ──────────────────────────────────────────
 
 function ConversationListPanel({
@@ -147,13 +106,12 @@ function ConversationListPanel({
   onSelect,
 }: {
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (conv: ConversationSummaryDto) => void;
 }) {
   const t = useTranslations('chat');
   const [tab, setTab]                     = useState<TabId>('all');
   const [search, setSearch]               = useState('');
   const [channelFilter, setChannelFilter] = useState<Set<Channel>>(new Set());
-  const [page, setPage]                   = useState(1);
   const sentinelRef                       = useRef<HTMLDivElement>(null);
   const searchRef                         = useRef<HTMLInputElement>(null);
 
@@ -165,34 +123,71 @@ function ConversationListPanel({
     });
   }, []);
 
-  const filtered = sortConvs(
-    filterByTab(MOCK_CONVERSATIONS, tab).filter((c) => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        (c.contactName?.toLowerCase().includes(q) ?? false) ||
-        c.lastMessagePreview.toLowerCase().includes(q);
-      const matchChannel = channelFilter.size === 0 || channelFilter.has(c.channel);
-      return matchSearch && matchChannel;
-    }),
-    tab,
+  // Server-side filters for the active tab; channel narrows further only when exactly one
+  // channel is toggled (the backend filter is single-valued — multi-channel narrowing stays
+  // client-side below, same as free-text search).
+  const singleChannel = channelFilter.size === 1 ? [...channelFilter][0] : undefined;
+  const baseFilters = useMemo(
+    () => ({ ...filtersForTab(tab), channel: singleChannel, pageSize: LIST_PAGE_SIZE }),
+    [tab, singleChannel],
   );
 
-  useEffect(() => { setPage(1); }, [tab, search, channelFilter]);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [accumulated, setAccumulated] = useState<ConversationSummaryDto[]>([]);
 
-  const visible = filtered.slice(0, page * LIST_PAGE_SIZE);
-  const hasMore = visible.length < filtered.length;
+  // Reset pagination whenever the filter set changes (new tab/channel = fresh first page).
+  const filterKey = JSON.stringify(baseFilters);
+  const prevFilterKeyRef = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKeyRef.current !== filterKey) {
+      prevFilterKeyRef.current = filterKey;
+      setCursor(undefined);
+      setAccumulated([]);
+    }
+  }, [filterKey]);
+
+  const pageQuery = useConversations(baseFilters, cursor);
+
+  // Append each fetched page's items into the accumulator (keyed by page identity, not just
+  // length, so refetches of the same page replace rather than duplicate).
+  useEffect(() => {
+    const page = pageQuery.data;
+    if (!page) return;
+    setAccumulated((prev) => (cursor === undefined ? page.items : [...prev, ...page.items]));
+    // Only re-run when a *new* page's data arrives (cursor changes) or the first page reloads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageQuery.data, cursor]);
+
+  const isLoading = pageQuery.isLoading && accumulated.length === 0;
+  const isError = pageQuery.isError;
+  const hasNextPage = Boolean(pageQuery.data?.nextCursor);
+  const isFetchingNextPage = pageQuery.isFetching && cursor !== undefined;
+
+  const fetchNextPage = useCallback(() => {
+    const next = pageQuery.data?.nextCursor;
+    if (next) setCursor(next ?? undefined);
+  }, [pageQuery.data?.nextCursor]);
+
+  const filtered = accumulated.filter((c) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      (c.contactName?.toLowerCase().includes(q) ?? false) ||
+      c.lastMessagePreview.toLowerCase().includes(q);
+    const matchChannel = channelFilter.size <= 1 || channelFilter.has(c.channel);
+    return matchSearch && matchChannel;
+  });
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !hasMore) return;
+    if (!el || !hasNextPage) return;
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) setPage((p) => p + 1); },
+      (entries) => { if (entries[0]?.isIntersecting) fetchNextPage(); },
       { threshold: 0.1 },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore]);
+  }, [hasNextPage, fetchNextPage]);
 
   const TABS: { id: TabId; labelKey: string }[] = [
     { id: 'all',      labelKey: 'inbox.tabs.all' },
@@ -218,30 +213,19 @@ function ConversationListPanel({
       <div className="shrink-0 px-2 pb-1">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabId)}>
           <TabsList className="h-auto w-full gap-0 bg-transparent p-0">
-            {TABS.map(({ id, labelKey }) => {
-              const count = tabCount(MOCK_CONVERSATIONS, id);
-              return (
-                <TabsTrigger
-                  key={id}
-                  value={id}
-                  className={cn(
-                    'relative h-8 flex-1 gap-1 rounded-none border-b-2 border-transparent px-1.5 text-[0.6875rem] font-medium transition-colors',
-                    'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary',
-                    'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {t(labelKey as Parameters<typeof t>[0])}
-                  {count > 0 && (
-                    <span className={cn(
-                      'rounded-full px-1 text-[0.5rem] font-bold tabular-nums',
-                      tab === id ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
-                    )}>
-                      {count}
-                    </span>
-                  )}
-                </TabsTrigger>
-              );
-            })}
+            {TABS.map(({ id, labelKey }) => (
+              <TabsTrigger
+                key={id}
+                value={id}
+                className={cn(
+                  'relative h-8 flex-1 gap-1 rounded-none border-b-2 border-transparent px-1.5 text-[0.6875rem] font-medium transition-colors',
+                  'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary',
+                  'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {t(labelKey as Parameters<typeof t>[0])}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
       </div>
@@ -302,7 +286,18 @@ function ConversationListPanel({
 
       {/* ── Scrollable list ── flex-1 + overflow-y-auto keeps this section scrollable only */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.3s]" />
+            <div className="mx-1 h-1 w-1 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.15s]" />
+            <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground/40" />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center gap-2 py-16 text-center">
+            <p className="text-sm font-medium text-destructive">Couldn&apos;t load conversations</p>
+            <p className="text-xs text-muted-foreground">Please try again shortly.</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <Bot className="h-6 w-6 text-muted-foreground/40" aria-hidden />
@@ -314,15 +309,15 @@ function ConversationListPanel({
           </div>
         ) : (
           <div className="flex flex-col gap-px py-1">
-            {visible.map((conv) => (
+            {filtered.map((conv) => (
               <ConversationListItem
                 key={conv.id}
-                conv={conv}
+                conv={toUiConversation(conv)}
                 isSelected={selectedId === conv.id}
-                onClick={() => onSelect(conv.id)}
+                onClick={() => onSelect(conv)}
               />
             ))}
-            {hasMore && (
+            {(hasNextPage || isFetchingNextPage) && (
               <div ref={sentinelRef} className="flex items-center justify-center py-4">
                 <div className="h-1 w-1 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.3s]" />
                 <div className="mx-1 h-1 w-1 animate-bounce rounded-full bg-muted-foreground/40 [animation-delay:-0.15s]" />
@@ -336,11 +331,43 @@ function ConversationListPanel({
   );
 }
 
+/** Adapts a `ConversationSummaryDto` to the `Conversation` shape the shared `shared/ui/chat/*`
+ * components expect: an empty `messages` array (the list item component never reads it), and
+ * `null` optional fields normalized to `undefined` (the DTOs mirror the backend, which uses
+ * `null`; the mock-data-derived `Conversation`/`Message` types the shared components were built
+ * against use `undefined` — the two are semantically identical here, so this is a type-only
+ * adapter, not a behavior change). */
+function toUiConversation(dto: ConversationSummaryDto): Conversation {
+  return {
+    ...dto,
+    contactName: dto.contactName ?? undefined,
+    assignedAgentName: dto.assignedAgentName ?? undefined,
+    slaExpiresAt: dto.slaExpiresAt ?? undefined,
+    messages: [],
+  };
+}
+
+/** Same null->undefined normalization as `toUiConversation`, for a single message. */
+function toUiMessage(dto: MessageDto): Message {
+  return {
+    ...dto,
+    senderName: dto.senderName ?? undefined,
+    deliveryStatus: dto.deliveryStatus ?? undefined,
+    confidence: dto.confidence ?? undefined,
+  };
+}
+
 // ─── Right info sidebar ───────────────────────────────────────────────────────
 
-function ConversationSidebar({ conv, convState }: { conv: Conversation; convState: ConvState }) {
+function ConversationSidebar({
+  conv,
+  messages,
+}: {
+  conv: ConversationSummaryDto;
+  messages: MessageDto[];
+}) {
   const t = useTranslations('chat');
-  const systemMessages = conv.messages.filter((m) => m.senderRole === 'System');
+  const systemMessages = messages.filter((m) => m.senderRole === 'System');
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-l border-border bg-card">
@@ -374,7 +401,7 @@ function ConversationSidebar({ conv, convState }: { conv: Conversation; convStat
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Status</span>
-                <StateChip state={convState.state} />
+                <StateChip state={conv.state} />
               </div>
               {conv.tags.length > 0 && (
                 <div>
@@ -441,9 +468,11 @@ function ConversationSidebar({ conv, convState }: { conv: Conversation; convStat
 function MessageComposer({
   onSend,
   onResolve,
+  isSending,
 }: {
   onSend: (text: string) => void;
   onResolve: () => void;
+  isSending: boolean;
 }) {
   const [draft, setDraft] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -510,7 +539,7 @@ function MessageComposer({
           <Button
             size="sm"
             onClick={handleSend}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || isSending}
             className="h-7 gap-1.5 text-xs"
           >
             <Send className="h-3 w-3" />
@@ -522,37 +551,73 @@ function MessageComposer({
   );
 }
 
+/**
+ * Reads the freshest cached `ConversationSummaryDto` for `conversationId` across every
+ * `['inbox', 'conversations', ...]` list-page query in the cache, falling back to `initial` (the
+ * summary the user actually clicked) when no cached page contains it yet. This is what keeps the
+ * open conversation's header/StateBanner/SlaCountdown in sync with `useChatHub`'s cache patches
+ * (assigned/resolved/reopened/handoff) without a dedicated get-one-conversation endpoint.
+ */
+function useLiveConversationSummary(
+  conversationId: string,
+  initial: ConversationSummaryDto,
+): ConversationSummaryDto {
+  const queryClient = useQueryClient();
+
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => queryClient.getQueryCache().subscribe(onStoreChange),
+    [queryClient],
+  );
+
+  const getSnapshot = useCallback((): ConversationSummaryDto => {
+    const queries = queryClient.getQueriesData<{ items: ConversationSummaryDto[] }>({
+      queryKey: ['inbox', 'conversations'],
+      exact: false,
+    });
+    for (const [, data] of queries) {
+      const match = data?.items.find((c) => c.id === conversationId);
+      if (match) return match;
+    }
+    return initial;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryClient, conversationId]);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
 // ─── Conversation view ────────────────────────────────────────────────────────
 
 function ConversationView({
-  conv,
-  convState,
-  onConvStateChange,
+  conv: initialConv,
   onBack,
   onToggleInfo,
   infoOpen,
 }: {
-  conv: Conversation;
-  convState: ConvState;
-  onConvStateChange: (u: Partial<ConvState>) => void;
+  conv: ConversationSummaryDto;
   onBack: () => void;
   onToggleInfo: () => void;
   infoOpen: boolean;
 }) {
   const t = useTranslations('chat');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const currentAgentName = useSessionStore((s) => s.user?.fullName);
+  const conv = useLiveConversationSummary(initialConv.id, initialConv);
 
-  const isMyConv = convState.assignedAgentName === MOCK_AGENT.name;
-  const showComposer = convState.state === 'HumanHandling' && isMyConv;
+  const messagesQuery = useConversationMessages(conv.id);
+  const messages = useMemo(() => messagesQuery.data?.items ?? [], [messagesQuery.data]);
+
+  const sendReply = useSendReply(conv.id);
+  const takeOver = useTakeOver();
+  const resolve = useResolve();
+  const reopen = useReopen();
+
+  const isMyConv = conv.assignedAgentName === currentAgentName;
+  const showComposer = conv.state === 'HumanHandling' && isMyConv;
 
   // Scroll to bottom on new messages or conversation switch
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conv.id, conv.messages.length]);
-
-  function acceptConv(state: ConversationState) {
-    onConvStateChange({ state, assignedAgentName: MOCK_AGENT.name });
-  }
+  }, [conv.id, messages.length]);
 
   return (
     // Three-row grid: header (fixed) | messages (flex-1 scroll) | footer (fixed)
@@ -581,7 +646,7 @@ function ConversationView({
           </span>
           <div className="flex items-center gap-1.5">
             <ChannelBadge channel={conv.channel} size="sm" />
-            <StateChip state={convState.state} />
+            <StateChip state={conv.state} />
           </div>
         </div>
 
@@ -605,18 +670,15 @@ function ConversationView({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
             <div className="flex flex-col gap-3">
-              {conv.messages.map((msg) =>
-                msg.isStreaming ? (
-                  <StreamingBubble key={msg.id} message={msg} />
-                ) : (
-                  <MessageBubble
-                    key={msg.id}
-                    message={msg}
-                    isCurrentAgent={msg.senderRole === 'Agent' && msg.senderName === MOCK_AGENT.name}
-                  />
-                ),
-              )}
-              {/* TODO: connect SignalR — stream incoming messages here */}
+              {messages.map((msg) => (
+                <MessageBubble
+                  key={msg.id}
+                  message={toUiMessage(msg)}
+                  isCurrentAgent={msg.senderRole === 'Agent' && msg.senderName === currentAgentName}
+                />
+              ))}
+              {/* Live incoming/outgoing messages arrive via useChatHub, which patches the
+                  same React Query cache this list reads from — no separate stream handling here. */}
               <div ref={bottomRef} aria-hidden className="h-1" />
             </div>
           </div>
@@ -624,19 +686,20 @@ function ConversationView({
           {/* ── Footer — never scrolls ── */}
           {showComposer ? (
             <MessageComposer
-              onSend={() => {/* TODO: SignalR send */}}
-              onResolve={() => onConvStateChange({ state: 'Resolved' })}
+              onSend={(text) => sendReply.mutate(text)}
+              onResolve={() => resolve.mutate(conv.id)}
+              isSending={sendReply.isPending}
             />
           ) : (
             <StateBanner
-              state={convState.state}
-              assignedAgentName={convState.assignedAgentName}
-              slaExpiresAt={conv.slaExpiresAt}
+              state={conv.state}
+              assignedAgentName={conv.assignedAgentName ?? undefined}
+              slaExpiresAt={conv.slaExpiresAt ?? undefined}
               isCurrentAgentAssigned={isMyConv}
-              onTakeOver={() => acceptConv('HumanHandling')}
-              onAccept={() => acceptConv('HumanHandling')}
-              onResolve={() => onConvStateChange({ state: 'Resolved' })}
-              onReopen={() => acceptConv('HumanHandling')}
+              onTakeOver={() => takeOver.mutate(conv.id)}
+              onAccept={() => takeOver.mutate(conv.id)}
+              onResolve={() => resolve.mutate(conv.id)}
+              onReopen={() => reopen.mutate(conv.id)}
             />
           )}
         </div>
@@ -644,7 +707,7 @@ function ConversationView({
         {/* Info sidebar (desktop only) */}
         {infoOpen && (
           <div className="hidden lg:flex">
-            <ConversationSidebar conv={conv} convState={convState} />
+            <ConversationSidebar conv={conv} messages={messages} />
           </div>
         )}
       </div>
@@ -674,27 +737,20 @@ function EmptyPrompt() {
 export default function InboxPage() {
   const t = useTranslations('chat');
 
-  const [selectedId, setSelectedId]     = useState<string | null>(null);
-  const [convStateMap, setConvStateMap] = useState<Record<string, ConvState>>({});
+  // The selected conversation is held as the summary the user clicked (from whichever tab/filter
+  // it was visible in), not re-looked-up from a separate unfiltered query — the list panel's own
+  // query is cursor-paged and filtered per-tab, so there is no single "all conversations" query
+  // that is guaranteed to contain every selectable row.
+  const [selectedConv, setSelectedConv] = useState<ConversationSummaryDto | null>(null);
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [infoOpen, setInfoOpen]         = useState(false);
 
-  const selectedConv = selectedId
-    ? (MOCK_CONVERSATIONS.find((c) => c.id === selectedId) ?? null)
-    : null;
+  // One SignalR connection for the whole inbox: joins the tenant agent-dashboard group on mount,
+  // and the selected conversation's group whenever the selection changes (see use-chat-hub.ts).
+  useChatHub(selectedConv?.id ?? null);
 
-  const getConvState = (conv: Conversation): ConvState =>
-    convStateMap[conv.id] ?? { state: conv.state, assignedAgentName: conv.assignedAgentName };
-
-  const handleStateChange = useCallback((id: string, update: Partial<ConvState>) => {
-    setConvStateMap((prev) => ({
-      ...prev,
-      [id]: { ...(prev[id] ?? { state: 'AiHandling' }), ...update },
-    }));
-  }, []);
-
-  const handleSelect = useCallback((id: string) => {
-    setSelectedId(id);
+  const handleSelect = useCallback((conv: ConversationSummaryDto) => {
+    setSelectedConv(conv);
     setDrawerOpen(false);
     setInfoOpen(false);
   }, []);
@@ -705,7 +761,7 @@ export default function InboxPage() {
 
       {/* ── Desktop list panel ── */}
       <div className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col xl:w-80">
-        <ConversationListPanel selectedId={selectedId} onSelect={handleSelect} />
+        <ConversationListPanel selectedId={selectedConv?.id ?? null} onSelect={handleSelect} />
       </div>
 
       {/* ── Mobile: FAB → drawer ── */}
@@ -737,7 +793,7 @@ export default function InboxPage() {
               </button>
             </div>
             <div className="min-h-0 flex-1">
-              <ConversationListPanel selectedId={selectedId} onSelect={handleSelect} />
+              <ConversationListPanel selectedId={selectedConv?.id ?? null} onSelect={handleSelect} />
             </div>
           </div>
         </DrawerContent>
@@ -754,9 +810,7 @@ export default function InboxPage() {
           <ConversationView
             key={selectedConv.id}
             conv={selectedConv}
-            convState={getConvState(selectedConv)}
-            onConvStateChange={(u) => handleStateChange(selectedConv.id, u)}
-            onBack={() => setSelectedId(null)}
+            onBack={() => setSelectedConv(null)}
             onToggleInfo={() => setInfoOpen((o) => !o)}
             infoOpen={infoOpen}
           />
@@ -772,7 +826,7 @@ export default function InboxPage() {
           selectedConv ? 'hidden' : 'flex',
         )}
       >
-        <ConversationListPanel selectedId={selectedId} onSelect={handleSelect} />
+        <ConversationListPanel selectedId={selectedConv?.id ?? null} onSelect={handleSelect} />
       </div>
     </div>
   );
