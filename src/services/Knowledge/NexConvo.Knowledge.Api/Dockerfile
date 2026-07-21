@@ -26,8 +26,9 @@ RUN dotnet publish src/services/Knowledge/NexConvo.Knowledge.Api/NexConvo.Knowle
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS runtime
 WORKDIR /app
+# 8080 = REST (Http1), 8081 = gRPC (Http2-only) — see Program.cs's ConfigureKestrel.
 EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8081
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "NexConvo.Knowledge.Api.dll"]

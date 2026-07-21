@@ -18,6 +18,20 @@ const string serviceName = "knowledge";
 
 var builder = WebApplication.CreateBuilder(args);
 
+// gRPC clients connect via HTTP/2 prior-knowledge (no TLS ALPN, no HTTP/1.1 Upgrade handshake).
+// Kestrel's mixed Http1AndHttp2 protocol sniffing on a single plaintext endpoint does not reliably
+// detect a bare h2c preface the way it detects an Upgrade-based h2c request — confirmed by testing
+// both the REST endpoints (h2c works via Upgrade) and gRPC (fails with HTTP_1_1_REQUIRED) on the
+// same port. A dedicated Http2-only port for gRPC sidesteps that ambiguity entirely, which is the
+// documented ASP.NET Core pattern for hosting REST + gRPC on the same Kestrel instance.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, listenOptions =>
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1);
+    options.ListenAnyIP(8081, listenOptions =>
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2);
+});
+
 builder.Host.UseNexConvoSerilog(serviceName);
 builder.Services.AddNexConvoOpenTelemetry(builder.Configuration, serviceName);
 builder.Services.AddNexConvoTenancy();
@@ -98,7 +112,14 @@ app.MapHealthChecks("/health/ready").AllowAnonymous();
 // Internal-only: exempted from the HTTP JWT FallbackPolicy (no JWT exists between services) —
 // InternalServiceAuthInterceptor is this endpoint's actual AuthN gate (skill Standard 12).
 // Never routed through YARP; only reachable service-to-service inside the cluster network.
-app.MapGrpcService<KnowledgeRetrievalGrpcService>().AllowAnonymous();
+// Real Kestrel listens on both 8080 (Http1) and 8081 (Http2-only, see ConfigureKestrel above);
+// WebApplicationFactory's in-memory TestServer has no real ports, so RequireHost would wrongly
+// reject test requests — only constrain the host when a real Kestrel server is listening.
+var grpcEndpoint = app.MapGrpcService<KnowledgeRetrievalGrpcService>().AllowAnonymous();
+if (app.Services.GetService<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>() is not null)
+{
+    grpcEndpoint.RequireHost("*:8081");
+}
 
 await app.RunAsync();
 

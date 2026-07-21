@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using NexConvo.BuildingBlocks.Ai.Services;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Results;
+using NexConvo.Chat.Application.Common;
 using NexConvo.Contracts.Enums;
 
 namespace NexConvo.Chat.Application.Features.Playground.Queries.GetProvidersAndModels;
@@ -28,10 +29,6 @@ public sealed class GetProvidersAndModelsQueryHandler : IRequestHandler<GetProvi
         _aes = aes;
         _aiProviderFactory = aiProviderFactory;
     }
-
-    private sealed record CachedAiConfig(
-        Guid TenantId, string Provider, string EncryptedApiKey, string? BaseUrl,
-        string DefaultModel, string? SystemPrompt, string? Parameters, bool IsActive);
 
     public async Task<Result<IReadOnlyList<ProviderModelDto>>> Handle(GetProvidersAndModelsQuery request, CancellationToken cancellationToken)
     {

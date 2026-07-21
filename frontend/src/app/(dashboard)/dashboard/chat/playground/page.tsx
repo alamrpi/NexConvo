@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { apiClient } from '@/shared/api/client/api-client';
+import { usePlaygroundModels } from '@/features/playground/api/use-playground-models';
+import type { ProviderModelDto } from '@/features/playground/model/playground.types';
 import {
   Shield,
   ChevronDown,
@@ -42,20 +43,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
+import { Combobox } from '@/shared/ui/combobox';
 import { cn } from '@/shared/lib/cn';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface ProviderModelDto {
-  providerId: string;
-  providerName: string;
-  models: ModelDto[];
-}
-
-export interface ModelDto {
-  modelId: string;
-  modelName: string;
-}
 
 
 interface DebugChunk {
@@ -923,57 +912,32 @@ function ComparePaneConfig({
           ))}
         </SelectContent>
       </Select>
-      <Select value={model} onValueChange={setModel}>
-        <SelectTrigger className="h-7 w-48 text-xs" aria-label={`${paneLabel} model`}>
-          <SelectValue placeholder="Model" />
-        </SelectTrigger>
-        <SelectContent>
-          {currentProvider?.models.map((m) => (
-            <SelectItem key={m.modelId} value={m.modelId}>{m.modelName}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Combobox
+        className="w-48"
+        value={model}
+        onValueChange={setModel}
+        options={(currentProvider?.models ?? []).map((m) => ({ value: m.modelId, label: m.modelName }))}
+        placeholder="Model"
+        searchPlaceholder="Search models…"
+        emptyText="No matching models"
+        triggerAriaLabel={`${paneLabel} model`}
+        disabled={!currentProvider || currentProvider.models.length === 0}
+      />
     </div>
   );
 }
 
 // ─── Empty / welcome state ────────────────────────────────────────────────────
 
-function EmptyState({ onLoadScenario }: { onLoadScenario: (key: string) => void }) {
+function EmptyState({ onLoadScenario: _onLoadScenario }: { onLoadScenario: (key: string) => void }) {
   return (
     <div className="flex flex-col items-center gap-6 px-6 py-12">
       <div className="flex flex-col items-center gap-2 text-center">
         <FlaskConical className="h-10 w-10 text-muted-foreground/30" aria-hidden />
         <h2 className="text-sm font-semibold text-foreground">Test Playground</h2>
         <p className="max-w-xs text-xs text-muted-foreground">
-          Send a message to test the AI chatbot live, or load a scenario below.
+          Send a message to test the AI chatbot live.
         </p>
-      </div>
-
-      <div className="w-full max-w-sm space-y-2">
-        <p className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">
-          Quick Scenarios
-        </p>
-        <div className="grid grid-cols-1 gap-1.5">
-          {SCENARIO_META.map(({ key, label, description, icon: Icon, tag, tagColor }) => (
-            <button
-              key={key}
-              onClick={() => onLoadScenario(key)}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">{label}</span>
-                  <span className={cn('rounded border px-1.5 py-0 text-[0.5rem] font-semibold', tagColor)}>
-                    {tag}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-              </div>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -1023,29 +987,52 @@ function ChatThread({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function PlaygroundPage() {
-  const [providers, setProviders] = useState<ProviderModelDto[]>([]);
+  const { data: providers = [] } = usePlaygroundModels();
   const [connection, setConnection] = useState<HubConnection | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClient.get<ProviderModelDto[]>('/playground/models').then((res) => {
-      setProviders(res.data);
-    }).catch(console.error);
-
     // Setup SignalR Connection
-    let hubConnection: HubConnection;
-    fetch('/api/bff/auth/ws-ticket').then(res => res.json()).then(data => {
-      if (!data.ticket || !data.url) throw new Error('No ticket or url returned');
-      
-      hubConnection = new HubConnectionBuilder()
-        .withUrl(`${data.url}?access_token=${data.ticket}`)
-        .withAutomaticReconnect()
-        .configureLogging(LogLevel.Information)
-        .build();
+    let hubConnection: HubConnection | undefined;
+    let cancelled = false;
 
-      hubConnection.start().then(() => setConnection(hubConnection)).catch(console.error);
-    });
+    fetch('/api/bff/auth/ws-ticket')
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data.ticket || !data.url) {
+          throw new Error('No ticket or url returned from ws-ticket endpoint');
+        }
+
+        hubConnection = new HubConnectionBuilder()
+          .withUrl(`${data.url}?access_token=${data.ticket}`)
+          .withAutomaticReconnect()
+          .configureLogging(LogLevel.Information)
+          .build();
+
+        hubConnection.onclose((err) => {
+          setConnection(null);
+          setConnectionError(err ? 'Connection lost. Please refresh.' : null);
+        });
+        hubConnection.onreconnected(() => setConnectionError(null));
+        hubConnection.onreconnecting(() => setConnectionError('Reconnecting…'));
+
+        return hubConnection.start().then(() => {
+          if (cancelled) {
+            hubConnection?.stop();
+            return;
+          }
+          setConnection(hubConnection ?? null);
+          setConnectionError(null);
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to establish playground connection:', err);
+        if (!cancelled) setConnectionError('Could not connect to the AI service. Please refresh.');
+      });
 
     return () => {
+      cancelled = true;
       hubConnection?.stop();
     };
   }, []);
@@ -1069,11 +1056,22 @@ export default function PlaygroundPage() {
   const [knowledgeVersion, setKnowledgeVersion] = useState('current');
   const [mcpDryRun, setMcpDryRun] = useState(false);
 
-  // Compare configs
-  const [leftProvider, setLeftProvider] = useState('openrouter');
-  const [leftModel, setLeftModel] = useState('anthropic/claude-3-haiku');
-  const [rightProvider, setRightProvider] = useState('openai');
-  const [rightModel, setRightModel] = useState('gpt-4o-mini');
+  // Compare configs — populated once the tenant's real provider/model list loads (see effect below);
+  // empty until then so we never send a hardcoded provider the tenant hasn't actually configured.
+  const [leftProvider, setLeftProvider] = useState('');
+  const [leftModel, setLeftModel] = useState('');
+  const [rightProvider, setRightProvider] = useState('');
+  const [rightModel, setRightModel] = useState('');
+
+  useEffect(() => {
+    if (providers.length === 0) return;
+    const first = providers[0];
+    if (!first) return;
+    setLeftProvider((prev) => (prev && providers.some((p) => p.providerId === prev) ? prev : first.providerId));
+    setLeftModel((prev) => (prev && first.models.some((m) => m.modelId === prev) ? prev : (first.models[0]?.modelId ?? '')));
+    setRightProvider((prev) => (prev && providers.some((p) => p.providerId === prev) ? prev : first.providerId));
+    setRightModel((prev) => (prev && first.models.some((m) => m.modelId === prev) ? prev : (first.models[0]?.modelId ?? '')));
+  }, [providers]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const leftScrollRef = useRef<HTMLDivElement>(null);
@@ -1197,6 +1195,13 @@ export default function PlaygroundPage() {
       setSelectedDebugId(aiId);
     };
 
+    const cleanup = () => {
+      connection.off('ReceiveToken', onToken);
+      connection.off('ReceiveDebugData', onDebug);
+      connection.off('ReceiveCompleted', onCompleted);
+      connection.off('ReceiveError', onError);
+    };
+
     const onCompleted = () => {
       setMessages((prev) =>
         prev.map((m) =>
@@ -1204,14 +1209,23 @@ export default function PlaygroundPage() {
         )
       );
       setIsStreaming(false);
-      connection.off('ReceiveToken', onToken);
-      connection.off('ReceiveDebugData', onDebug);
-      connection.off('ReceiveCompleted', onCompleted);
+      cleanup();
+    };
+
+    const onError = (message: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId ? { ...m, isStreaming: false, body: message || 'An error occurred.' } : m
+        )
+      );
+      setIsStreaming(false);
+      cleanup();
     };
 
     connection.on('ReceiveToken', onToken);
     connection.on('ReceiveDebugData', onDebug);
     connection.on('ReceiveCompleted', onCompleted);
+    connection.on('ReceiveError', onError);
 
     connection.invoke('ExecuteScenarioAsync', {
       UserMessage: body,
@@ -1221,9 +1235,7 @@ export default function PlaygroundPage() {
     }).catch(err => {
       console.error('SignalR Invoke Error:', err);
       setIsStreaming(false);
-      connection.off('ReceiveToken', onToken);
-      connection.off('ReceiveDebugData', onDebug);
-      connection.off('ReceiveCompleted', onCompleted);
+      cleanup();
     });
   }, [inputText, isStreaming, compareMode, connection, leftProvider, leftModel, sysPromptOn, sysPrompt, setMessages, setCompareLeftMessages, setCompareRightMessages, setCurrentDebugData, setSelectedDebugId, setIsStreaming]);
 
@@ -1256,6 +1268,11 @@ export default function PlaygroundPage() {
           <FlaskConical className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="text-sm font-semibold text-foreground">Test Playground</span>
           <Badge variant="outline" className="shrink-0 text-xs text-muted-foreground">Sandbox</Badge>
+          {connectionError && (
+            <Badge variant="outline" className="shrink-0 text-xs text-destructive border-destructive/30 bg-destructive/5">
+              {connectionError}
+            </Badge>
+          )}
           {sessionMsgCount > 0 && (
             <span className="text-xs text-muted-foreground tabular-nums">
               {sessionMsgCount} msg{sessionMsgCount !== 1 ? 's' : ''}
