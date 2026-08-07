@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../NexConvo.Notification.Application/NexConvo.Notification.Application.csproj" />
+    <ProjectReference Include="../../../shared/NexConvo.BuildingBlocks.Infrastructure/NexConvo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="../../../shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+</Project>

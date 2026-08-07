@@ -5,14 +5,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 
 namespace NexConvo.BuildingBlocks.Infrastructure.Web;
 
 /// <summary>
-/// Maps unhandled exceptions to RFC 7807 problem responses: FluentValidation → 422,
-/// DbUpdateConcurrencyException → 409, DomainException / NotSupportedException → 400,
-/// everything else → 500 (logged once, with correlation via Serilog). Never leaks internal
-/// detail on 500.
+/// Maps unhandled exceptions to RFC 7807 problem responses: FluentValidation / ConnectionTestFailedException → 422,
+/// DbUpdateConcurrencyException / ConnectionUnhealthyException → 409, DomainException /
+/// NotSupportedException → 400, everything else → 500 (logged once, with correlation via
+/// Serilog). Never leaks internal detail on 500.
 /// </summary>
 public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
@@ -27,6 +28,10 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
             await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, "Validation failed",
                 ex.Errors.Select(e => e.ErrorMessage).Distinct().ToArray());
         }
+        catch (ConnectionTestFailedException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status422UnprocessableEntity, ex.Message, code: "connection-test-failed");
+        }
         catch (EmailNotVerifiedException ex)
         {
             await WriteAsync(context, StatusCodes.Status403Forbidden, ex.Message, code: "email-not-verified");
@@ -39,6 +44,10 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         {
             await WriteAsync(context, StatusCodes.Status409Conflict,
                 "The record was modified by someone else. Reload and try again.", code: "concurrency-conflict");
+        }
+        catch (ConnectionUnhealthyException ex)
+        {
+            await WriteAsync(context, StatusCodes.Status409Conflict, ex.Message, code: "connection-unhealthy");
         }
         catch (NotSupportedException ex)
         {

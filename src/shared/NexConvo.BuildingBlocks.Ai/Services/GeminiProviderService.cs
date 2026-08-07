@@ -92,4 +92,62 @@ public class GeminiProviderService(HttpClient httpClient) : IAiProviderService
             }
         }
     }
+
+    public async Task<IReadOnlyList<ModelDto>> GetAvailableModelsAsync(string apiKey, string? baseUrl = null, CancellationToken cancellationToken = default)
+    {
+        var baseEndpoint = baseUrl ?? DefaultBaseUrl;
+        var requestUrl = $"{baseEndpoint}/models?key={apiKey}";
+
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+
+        try
+        {
+            using var response = await httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Fallback if the endpoint fails
+                return new List<ModelDto>
+                {
+                    new ModelDto("gemini-1.5-pro", "Gemini 1.5 Pro"),
+                    new ModelDto("gemini-1.5-flash", "Gemini 1.5 Flash")
+                };
+            }
+
+            var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
+
+            var root = document.RootElement;
+            var models = new List<ModelDto>();
+
+            if (root.TryGetProperty("models", out var modelsElement) && modelsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in modelsElement.EnumerateArray())
+                {
+                    if (item.TryGetProperty("name", out var nameElement))
+                    {
+                        var name = nameElement.GetString();
+                        if (!string.IsNullOrEmpty(name))
+                        {
+                            // name is typically "models/gemini-..." but we pass the clean ID
+                            var id = name.StartsWith("models/", System.StringComparison.OrdinalIgnoreCase) ? name[7..] : name;
+                            var displayName = item.TryGetProperty("displayName", out var displayElement) && displayElement.ValueKind == JsonValueKind.String
+                                ? displayElement.GetString()!
+                                : id;
+                            models.Add(new ModelDto(id, displayName));
+                        }
+                    }
+                }
+            }
+
+            return models;
+        }
+        catch
+        {
+            return new List<ModelDto>
+            {
+                new ModelDto("gemini-1.5-pro", "Gemini 1.5 Pro"),
+                new ModelDto("gemini-1.5-flash", "Gemini 1.5 Flash")
+            };
+        }
+    }
 }

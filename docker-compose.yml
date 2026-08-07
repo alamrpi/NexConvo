@@ -3,7 +3,7 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nexconvo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -54,6 +54,58 @@ services:
     ports:
       - "5341:80"
 
+  # Self-hosted embedding server (BGE-M3, 1024-dim) for the RAG knowledge base — OpenAI-compatible
+  # /embeddings API. First start downloads the model weights into the cached volume (a few minutes).
+  # CPU build: the default (GPU/CUDA) image is 4.5 GB and unnecessary for local dev; -cpu is 714 MB.
+  bge-m3:
+    image: michaelf34/infinity:0.0.77-cpu
+    command: v2 --model-id BAAI/bge-m3 --port 7997
+    ports:
+      - "7997:7997"
+    volumes:
+      - bge_model_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7997/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # Self-hosted S3-compatible storage for local knowledge-base testing while a real AWS S3
+  # subscription is pending. Temporary workaround, not a production dependency — Integrations'
+  # and Knowledge's S3 client factories already support any S3-compatible CustomEndpoint via
+  # ForcePathStyle, so no application code changes are needed; only a workspace S3 config pointed
+  # at http://minio:9000 (in-network) is required. Console at http://localhost:9001 to create the
+  # bucket (MinIO does not auto-create buckets).
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nexconvo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # pgAdmin — PostgreSQL GUI (http://localhost:5050). Login: admin@nexconvo.local / admin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nexconvo.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Local transactional-email catcher. The platform-default sender points at smtp 1025;
   # nothing leaves the machine. View captured mail at http://localhost:8025.
   mailpit:
@@ -86,12 +138,16 @@ services:
       Jwt__Authority: http://identity:8080
       ReverseProxy__Clusters__identity-cluster__Destinations__primary__Address: http://identity:8080
       ReverseProxy__Clusters__integrations-cluster__Destinations__primary__Address: http://integrations:8080
+      ReverseProxy__Clusters__chat-cluster__Destinations__primary__Address: http://chat:8080
+      ReverseProxy__Clusters__knowledge-cluster__Destinations__primary__Address: http://knowledge:8080
     ports:
       - "5055:8080"
     depends_on:
       seq:
         condition: service_started
       identity:
+        condition: service_started
+      chat:
         condition: service_started
 
   identity:
@@ -115,6 +171,9 @@ services:
       # Platform-default email sender → Mailpit (captured at http://localhost:8025).
       Email__Default__Smtp__Host: mailpit
       Email__Default__Smtp__Port: "1025"
+      # Shared secret guarding /internal/* (health-alert-recipients) — same value as the
+      # notification service's Internal__ApiKey. Env-only (Standard 13).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5047:8080"
     depends_on:
@@ -155,12 +214,76 @@ services:
       Seq__Url: http://seq
       Jwt__Authority: http://identity:8080
       Jwt__Audience: nexconvo-api
+      ConnectionStrings__ChatDb: "Host=postgres;Port=5432;Database=nexconvo_chat;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__ChatDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_chat;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
+      SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
+      # Dedicated Http2-only gRPC port (8081) — see Knowledge's Program.cs ConfigureKestrel comment.
+      Knowledge__GrpcAddress: http://knowledge:8081
+      # Guards Chat's outbound call to Knowledge's internal-only KnowledgeRetrieval gRPC service.
+      # Same value as Knowledge's own Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
     ports:
       - "5132:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      knowledge:
+        condition: service_started
+      seq:
+        condition: service_started
+
+  knowledge:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Knowledge/NexConvo.Knowledge.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # No ASPNETCORE_URLS here — Program.cs's ConfigureKestrel is the single source of truth for
+      # ports (8080 REST/Http1, 8081 gRPC/Http2-only); setting both would fight each other.
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+      ConnectionStrings__KnowledgeDb: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__KnowledgeDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_knowledge;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      # Caches the Integrations-owned S3 config (Standard 5 — never queried cross-service directly).
+      ConnectionStrings__Redis: "redis:6379,password=${REDIS_PASSWORD:-localdev_redis_pw}"
+      # Same value as Chat/Integrations' AiMasterKey — decrypts the cached S3 credentials
+      # (S3ConfigUpdatedEvent payload) that S3StorageService reads at upload/download time.
+      SecuritySettings__AiMasterKey: "${AI_MASTER_KEY:-nexconvo-local-dev-aes-key-32chars!!}"
+      # Slice 1 embedding providers — BGE-M3 (self-hosted Infinity container) is the default,
+      # but the local bge-m3 container's cached model is temporarily broken, so Cohere is the
+      # active provider here for now (env-only secret, Standard 13).
+      EMBEDDING__PROVIDER: Cohere
+      EMBEDDING__BGEM3__BASEURL: http://bge-m3:7997
+      EMBEDDING__COHERE__APIKEY: "${COHERE_API_KEY:?set COHERE_API_KEY in .env}"
+      # Guards the internal-only KnowledgeRetrieval gRPC service (Chat/Voice callers).
+      # Same value as Identity's Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
+    ports:
+      - "5019:8080"
+      - "5020:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       identity:
         condition: service_started
       seq:
+        condition: service_started
+      bge-m3:
+        condition: service_started
+      redis:
         condition: service_started
 
   voice:
@@ -212,9 +335,17 @@ services:
       Seq__Url: http://seq
       Jwt__Authority: http://identity:8080
       Jwt__Audience: nexconvo-api
+      ConnectionStrings__AutomationDb: "Host=postgres;Port=5432;Database=nexconvo_automation;Username=nexconvo_service;Password=${POSTGRES_SERVICE_PASSWORD:-localdev_service_pw}"
+      ConnectionStrings__AutomationDbMigrator: "Host=postgres;Port=5432;Database=nexconvo_automation;Username=${POSTGRES_USER:-nexconvo};Password=${POSTGRES_PASSWORD:-localdev_pg_pw}"
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      HealthSweep__Cron: "0 */6 * * *"
     ports:
       - "5228:8080"
     depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
       identity:
         condition: service_started
       seq:
@@ -243,5 +374,42 @@ services:
       seq:
         condition: service_started
 
+  notification:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: src/services/Notification/NexConvo.Notification.Worker/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Seq__Url: http://seq
+      Jwt__Authority: http://identity:8080
+      Jwt__Audience: nexconvo-api
+      ConnectionStrings__RabbitMQ: "amqp://nexconvo:${RABBITMQ_PASSWORD:-localdev_rmq_pw}@rabbitmq:5672"
+      # Identity's internal (non-gateway, shared-secret-guarded) endpoint for owner/admin lookup.
+      Identity__BaseUrl: http://identity:8080
+      # Same value as Identity's Internal__ApiKey (Standard 13 — env-only shared secret).
+      Internal__ApiKey: "${INTERNAL_API_KEY:-localdev_internal_key}"
+      # Notification is the sole holder of the alert email-provider secret. Dev → Mailpit.
+      Email__Default__Provider: Smtp
+      Email__Default__FromAddress: alerts@nexconvo.local
+      Email__Default__FromName: NexConvo Alerts
+      Email__Default__Smtp__Host: mailpit
+      Email__Default__Smtp__Port: "1025"
+      Email__Default__Resend__ApiKey: "${NOTIFICATION_RESEND_API_KEY:-}"
+    ports:
+      - "5233:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      identity:
+        condition: service_started
+      mailpit:
+        condition: service_started
+      seq:
+        condition: service_started
+
 volumes:
   postgres_data:
+  bge_model_cache:
+  minio_data:

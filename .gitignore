@@ -491,3 +491,10 @@ $RECYCLE.BIN/
 # This is a .NET repo at the root; the frontend has its own lockfile under /frontend.
 # A stray root package-lock.json confuses Next.js workspace-root detection — never commit one.
 /package-lock.json
+
+# Local dev / agent artifacts
+.claude/worktrees/
+frontend/screenshot*.mjs
+frontend/scratch/
+md2pdf.py
+docs/learning_notes.pdf

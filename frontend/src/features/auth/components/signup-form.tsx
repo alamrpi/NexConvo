@@ -38,9 +38,7 @@ export function SignupForm() {
   const onSubmit = handleSubmit(async (values) => {
     const user = await signup.mutateAsync(values).catch(() => null);
     if (user) {
-      // replace() already renders the dashboard's server layout fresh (re-reading the new
-      // session cookies); a router.refresh() here races and can abort the navigation.
-      router.replace('/dashboard');
+      window.location.assign('/dashboard');
     }
   });
 

@@ -12,6 +12,17 @@ builder.Host.UseNexConvoSerilog(serviceName);
 builder.Services.AddNexConvoOpenTelemetry(builder.Configuration, serviceName);
 
 // YARP reverse proxy — routes/clusters from configuration.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LocalDevCors", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3003", "http://localhost:3007", "http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -23,6 +34,25 @@ builder.Services
     {
         builder.Configuration.GetSection("Jwt").Bind(options);
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.Events = new JwtBearerEvents
+        {
+            // The /hubs/{**catch-all} route enforces AuthorizationPolicy "default", but browsers
+            // cannot set an Authorization header on a WebSocket handshake — SignalR clients send
+            // the JWT as an access_token query parameter instead. Honor it for hub paths only;
+            // YARP forwards the query string, and the Chat service re-authenticates with the same
+            // hook. The token never reaches the access log: Serilog request logging records
+            // RequestPath only, not the query string.
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -45,11 +75,32 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true,
         });
     });
+
+    // Tighter per-IP limiter for the anonymous public widget (config fetch + hub connect). The
+    // widget is unauthenticated and drives a tenant's paid LLM, so it needs a stricter cap than the
+    // global policy (audit C4). Applied to the widget routes via "RateLimiterPolicy" in YARP config.
+    options.AddPolicy("widget-public", httpContext =>
+    {
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        return RateLimitPartition.GetTokenBucketLimiter(partitionKey, _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 30,
+            TokensPerPeriod = 30,
+            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true,
+        });
+    });
 });
 
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("LocalDevCors");
+}
 
 app.UseNexConvoRequestLogging();
 app.UseRateLimiter();
@@ -65,6 +116,7 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger-json/voice/swagger.json", "Voice API");
     c.SwaggerEndpoint("/swagger-json/aiassistant/swagger.json", "AI Assistant API");
     c.SwaggerEndpoint("/swagger-json/integrations/swagger.json", "Integrations API");
+    c.SwaggerEndpoint("/swagger-json/knowledge/swagger.json", "Knowledge API");
     c.SwaggerEndpoint("/swagger-json/automation/swagger.json", "Automation API");
     c.RoutePrefix = "swagger";
 });

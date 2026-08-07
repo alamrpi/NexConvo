@@ -1,0 +1,25 @@
+// Copied from src/services/Knowledge/NexConvo.Knowledge.Api/Protos/knowledge.proto.
+// Chat.Infrastructure.csproj compiles this with GrpcServices="Client" only — Chat does not
+// project-reference NexConvo.Knowledge.Api (services stay autonomous; see ARCHITECTURE.md §3).
+// KEEP IN SYNC MANUALLY. Follow-up: add a Pact/contract test to catch drift (Standard 19).
+syntax = "proto3";
+option csharp_namespace = "NexConvo.Knowledge.Api.Grpc";
+package knowledge;
+
+service KnowledgeRetrieval {
+  rpc Search (SearchRequest) returns (SearchReply);
+}
+message SearchRequest {
+  string query = 1;
+  int32 top_k = 2;
+  double min_score = 3;
+}
+message SearchReply {
+  repeated Chunk chunks = 1;
+}
+message Chunk {
+  string chunk_id = 1;
+  string document_id = 2;
+  string content = 3;
+  double score = 4;
+}

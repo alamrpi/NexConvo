@@ -1,0 +1,23 @@
+namespace NexConvo.Knowledge.Application.Common.Interfaces;
+
+/// <summary>
+/// A ranked similarity match returned from <see cref="IKnowledgeChunkRepository.SimilaritySearchAsync"/>.
+/// </summary>
+public sealed record ChunkMatch(Guid ChunkId, Guid DocumentId, string Content, double Score);
+
+/// <summary>
+/// Cosine similarity search over <c>knowledge_chunks</c> (CHATBOT-ARCHITECTURE.md §7.4/§12).
+/// Tenant scoping comes from PostgreSQL RLS on the underlying connection — implementations must
+/// NOT add an application-level tenant filter (skill Standard 6: RLS is the isolation boundary).
+/// </summary>
+public interface IKnowledgeChunkRepository
+{
+    /// <summary>
+    /// Returns the top <paramref name="topK"/> active chunks matching <paramref name="queryText"/> /
+    /// <paramref name="queryEmbedding"/>, fusing lexical (full-text) and vector cosine-similarity
+    /// signals via Reciprocal Rank Fusion, excluding any below <paramref name="minScore"/> on the
+    /// fused score, ordered best-first.
+    /// </summary>
+    Task<IReadOnlyList<ChunkMatch>> SimilaritySearchAsync(
+        string queryText, float[] queryEmbedding, int topK, double minScore, CancellationToken cancellationToken);
+}

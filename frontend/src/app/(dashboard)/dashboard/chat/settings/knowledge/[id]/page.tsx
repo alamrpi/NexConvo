@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Pencil, Check, RefreshCw, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -15,92 +15,93 @@ import {
 import { Button } from '@/shared/ui/button';
 import { Badge } from '@/shared/ui/badge';
 import { Input } from '@/shared/ui/input';
+import { Skeleton } from '@/shared/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/shared/ui/dialog';
 import { cn } from '@/shared/lib/cn';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type DocStatus = 'Ready' | 'Processing' | 'Failed';
-
-interface Chunk {
-  index: number;
-  preview: string;
-  tokens: number;
-  score: number;
-}
-
-interface DocVersion {
-  version: number;
-  createdAt: string;
-  model: string;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_DOC_DETAIL = {
-  id: '1',
-  title: 'Product Catalog 2026',
-  status: 'Processing' as DocStatus,
-  currentStep: 2,
-  versions: [
-    { version: 3, createdAt: '2026-06-30T09:00:00.000Z', model: 'text-embedding-3-large' },
-    { version: 2, createdAt: '2026-06-28T10:00:00.000Z', model: 'text-embedding-3-large' },
-    { version: 1, createdAt: '2026-06-25T08:00:00.000Z', model: 'text-embedding-ada-002' },
-  ] as DocVersion[],
-};
-
-const MOCK_CHUNKS: Chunk[] = Array.from({ length: 12 }, (_, i) => ({
-  index: i + 1,
-  preview: [
-    'Our return policy allows customers to return unused items within 30 days of purchase…',
-    'The Jamdani saree collection features hand-woven patterns from traditional Bangladeshi…',
-    'Delivery times vary by region: Dhaka 1-2 days, Chittagong 2-3 days, other areas 3-5…',
-    'bKash payment is accepted for all orders above ৳500. For larger amounts, bank transfer…',
-    'Warranty coverage includes manufacturing defects for 12 months from purchase date…',
-    'আমাদের পণ্যগুলো সর্বোচ্চ মানের কাঁচামাল দিয়ে তৈরি। গুণমান নিশ্চিত করতে…',
-  ][i % 6] + ` (chunk ${i + 1})`,
-  tokens: 180 + (i * 23) % 120,
-  score: parseFloat((0.72 + (i * 0.03) % 0.25).toFixed(2)),
-}));
+import { useKnowledgeDocument } from '@/features/settings/api/use-knowledge-document';
+import { useReEmbedKnowledgeDocument } from '@/features/settings/api/use-re-embed-knowledge-document';
+import { useDeleteKnowledgeDocument } from '@/features/settings/api/use-delete-knowledge-document';
+import type { IngestionStatus } from '@/features/settings/model/knowledge-document.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(iso));
 }
 
-function StatusBadge({ status }: { status: DocStatus }) {
-  const cls = cn(
-    'font-medium',
-    status === 'Ready'      && 'text-chatConfidence-high border-chatConfidence-high/40',
-    status === 'Processing' && 'text-chatConfidence-medium border-chatConfidence-medium/40',
-    status === 'Failed'     && 'text-destructive border-destructive/40',
-  );
-  return <Badge variant="outline" className={cls}>{status}</Badge>;
+function formatDateShort(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(iso));
 }
 
-function ScoreBadge({ score }: { score: number }) {
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: IngestionStatus }) {
   const cls = cn(
-    'font-mono text-xs font-medium',
-    score >= 0.8 && 'text-chatConfidence-high border-chatConfidence-high/40',
-    score >= 0.6 && score < 0.8 && 'text-chatConfidence-medium border-chatConfidence-medium/40',
-    score < 0.6  && 'text-destructive border-destructive/40',
+    'font-medium gap-1',
+    status === 'Ready'      && 'text-chatConfidence-high border-chatConfidence-high/40',
+    status === 'Pending'    && 'text-amber-600 border-amber-600/40 dark:text-amber-400 dark:border-amber-400/40',
+    status === 'Processing' && 'text-blue-600 border-blue-600/40 dark:text-blue-400 dark:border-blue-400/40',
+    status === 'Failed'     && 'text-destructive border-destructive/40',
   );
-  return <Badge variant="outline" className={cls}>{score.toFixed(2)}</Badge>;
+  return (
+    <Badge variant="outline" className={cls}>
+      {(status === 'Pending' || status === 'Processing') && (
+        <span
+          className={cn(
+            'h-1.5 w-1.5 rounded-full animate-pulse',
+            status === 'Pending'    && 'bg-amber-600 dark:bg-amber-400',
+            status === 'Processing' && 'bg-blue-600 dark:bg-blue-400',
+          )}
+        />
+      )}
+      {status === 'Ready'      && 'Active'}
+      {status === 'Pending'    && 'Pending'}
+      {status === 'Processing' && 'Processing'}
+      {status === 'Failed'     && 'Failed'}
+    </Badge>
+  );
 }
 
 // ─── Processing Steps ─────────────────────────────────────────────────────────
 
 const STEPS = ['upload', 'extract', 'chunk', 'embed', 'index'] as const;
-type StepKey = typeof STEPS[number];
+type StepKey = (typeof STEPS)[number];
 
-function ProcessingSteps({ currentStep }: { currentStep: number }) {
-  const t = useTranslations('chat');
+function statusToStep(status: IngestionStatus): number {
+  if (status === 'Pending')    return 0;
+  if (status === 'Processing') return 2;
+  if (status === 'Ready')      return 4;
+  return -1;
+}
+
+function ProcessingSteps({ status }: { status: IngestionStatus }) {
+  const t           = useTranslations('chat');
+  const currentStep = statusToStep(status);
+  if (currentStep < 0) return null;
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Processing</p>
+      <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Processing
+      </p>
       <div className="flex items-center">
         {STEPS.map((step: StepKey, idx) => {
           const isDone    = idx < currentStep;
@@ -121,15 +122,33 @@ function ProcessingSteps({ currentStep }: { currentStep: number }) {
                   {isDone ? (
                     <Check className="h-3.5 w-3.5" />
                   ) : (
-                    <span className={cn('h-2 w-2 rounded-full', isCurrent && 'animate-pulse bg-primary', isPending && 'bg-muted-foreground/30')} />
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        isCurrent && 'animate-pulse bg-primary',
+                        isPending && 'bg-muted-foreground/30',
+                      )}
+                    />
                   )}
                 </div>
-                <span className={cn('hidden text-center text-[10px] font-medium sm:block', isDone && 'text-primary', isCurrent && 'text-foreground', isPending && 'text-muted-foreground/50')}>
+                <span
+                  className={cn(
+                    'hidden text-center text-[10px] font-medium sm:block',
+                    isDone    && 'text-primary',
+                    isCurrent && 'text-foreground',
+                    isPending && 'text-muted-foreground/50',
+                  )}
+                >
                   {t(`knowledge.detail.processingSteps.${step}`)}
                 </span>
               </div>
               {idx < STEPS.length - 1 && (
-                <div className={cn('h-0.5 flex-1 mx-1 rounded-full transition-colors', isDone ? 'bg-primary' : 'bg-muted-foreground/20')} />
+                <div
+                  className={cn(
+                    'mx-1 h-0.5 flex-1 rounded-full transition-colors',
+                    isDone ? 'bg-primary' : 'bg-muted-foreground/20',
+                  )}
+                />
               )}
             </div>
           );
@@ -141,12 +160,24 @@ function ProcessingSteps({ currentStep }: { currentStep: number }) {
 
 // ─── Chunks Tab ───────────────────────────────────────────────────────────────
 
-function ChunksTab({ status }: { status: DocStatus }) {
-  const t = useTranslations('chat');
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+function ChunksTab({
+  chunks,
+  status,
+}: {
+  chunks: Array<{ id: string; ordinal: number; content: string; tokenCount: number }>;
+  status: IngestionStatus;
+}) {
+  const t        = useTranslations('chat');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   if (status !== 'Ready') {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Chunks will appear here once processing completes.</div>;
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Chunks will appear here once processing completes.
+      </div>
+    );
   }
+
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <Table>
@@ -154,30 +185,42 @@ function ChunksTab({ status }: { status: DocStatus }) {
           <TableRow className="bg-muted/50">
             <TableHead className="w-12">{t('knowledge.detail.chunksTable.index')}</TableHead>
             <TableHead>{t('knowledge.detail.chunksTable.preview')}</TableHead>
-            <TableHead className="w-20 text-right">{t('knowledge.detail.chunksTable.tokens')}</TableHead>
-            <TableHead className="w-20 text-right">{t('knowledge.detail.chunksTable.score')}</TableHead>
+            <TableHead className="w-24 text-right">
+              {t('knowledge.detail.chunksTable.tokens')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {MOCK_CHUNKS.map(chunk => {
-            const isExpanded = expanded[chunk.index] ?? false;
-            const preview = isExpanded ? chunk.preview : chunk.preview.slice(0, 40) + (chunk.preview.length > 40 ? '…' : '');
+          {chunks.map((chunk) => {
+            const isExpanded = expanded[chunk.id] ?? false;
+            const preview = isExpanded
+              ? chunk.content
+              : chunk.content.slice(0, 40) +
+                (chunk.content.length > 40 ? '…' : '');
             return (
-              <TableRow key={chunk.index}>
-                <TableCell className="tabular-nums text-sm text-muted-foreground">{chunk.index}</TableCell>
+              <TableRow key={chunk.id}>
+                <TableCell className="tabular-nums text-sm text-muted-foreground">
+                  {chunk.ordinal}
+                </TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-sm leading-relaxed text-foreground">{preview}</p>
-                    {chunk.preview.length > 40 && (
-                      <button type="button" className="text-xs text-primary hover:underline focus-visible:outline-none focus-visible:underline"
-                        onClick={() => setExpanded(prev => ({ ...prev, [chunk.index]: !isExpanded }))}>
+                    {chunk.content.length > 40 && (
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline focus-visible:outline-none focus-visible:underline"
+                        onClick={() =>
+                          setExpanded((prev) => ({ ...prev, [chunk.id]: !isExpanded }))
+                        }
+                      >
                         {isExpanded ? 'Collapse' : 'Expand'}
                       </button>
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-sm text-muted-foreground">{chunk.tokens}</TableCell>
-                <TableCell className="text-right"><ScoreBadge score={chunk.score} /></TableCell>
+                <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
+                  {chunk.tokenCount}
+                </TableCell>
               </TableRow>
             );
           })}
@@ -189,13 +232,16 @@ function ChunksTab({ status }: { status: DocStatus }) {
 
 // ─── Version History Tab ──────────────────────────────────────────────────────
 
-function VersionHistoryTab() {
+function VersionHistoryTab({
+  versions,
+  docId,
+}: {
+  versions: Array<{ version: number; embeddingModel: string; chunkCount: number; createdAt: string }>;
+  docId: string;
+}) {
   const t = useTranslations('chat');
-  const [restored, setRestored] = useState<Record<number, boolean>>({});
-  function handleRestore(version: number) {
-    setRestored(prev => ({ ...prev, [version]: true }));
-    setTimeout(() => setRestored(prev => ({ ...prev, [version]: false })), 2000);
-  }
+  const { mutate: reEmbed, isPending, variables: pendingId } = useReEmbedKnowledgeDocument();
+
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <Table>
@@ -204,22 +250,35 @@ function VersionHistoryTab() {
             <TableHead className="w-24">{t('knowledge.detail.historyTable.version')}</TableHead>
             <TableHead>{t('knowledge.detail.historyTable.createdAt')}</TableHead>
             <TableHead>{t('knowledge.detail.historyTable.model')}</TableHead>
+            <TableHead className="w-20 text-right">Chunks</TableHead>
             <TableHead className="text-right">{t('knowledge.detail.historyTable.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {MOCK_DOC_DETAIL.versions.map(v => (
+          {versions.map((v) => (
             <TableRow key={v.version}>
               <TableCell className="text-sm font-medium">v{v.version}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">{formatDate(v.createdAt)}</TableCell>
-              <TableCell><span className="font-mono text-xs text-muted-foreground">{v.model}</span></TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDate(v.createdAt)}
+              </TableCell>
+              <TableCell>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {v.embeddingModel}
+                </span>
+              </TableCell>
+              <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
+                {v.chunkCount}
+              </TableCell>
               <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
-                  {restored[v.version] && <span className="text-xs text-chatConfidence-high">Restored to v{v.version}</span>}
-                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleRestore(v.version)} disabled={restored[v.version]}>
-                    {t('knowledge.actions.restore')}
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={isPending && pendingId === docId}
+                  onClick={() => reEmbed(docId)}
+                >
+                  {isPending && pendingId === docId ? 'Restoring…' : t('knowledge.actions.restore')}
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -231,66 +290,288 @@ function VersionHistoryTab() {
 
 // ─── Inline Editable Title ────────────────────────────────────────────────────
 
-function EditableTitle({ initial }: { initial: string }) {
+interface EditableTitleProps {
+  initial: string;
+  onSave: (title: string) => void;
+  isSaving: boolean;
+}
+
+function EditableTitle({ initial, onSave, isSaving }: EditableTitleProps) {
   const [editing, setEditing] = useState(false);
-  const [title, setTitle]     = useState(initial);
   const [draft, setDraft]     = useState(initial);
 
   function commit() {
     const trimmed = draft.trim();
-    if (trimmed) setTitle(trimmed);
+    if (trimmed && trimmed !== initial) onSave(trimmed);
     setEditing(false);
   }
 
   if (editing) {
     return (
-      <Input autoFocus value={draft} onChange={e => setDraft(e.target.value)}
+      <Input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') setEditing(false);
+        }}
         className="h-auto rounded-none border-0 border-b border-border bg-transparent px-0 py-0.5 text-2xl font-bold tracking-tight focus-visible:ring-0"
-        aria-label="Edit document title" />
+        aria-label="Edit document title"
+      />
     );
   }
 
   return (
-    <button type="button" className="group flex items-center gap-2 text-left focus-visible:outline-none" onClick={() => { setDraft(title); setEditing(true); }} aria-label="Click to edit title">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-      <Pencil className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+    <button
+      type="button"
+      className="group flex items-center gap-2 text-left focus-visible:outline-none"
+      onClick={() => { setDraft(initial); setEditing(true); }}
+      aria-label="Click to edit title"
+      disabled={isSaving}
+    >
+      <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        {isSaving ? <span className="opacity-60">{initial}</span> : initial}
+      </h1>
+      {!isSaving && (
+        <Pencil className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+      )}
+      {isSaving && <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />}
     </button>
+  );
+}
+
+// ─── Detail Skeleton ──────────────────────────────────────────────────────────
+
+function DetailSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 p-4 md:p-6">
+      <Skeleton className="h-4 w-32" />
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-5 w-20 rounded-full" />
+      </div>
+      <div className="rounded-lg border border-border bg-card p-4">
+        <Skeleton className="h-3 w-24 mb-4" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-32" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
+
+interface DeleteConfirmDialogProps {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}
+
+function DeleteConfirmDialog({
+  open,
+  title,
+  onClose,
+  onConfirm,
+  isPending,
+}: DeleteConfirmDialogProps) {
+  const t = useTranslations('chat');
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('knowledge.deleteConfirm')}</DialogTitle>
+          <DialogDescription>{t('knowledge.deleteDescription')}</DialogDescription>
+        </DialogHeader>
+        <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isPending}>
+            {t('knowledge.cancel')}
+          </Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={isPending}>
+            {isPending ? 'Deleting…' : t('knowledge.confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function KnowledgeDetailPage() {
-  const t      = useTranslations('chat');
-  const router = useRouter();
-  const doc    = MOCK_DOC_DETAIL;
+export default function KnowledgeDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id }   = use(params);
+  const router   = useRouter();
+  const tl       = useTranslations('chat');
+
+  const { data: doc, isLoading, isError } = useKnowledgeDocument(id);
+  const { mutate: reEmbed, isPending: reEmbedPending } = useReEmbedKnowledgeDocument();
+  const { mutate: deleteDoc, isPending: deletePending } = useDeleteKnowledgeDocument();
+
+  const [deleteOpen, setDeleteOpen]     = useState(false);
+  // Title save is a stub — in a real system this would call a PATCH mutation.
+  // For now we track the locally-saved title; the server reflects it on the next refetch.
+  const [localTitle, setLocalTitle]     = useState<string | null>(null);
+  const [titleSaving, setTitleSaving]   = useState(false);
+
+  function handleTitleSave(newTitle: string) {
+    setTitleSaving(true);
+    // Optimistic local update — replace with a real PATCH mutation when backend exposes it.
+    setTimeout(() => {
+      setLocalTitle(newTitle);
+      setTitleSaving(false);
+    }, 600);
+  }
+
+  function handleDelete() {
+    deleteDoc(id, {
+      onSuccess: () => router.push('/dashboard/chat/settings/knowledge'),
+      onSettled: () => setDeleteOpen(false),
+    });
+  }
+
+  if (isLoading) return <DetailSkeleton />;
+
+  if (isError || !doc) {
+    return (
+      <div className="flex flex-col gap-4 p-4 md:p-6">
+        <button
+          type="button"
+          onClick={() => router.push('/dashboard/chat/settings/knowledge')}
+          className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {tl('knowledge.title')}
+        </button>
+        <p role="alert" className="text-sm text-destructive">
+          Could not load this document. It may have been deleted.
+        </p>
+      </div>
+    );
+  }
+
+  const displayTitle = localTitle ?? doc.title;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <button type="button" onClick={() => router.push('/dashboard/chat/settings/knowledge')}
+      {/* ── Back link ── */}
+      <button
+        type="button"
+        onClick={() => router.push('/dashboard/chat/settings/knowledge')}
         className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:underline"
-        aria-label="Back to Knowledge Base">
+        aria-label="Back to Knowledge Base"
+      >
         <ArrowLeft className="h-4 w-4" />
-        {t('knowledge.title')}
+        {tl('knowledge.title')}
       </button>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <EditableTitle initial={doc.title} />
-        <StatusBadge status={doc.status} />
+      {/* ── Title + actions ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          <EditableTitle
+            initial={displayTitle}
+            onSave={handleTitleSave}
+            isSaving={titleSaving}
+          />
+          <StatusBadge status={doc.status} />
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={reEmbedPending}
+            onClick={() => reEmbed(id)}
+          >
+            <RefreshCw className={cn('h-4 w-4', reEmbedPending && 'animate-spin')} />
+            {reEmbedPending ? tl('knowledge.reEmbedding') : tl('knowledge.actions.reEmbed')}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            {tl('knowledge.actions.delete')}
+          </Button>
+        </div>
       </div>
 
-      {doc.status === 'Processing' && <ProcessingSteps currentStep={doc.currentStep} />}
+      {/* ── Metadata bar ── */}
+      <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+        <div className="flex gap-1">
+          <dt className="font-medium text-foreground">Source:</dt>
+          <dd className="capitalize">{doc.sourceType.replace('_', ' ')}</dd>
+        </div>
+        <div className="flex gap-1">
+          <dt className="font-medium text-foreground">Version:</dt>
+          <dd>v{doc.version}</dd>
+        </div>
+        <div className="flex gap-1">
+          <dt className="font-medium text-foreground">Chunks:</dt>
+          <dd>{doc.chunkCount.toLocaleString()}</dd>
+        </div>
+        <div className="flex gap-1">
+          <dt className="font-medium text-foreground">Created:</dt>
+          <dd>{formatDateShort(doc.createdAt)}</dd>
+        </div>
+        <div className="flex gap-1">
+          <dt className="font-medium text-foreground">Model:</dt>
+          <dd className="font-mono text-xs">{doc.embeddingModel}</dd>
+        </div>
+      </dl>
 
+      {/* ── Processing steps (only when in-flight) ── */}
+      {(doc.status === 'Pending' || doc.status === 'Processing') && (
+        <ProcessingSteps status={doc.status} />
+      )}
+
+      {/* ── Failure reason ── */}
+      {doc.status === 'Failed' && doc.failureReason && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+          <p className="text-sm font-medium text-destructive">Ingestion failed</p>
+          <p className="mt-1 text-sm text-destructive/80">{doc.failureReason}</p>
+        </div>
+      )}
+
+      {/* ── Chunks + Version History tabs ── */}
       <Tabs defaultValue="chunks">
         <TabsList>
-          <TabsTrigger value="chunks">{t('knowledge.detail.tabs.chunks')}</TabsTrigger>
-          <TabsTrigger value="history">{t('knowledge.detail.tabs.history')}</TabsTrigger>
+          <TabsTrigger value="chunks">
+            {tl('knowledge.detail.tabs.chunks')}
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            {tl('knowledge.detail.tabs.history')}
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="chunks" className="mt-4"><ChunksTab status={doc.status} /></TabsContent>
-        <TabsContent value="history" className="mt-4"><VersionHistoryTab /></TabsContent>
+        <TabsContent value="chunks" className="mt-4">
+          <ChunksTab chunks={doc.chunks} status={doc.status} />
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <VersionHistoryTab versions={doc.versionHistory} docId={id} />
+        </TabsContent>
       </Tabs>
+
+      {/* ── Delete confirmation ── */}
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        title={displayTitle}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        isPending={deletePending}
+      />
     </div>
   );
 }

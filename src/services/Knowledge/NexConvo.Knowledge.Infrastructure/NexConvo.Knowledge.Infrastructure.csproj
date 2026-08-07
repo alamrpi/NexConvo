@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NexConvo.Knowledge.Domain\NexConvo.Knowledge.Domain.csproj" />
+    <ProjectReference Include="..\NexConvo.Knowledge.Application\NexConvo.Knowledge.Application.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Ai\NexConvo.BuildingBlocks.Ai.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Pgvector.EntityFrameworkCore" />
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.PostgreSql" />
+    <PackageReference Include="Microsoft.ML.Tokenizers" />
+    <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NexConvo.Knowledge.IntegrationTests" />
+    <InternalsVisibleTo Include="NexConvo.Knowledge.Infrastructure.Tests" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

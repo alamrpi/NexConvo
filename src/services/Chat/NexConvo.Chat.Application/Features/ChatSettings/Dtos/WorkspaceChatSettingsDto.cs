@@ -1,0 +1,25 @@
+using NexConvo.Chat.Domain.Enums;
+using NexConvo.Contracts.Enums;
+
+namespace NexConvo.Chat.Application.Features.ChatSettings.Dtos;
+
+public sealed record WorkspaceChatSettingsDto(
+    Guid? Id,
+    AiProviderType PrimaryProvider,
+    string PrimaryModel,
+    IReadOnlyList<AiProviderType> FallbackProviders,
+    string? SystemPromptOverride,
+    double HandoffConfidenceThreshold,
+    bool SentimentEscalationEnabled,
+    SentimentSensitivity SentimentSensitivity,
+    IReadOnlyList<string> TriggerPhrases,
+    Guid WidgetToken,
+    int MaxUnansweredMessages,
+    PiiMaskingLevel PiiMaskingLevel,
+    int? DataRetentionDays,
+    string? WidgetIconUrl,
+    string WidgetPrimaryColor,
+    string WidgetSecondaryColor,
+    string WidgetWelcomeMessage,
+    string NoAnswerMessage,
+    DateTimeOffset? UpdatedAt);

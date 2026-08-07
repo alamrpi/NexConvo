@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="MockQueryable.NSubstitute" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\services\Chat\NexConvo.Chat.Application\NexConvo.Chat.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\services\Chat\NexConvo.Chat.Domain\NexConvo.Chat.Domain.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Application\NexConvo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Ai\NexConvo.BuildingBlocks.Ai.csproj" />
+    <ProjectReference Include="..\..\..\..\src\shared\NexConvo.BuildingBlocks.Rag\NexConvo.BuildingBlocks.Rag.csproj" />
+  </ItemGroup>
+
+</Project>

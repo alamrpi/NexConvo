@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Application\NexConvo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Ai\NexConvo.BuildingBlocks.Ai.csproj" />
+    <ProjectReference Include="..\NexConvo.Knowledge.Domain\NexConvo.Knowledge.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.Abstractions" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

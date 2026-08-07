@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option csharp_namespace = "NexConvo.Knowledge.Api.Grpc";
+
+package knowledge;
+
+// Internal service-to-service retrieval seam shared by Chat and Voice
+// (CHATBOT-ARCHITECTURE.md §7.4, docs/ARCHITECTURE.md §8). Not exposed through the
+// public YARP gateway — callers authenticate with a shared internal key and propagate
+// tenant/correlation via gRPC metadata, never in the request body.
+service KnowledgeRetrieval {
+  rpc Search (SearchRequest) returns (SearchReply);
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 top_k = 2;
+  double min_score = 3;
+}
+
+message SearchReply {
+  repeated Chunk chunks = 1;
+}
+
+message Chunk {
+  string chunk_id = 1;
+  string document_id = 2;
+  string content = 3;
+  double score = 4;
+}

@@ -10,6 +10,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="MassTransit.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
@@ -17,5 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/services/Automation/NexConvo.Automation.Application/NexConvo.Automation.Application.csproj" />
     <ProjectReference Include="../../src/services/Automation/NexConvo.Automation.Domain/NexConvo.Automation.Domain.csproj" />
+    <ProjectReference Include="../../src/services/Automation/NexConvo.Automation.Infrastructure/NexConvo.Automation.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/shared/NexConvo.Contracts/NexConvo.Contracts.csproj" />
   </ItemGroup>
 </Project>

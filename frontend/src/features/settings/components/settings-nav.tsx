@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import {
   Bot,
   CreditCard,
+  Database,
   KeyRound,
   Mail,
   Shield,
@@ -13,6 +14,8 @@ import {
   SlidersHorizontal,
   User,
   Users,
+  Zap,
+  MessageCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
@@ -55,7 +58,12 @@ const groups: readonly SettingsGroup[] = [
   },
   {
     key: 'communication',
-    items: [{ key: 'email', href: '/dashboard/settings/email', icon: Mail, enabled: true }],
+    items: [
+      { key: 'email', href: '/dashboard/settings/email', icon: Mail, enabled: true },
+      { key: 'channels', href: '/dashboard/settings/channels', icon: Zap, enabled: true },
+      { key: 'chatWidget', href: '/dashboard/settings/chat-widget', icon: MessageCircle, enabled: true },
+      { key: 's3', href: '/dashboard/settings/s3', icon: Database, enabled: true },
+    ],
   },
 ];
 

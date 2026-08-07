@@ -35,6 +35,21 @@ describe('useUpdateAiSettings', () => {
     });
   });
 
+  it('maps a 422 with code "test-failed" to a typed test-failed error', async () => {
+    server.use(
+      http.post('/api/bff/settings/ai-config', () =>
+        HttpResponse.json({ code: 'test-failed' }, { status: 422 }),
+      ),
+    );
+
+    const { result } = renderHook(() => useUpdateAiSettings(), { wrapper: createWrapper() });
+
+    await expect(result.current.mutateAsync(values)).rejects.toMatchObject({
+      name: 'AiSettingsError',
+      code: 'test-failed',
+    });
+  });
+
   it('maps other failures to a generic error', async () => {
     server.use(http.post('/api/bff/settings/ai-config', () => new HttpResponse(null, { status: 500 })));
 

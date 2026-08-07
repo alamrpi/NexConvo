@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.Integrations.Domain.Entities;
 
 namespace NexConvo.Integrations.Infrastructure.Persistence.Configurations;
@@ -46,5 +47,17 @@ public class WorkspaceAiConfigConfiguration : IEntityTypeConfiguration<Workspace
         builder.HasIndex(x => new { x.TenantId, x.IsActive })
             .IsUnique()
             .HasFilter("\"IsActive\" = true");
+
+        // Connection health tracking (Task 4).
+        builder.Property(x => x.LastTestStatus)
+            .HasConversion<int>()
+            .HasDefaultValue(ConnectionStatus.Untested);
+
+        builder.Property(x => x.LastTestError)
+            .HasMaxLength(1000);
+
+        builder.Property(x => x.LastTestedAt);
+
+        builder.Property(x => x.LastTestLatencyMs);
     }
 }

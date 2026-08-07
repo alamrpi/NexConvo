@@ -14,4 +14,5 @@ public enum LeadSourceChannel
     Sms = 8,
     Email = 9,
     Voice = 10,
+    Web = 11,
 }

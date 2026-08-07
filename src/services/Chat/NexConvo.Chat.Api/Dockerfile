@@ -17,15 +17,18 @@ COPY src/services/Chat/NexConvo.Chat.Infrastructure/NexConvo.Chat.Infrastructure
 COPY src/shared/NexConvo.BuildingBlocks.Domain/NexConvo.BuildingBlocks.Domain.csproj src/shared/NexConvo.BuildingBlocks.Domain/
 COPY src/shared/NexConvo.BuildingBlocks.Application/NexConvo.BuildingBlocks.Application.csproj src/shared/NexConvo.BuildingBlocks.Application/
 COPY src/shared/NexConvo.BuildingBlocks.Infrastructure/NexConvo.BuildingBlocks.Infrastructure.csproj src/shared/NexConvo.BuildingBlocks.Infrastructure/
+COPY src/shared/NexConvo.BuildingBlocks.Ai/NexConvo.BuildingBlocks.Ai.csproj src/shared/NexConvo.BuildingBlocks.Ai/
+COPY src/shared/NexConvo.BuildingBlocks.Rag/NexConvo.BuildingBlocks.Rag.csproj src/shared/NexConvo.BuildingBlocks.Rag/
 COPY src/shared/NexConvo.Contracts/NexConvo.Contracts.csproj src/shared/NexConvo.Contracts/
 RUN dotnet restore src/services/Chat/NexConvo.Chat.Api/NexConvo.Chat.Api.csproj
 
 COPY src/ src/
 RUN dotnet publish src/services/Chat/NexConvo.Chat.Api/NexConvo.Chat.Api.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS runtime
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "NexConvo.Chat.Api.dll"]

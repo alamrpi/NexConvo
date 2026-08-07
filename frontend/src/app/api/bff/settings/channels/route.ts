@@ -1,0 +1,63 @@
+import { NextResponse } from 'next/server';
+import axios from 'axios';
+import { withBff } from '@/shared/api/server/bff';
+import { e2eChannelsGet, e2eChannelsPost } from '@/shared/api/server/e2e-fixtures';
+import { saveChannelConnectionSchema } from '@/features/settings/model/channel-connection.schema';
+import type { ChannelConnectionDto } from '@/features/settings/model/channel-connection.types';
+
+/**
+ * Channel connections BFF (frontend standards S3/S4/S8): tenant-implicit (the gateway derives the
+ * tenant from the JWT), routed through the resilient `withBff` client (silent refresh + correlation).
+ * Access tokens are never returned in full — the backend exposes only `maskedAccessToken` (S3).
+ */
+export const GET = withBff(async (_req, { api }) => {
+  const { data } = await api.get<ChannelConnectionDto[]>('/api/v1/channel-connections');
+  if (!Array.isArray(data)) {
+    return NextResponse.json([]);
+  }
+  const normalized = data.map((conn) => ({
+    ...conn,
+    channel: typeof conn?.channel === 'string' ? (conn.channel.toLowerCase() as any) : conn?.channel,
+  }));
+  return NextResponse.json(normalized);
+}, e2eChannelsGet);
+
+export const POST = withBff(async (req, { api }) => {
+  // Same zod schema as the form — the BFF is the server-side validation boundary (S10).
+  const parsed = saveChannelConnectionSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ title: 'Invalid input' }, { status: 422 });
+  }
+
+  try {
+    const { displayName, accessToken, ...rest } = parsed.data;
+    const payload = {
+      ...rest,
+      accountName: displayName,
+      accessToken: accessToken ?? '',
+    };
+    const { data } = await api.post<ChannelConnectionDto>('/api/v1/channel-connections', payload);
+    const normalized = {
+      ...data,
+      channel: typeof data?.channel === 'string' ? (data.channel.toLowerCase() as any) : data?.channel,
+    };
+    return NextResponse.json(normalized);
+  } catch (error) {
+    // Surface the backend's optimistic-concurrency conflict (S17) as a stable code.
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
+      return NextResponse.json({ code: 'conflict' }, { status: 409 });
+    }
+    if (axios.isAxiosError(error) && error.response?.status === 422) {
+      // Two kinds of 422 come back from the gateway: the server re-tested the connection on
+      // save and it failed (`connection-test-failed`), or FluentValidation rejected the body.
+      // Only the former should surface as the "credentials expired, test again" message —
+      // discriminate on the backend `code` so a validation failure passes its payload through.
+      const data = error.response.data as { code?: string } | undefined;
+      if (data?.code === 'connection-test-failed') {
+        return NextResponse.json({ code: 'test-failed' }, { status: 422 });
+      }
+      return NextResponse.json(error.response.data ?? { title: 'Invalid input' }, { status: 422 });
+    }
+    throw error;
+  }
+}, e2eChannelsPost);

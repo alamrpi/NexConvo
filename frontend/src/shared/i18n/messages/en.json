@@ -489,6 +489,9 @@
         "restore": "Restore"
       },
       "reEmbedding": "Re-embedding…",
+      "s3Unhealthy": "S3 storage connection isn't healthy — knowledge uploads are paused. Test & fix it in Settings.",
+      "s3NotConfigured": "S3 storage isn't configured yet — knowledge uploads are paused until it's set up.",
+      "s3UnhealthyCta": "Go to S3 settings",
       "deleteConfirm": "Delete this document?",
       "deleteDescription": "This will permanently remove the document and all its chunks.",
       "cancel": "Cancel",
@@ -503,7 +506,7 @@
         },
         "upload": {
           "hint": "Drag & drop or click to upload",
-          "types": "PDF, DOCX, TXT, MD up to 50 MB",
+          "types": "PDF, DOCX, TXT, CSV, MD up to 50 MB",
           "uploading": "Uploading…",
           "progress": "{percent}%"
         },
@@ -530,7 +533,12 @@
         "status": {
           "Processing": "Processing",
           "Ready": "Ready",
-          "Failed": "Failed"
+          "Failed": "Failed",
+          "active": "Active",
+          "pending": "Pending",
+          "processing": "Processing",
+          "failed": "Failed",
+          "inactive": "Inactive"
         },
         "processingSteps": {
           "upload": "Upload",
@@ -551,45 +559,6 @@
           "model": "Model",
           "actions": "Actions"
         }
-      }
-    },
-    "channels": {
-      "title": "Channel Connections",
-      "subtitle": "Connect your messaging channels to start receiving conversations.",
-      "status": {
-        "connected": "Connected",
-        "notConnected": "Not connected",
-        "error": "Connection error"
-      },
-      "connect": "Connect",
-      "configure": "Configure",
-      "disconnect": "Disconnect",
-      "drawer": {
-        "steps": {
-          "credentials": "Credentials",
-          "verify": "Verify",
-          "webhook": "Webhook",
-          "test": "Test",
-          "done": "Done"
-        },
-        "verifyCredentials": "Verify Credentials",
-        "verifying": "Verifying…",
-        "copyWebhook": "Copy URL",
-        "copied": "Copied!",
-        "sendTest": "Send Test Message",
-        "sending": "Sending…",
-        "testSuccess": "Test message sent!",
-        "close": "Close",
-        "success": "Connected successfully!"
-      },
-      "widget": {
-        "title": "Widget Appearance",
-        "color": "Color",
-        "welcomeMessage": "Welcome message",
-        "position": "Position",
-        "positionBottomRight": "Bottom right",
-        "positionBottomLeft": "Bottom left",
-        "preview": "Preview"
       }
     },
     "aiSettings": {
@@ -624,7 +593,15 @@
         "manageKeys": "Manage API keys in Workspace Settings",
         "save": "Save",
         "saving": "Saving…",
-        "saved": "Saved"
+        "saved": "Saved",
+        "providerLabel": "প্রোভাইডার",
+        "apiKeyLabel": "এপিআই কী",
+        "testConnection": "কানেকশন পরীক্ষা",
+        "testing": "পরীক্ষা হচ্ছে…",
+        "testPassed": "✓ কানেকশন সফল",
+        "testFailed": "✗ কানেকশন ব্যর্থ",
+        "moveUp": "উপরে নিন",
+        "moveDown": "নিচে নিন"
       },
       "systemPrompt": {
         "title": "System Prompt",
@@ -642,7 +619,8 @@
         "testLink": "Test in Playground",
         "save": "Save",
         "saving": "Saving…",
-        "saved": "Saved"
+        "saved": "Saved",
+        "label": "সিস্টেম প্রম্পট"
       },
       "handoff": {
         "title": "Human Handoff",
@@ -664,7 +642,11 @@
         "maxUnansweredDescription": "Escalate after this many consecutive low-confidence replies",
         "save": "Save",
         "saving": "Saving…",
-        "saved": "Saved"
+        "saved": "Saved",
+        "confidenceLabel": "এআই আস্থা এর নিচে হলে এস্কালেট করুন",
+        "sentimentLabel": "নেতিবাচক অনুভূতিতে এস্কালেট",
+        "sentimentSensitivity": "সংবেদনশীলতা",
+        "maxUnansweredLabel": "এস্কালেশনের আগে সর্বোচ্চ অনুত্তরিত বার্তা"
       },
       "privacy": {
         "title": "Privacy & Data",
@@ -683,7 +665,19 @@
         "save": "Save",
         "saving": "Saving…",
         "saved": "Saved"
-      }
+      },
+      "pii": {
+        "label": "পিআইআই মাস্কিং স্তর",
+        "none": "কিছু না — এলএলএম-এ কাঁচা টেক্সট পাঠান",
+        "pseudonymise": "ছদ্মনামকরণ — নাম/আইডি টোকেন দিয়ে প্রতিস্থাপন",
+        "redact": "রিড্যাক্ট — পিআইআই সম্পূর্ণ সরান"
+      },
+      "retention": {
+        "label": "কথোপকথনের ডেটা সংরক্ষণের সময়কাল (দিন)"
+      },
+      "save": "সংরক্ষণ",
+      "saving": "সংরক্ষণ হচ্ছে…",
+      "saved": "সেটিংস সংরক্ষিত।"
     },
     "tools": {
       "title": "MCP Tools",
@@ -730,7 +724,10 @@
     "nav": {
       "label": "Settings sections",
       "email": "Email",
+      "channels": "Channels",
+      "chatWidget": "Chat Widget",
       "ai": "AI Config",
+      "s3": "S3 Storage",
       "general": "General",
       "members": "Members",
       "roles": "Roles",
@@ -979,7 +976,10 @@
       "noPermission": "You don’t have permission to manage email settings.",
       "loadError": "Couldn’t load email settings. Please try again.",
       "providerLabel": "Provider",
-      "provider": { "Smtp": "SMTP", "Resend": "Resend" },
+      "provider": {
+        "Smtp": "SMTP",
+        "Resend": "Resend"
+      },
       "fromNameLabel": "From name",
       "fromAddressLabel": "From email",
       "smtpHostLabel": "SMTP host",
@@ -1015,6 +1015,141 @@
         "smtpPortRange": "Port must be between 1 and 65535."
       }
     },
+    "channels": {
+      "title": "Channel Connections",
+      "description": "Connect messaging channels to receive conversations in your workspace.",
+      "noPermission": "You don’t have permission to manage channel connections.",
+      "loadError": "Couldn’t load channel connections. Please try again.",
+      "connect": "Connect",
+      "configure": "Configure",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "disconnectConfirmTitle": "Disconnect {name}?",
+      "disconnectConfirmDescription": "This will stop receiving new conversations from this channel.",
+      "cancel": "Cancel",
+      "lastTested": "Last tested {time}",
+      "lastTestedNever": "Never tested",
+      "status": {
+        "connected": "Connected",
+        "disconnected": "Not connected",
+        "error": "Connection error"
+      },
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "telegram": "Telegram",
+        "web": "Web Widget"
+      },
+      "descriptions": {
+        "whatsapp": "Connect via WhatsApp Business API",
+        "facebook": "Connect your Facebook Page",
+        "instagram": "Connect your Instagram Business account",
+        "telegram": "Connect your Telegram bot",
+        "web": "Embed a chat widget on your website"
+      },
+      "drawer": {
+        "connectTitle": "Connect {name}",
+        "configureTitle": "Configure {name}",
+        "close": "Close",
+        "next": "Next",
+        "back": "Back",
+        "finish": "Finish",
+        "stepOf": "Step {current} of {total}",
+        "steps": {
+          "instructions": "Instructions",
+          "credentials": "Credentials",
+          "verify": "Verify",
+          "webhook": "Webhook",
+          "done": "Done"
+        },
+        "instructions": {
+          "whatsapp": "To connect WhatsApp, you need a Meta Business Account with WhatsApp Business API access. Set up a WhatsApp Business App in the Meta Developer portal and obtain your Phone Number ID and a permanent access token.",
+          "facebook": "Connect your Facebook Page to receive Messenger conversations. You need a Facebook App with Messenger permissions and a Page Access Token.",
+          "instagram": "Connect your Instagram Business Account to receive DMs. Your account must be a Business or Creator account linked to a Facebook Page.",
+          "telegram": "Create a Telegram bot using @BotFather. Send /newbot, choose a name and username, and copy the bot token.",
+          "web": "The web widget requires no external setup. After connecting, you’ll receive a code snippet to embed on your website."
+        },
+        "fields": {
+          "displayName": "Display Name",
+          "displayNamePlaceholder": "e.g. Support WhatsApp",
+          "phoneNumberId": "Phone Number ID",
+          "phoneNumberIdPlaceholder": "e.g. 123456789",
+          "pageId": "Page ID",
+          "pageIdPlaceholder": "e.g. 987654321",
+          "botUsername": "Bot Username",
+          "botUsernamePlaceholder": "e.g. mycompanybot",
+          "accessToken": "Access Token",
+          "accessTokenPlaceholder": "Enter access token",
+          "appSecret": "App Secret",
+          "appSecretPlaceholder": "Enter app secret",
+          "botToken": "Bot Token",
+          "botTokenPlaceholder": "Enter bot token (e.g. 123456:ABC-DEF)"
+        },
+        "verify": {
+          "title": "Verify Credentials",
+          "description": "Click below to verify your credentials with {name}.",
+          "button": "Verify Credentials",
+          "verifying": "Verifying…",
+          "success": "Credentials verified! Account: {accountName}",
+          "failed": "Verification failed"
+        },
+        "webhook": {
+          "title": "Configure Webhook",
+          "description": "Add this webhook URL in your {name} app settings.",
+          "copy": "Copy URL",
+          "copied": "Copied!"
+        },
+        "done": {
+          "title": "Connected!",
+          "description": "{name} is now active and ready to receive conversations."
+        }
+      },
+      "widget": {
+        "title": "Widget Appearance",
+        "noPermission": "You don’t have permission to manage these settings.",
+        "loadError": "Couldn’t load widget settings. Please try again.",
+        "saveError": "Couldn’t save widget settings. Please try again.",
+        "conflict": "Someone else changed these settings. Reload and try again.",
+        "color": "Primary color",
+        "secondaryColor": "Secondary color",
+        "iconUrl": "Widget icon URL (optional)",
+        "iconUrlPlaceholder": "https://example.com/icon.png",
+        "welcomeMessage": "Welcome message",
+        "welcomeMessagePlaceholder": "Hi! How can I help you?",
+        "noAnswerLabel": "Message when no answer is found",
+        "noAnswerPlaceholder": "Sorry, I don't have information about that…",
+        "position": "Position",
+        "positionBottomRight": "Bottom right",
+        "positionBottomLeft": "Bottom left",
+        "preview": "Preview",
+        "save": "Save widget settings",
+        "saving": "Saving…",
+        "saved": "Widget settings saved.",
+        "embedTitle": "How to embed",
+        "embedDescription": "Copy this script tag into your website’s HTML, just before the closing </body> tag.",
+        "errors": {
+          "invalidUrl": "Enter a valid https URL.",
+          "invalidColor": "Enter a hex color, e.g. #0F172A.",
+          "welcomeMessageRequired": "A welcome message is required.",
+          "welcomeMessageTooLong": "Welcome message must be 500 characters or fewer.",
+          "noAnswerRequired": "A no-answer message is required.",
+          "noAnswerTooLong": "No-answer message must be 500 characters or fewer."
+        }
+      },
+      "errors": {
+        "displayNameRequired": "Display name is required.",
+        "displayNameTooLong": "Display name must be 100 characters or fewer.",
+        "accessTokenRequired": "Access token is required.",
+        "externalAccountIdRequired": "Account ID is required.",
+        "appSecretRequired": "App secret is required.",
+        "deleteError": "Couldn’t disconnect the channel. Please try again.",
+        "conflict": "Couldn’t save — please reload and try again.",
+        "credentialsExpired": "These credentials no longer work. Test the connection again before saving.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
     "ai": {
       "title": "AI Models",
       "description": "Configure the AI providers and API keys used across your workspace.",
@@ -1039,6 +1174,13 @@
       "saved": "Settings saved.",
       "saveError": "Couldn’t save settings. Please try again.",
       "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "credentialsExpired": "These credentials no longer work. Test the connection again before saving.",
+      "healthUntested": "Untested",
+      "healthHealthy": "Healthy",
+      "healthDegraded": "Degraded",
+      "healthFailed": "Failed",
+      "lastTested": "Last tested {time}",
+      "lastTestedNever": "Never tested",
       "status": {
         "active": "Active",
         "inactive": "Inactive"
@@ -1047,6 +1189,54 @@
         "defaultModelRequired": "Default model is required.",
         "baseUrlInvalid": "Enter a valid URL.",
         "parametersInvalid": "Parameters must be a valid JSON object."
+      }
+    },
+    "s3": {
+      "title": "S3 Storage",
+      "description": "Configure S3-compatible object storage for knowledge base documents and file uploads.",
+      "noPermission": "You don't have permission to manage storage settings.",
+      "loadError": "Couldn't load storage settings. Please try again.",
+      "bucketNameLabel": "Bucket Name",
+      "bucketNamePlaceholder": "my-nexconvo-bucket",
+      "regionLabel": "Region",
+      "regionPlaceholder": "us-east-1",
+      "regionHint": "AWS region or provider-specific region code.",
+      "accessKeyIdLabel": "Access Key ID",
+      "accessKeyIdPlaceholder": "Enter access key ID",
+      "secretAccessKeyLabel": "Secret Access Key",
+      "secretAccessKeyPlaceholder": "Enter secret access key",
+      "secretConfigured": "Credentials are configured — leave blank to keep.",
+      "secretPlaceholder": "Leave blank to keep current value",
+      "customEndpointLabel": "Custom Endpoint (Optional)",
+      "customEndpointPlaceholder": "https://your-account.r2.cloudflarestorage.com",
+      "customEndpointHint": "For S3-compatible providers: Cloudflare R2, MinIO, DigitalOcean Spaces. Leave empty for AWS S3.",
+      "pathPrefixLabel": "Path Prefix (Optional)",
+      "pathPrefixPlaceholder": "knowledge/",
+      "pathPrefixHint": "Prefix applied to all stored objects, e.g. \"knowledge/\". Must end with a slash.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved.",
+      "saveError": "Couldn't save settings. Please try again.",
+      "saveConflict": "Someone else changed these settings. Reload and try again.",
+      "credentialsExpired": "These credentials no longer work. Test the connection again before saving.",
+      "testConnection": "Test Connection",
+      "testingConnection": "Testing…",
+      "testPassed": "Connection successful.",
+      "testFailed": "Connection failed.",
+      "testRequired": "Test the connection before saving new or changed credentials.",
+      "healthUntested": "Untested",
+      "healthHealthy": "Healthy",
+      "healthDegraded": "Degraded",
+      "healthFailed": "Failed",
+      "lastTested": "Last tested {time}",
+      "lastTestedNever": "Never tested",
+      "errors": {
+        "bucketNameRequired": "Bucket name is required.",
+        "bucketNameTooLong": "Bucket name must be 63 characters or fewer.",
+        "bucketNameInvalid": "Bucket name must be 3–63 lowercase letters, numbers, or hyphens, and cannot start or end with a hyphen.",
+        "regionRequired": "Region is required.",
+        "customEndpointInvalid": "Custom endpoint must be a valid http:// or https:// URL.",
+        "pathPrefixInvalid": "Path prefix must not start with a slash and must end with a slash, e.g. \"knowledge/\"."
       }
     }
   }

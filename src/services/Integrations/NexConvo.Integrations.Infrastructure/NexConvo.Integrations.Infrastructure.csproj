@@ -4,6 +4,7 @@
     <ProjectReference Include="..\NexConvo.Integrations.Domain\NexConvo.Integrations.Domain.csproj" />
     <ProjectReference Include="..\NexConvo.Integrations.Application\NexConvo.Integrations.Application.csproj" />
     <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Infrastructure\NexConvo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\NexConvo.BuildingBlocks.Ai\NexConvo.BuildingBlocks.Ai.csproj" />
     <ProjectReference Include="..\..\..\shared\NexConvo.Contracts\NexConvo.Contracts.csproj" />
   </ItemGroup>
 
@@ -12,6 +13,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NexConvo.Integrations.Infrastructure.Tests" />
   </ItemGroup>
 
   <PropertyGroup>

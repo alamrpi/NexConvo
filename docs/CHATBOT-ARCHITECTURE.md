@@ -264,6 +264,11 @@ While in `PendingHuman`/`HumanHandling` the AI is silent; agent messages flow in
 
 ## 6. Inbound Ingestion
 
+> **Implementing a new channel?** See the `.claude/skills/nexconvo-add-channel/SKILL.md` skill
+> for the concrete, file-and-line-level steps (webhook receiver → `MessageReceivedIntegrationEvent`
+> → outbound sender adapter) as of the `add-chat-inbox` change — this section describes the
+> original design intent; the skill reflects what is actually built and what remains a gap.
+
 ### Endpoint placement — YARP routes, **Chat.Api verifies**
 
 Provider webhooks need provider-specific signature verification and the `hub.challenge` handshake, and that verification touches a **per-tenant secret** (`EncryptedAppSecret`). Per the "smart endpoints, dumb pipes" principle (ARCHITECTURE.md §3.5), YARP only **routes** `/api/v1/webhooks/**` to Chat and applies rate limiting; **all verification logic lives in Chat.Api** so the secret never leaves the bounded context.

@@ -23,9 +23,10 @@ RUN dotnet restore src/services/Voice/NexConvo.Voice.Api/NexConvo.Voice.Api.cspr
 COPY src/ src/
 RUN dotnet publish src/services/Voice/NexConvo.Voice.Api/NexConvo.Voice.Api.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/sdk:9.0.313 AS runtime
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "NexConvo.Voice.Api.dll"]

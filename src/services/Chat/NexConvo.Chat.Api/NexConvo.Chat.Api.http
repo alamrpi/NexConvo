@@ -1,6 +1,186 @@
-@NexConvo.Chat.Api_HostAddress = http://localhost:5132
+### ============================================================
+### NexConvo Chat API — Manual Test Requests
+### ============================================================
+### How to use (VS Code REST Client / JetBrains .http):
+###   1. Run STEP 1–3 in order (signup → verify-email → login)
+###   2. Copy the accessToken from the login response
+###   3. Paste it into the @token variable below
+###   4. Run the Chat API requests
+###
+### Services needed:
+###   Identity  → http://localhost:5047
+###   Chat      → http://localhost:5132
+### ============================================================
 
-GET {{NexConvo.Chat.Api_HostAddress}}/weatherforecast/
+@identityBase = http://localhost:5047
+@chatBase      = http://localhost:5132
+
+### ── Paste your access token here after login ─────────────────
+@token = PASTE_ACCESS_TOKEN_HERE
+
+
+### ============================================================
+### STEP 1 — Sign up (run once; skip if account already exists)
+### ============================================================
+
+POST {{identityBase}}/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "tenantName":  "Acme Corp",
+  "tenantSlug":  "acme",
+  "email":       "admin@acme.com",
+  "password":    "Test@1234!",
+  "fullName":    "Acme Admin"
+}
+
+###
+
+### ============================================================
+### STEP 2 — Verify email (copy token from Mailpit: http://localhost:8025)
+### ============================================================
+
+POST {{identityBase}}/api/v1/auth/verify-email
+Content-Type: application/json
+
+{
+  "token": "PASTE_EMAIL_VERIFICATION_TOKEN_HERE"
+}
+
+###
+
+### ============================================================
+### STEP 3 — Login → copy accessToken into @token above
+### ============================================================
+
+POST {{identityBase}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "tenantSlug": "acme",
+  "email":      "admin@acme.com",
+  "password":   "Test@1234!"
+}
+
+###
+
+
+### ============================================================
+### CHANNEL CONNECTIONS
+### ============================================================
+
+### List all connections (empty on a fresh DB)
+GET {{chatBase}}/api/v1/channel-connections
+Authorization: Bearer {{token}}
 Accept: application/json
 
+###
+
+### Connect a Web Widget (channel = 0, no external account needed)
+POST {{chatBase}}/api/v1/channel-connections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channel":           0,
+  "externalAccountId": null,
+  "accountName":       "Website Widget",
+  "accessToken":       "web-widget"
+}
+
+###
+
+### Connect a Telegram bot (channel = 4)
+POST {{chatBase}}/api/v1/channel-connections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channel":           4,
+  "externalAccountId": "@mycompanybot",
+  "accountName":       "Company Telegram Bot",
+  "accessToken":       "123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
+}
+
+###
+
+### Test a connection (validates token with the platform)
+POST {{chatBase}}/api/v1/channel-connections/test
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channel":     4,
+  "accessToken": "123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
+}
+
+###
+
+### Delete a connection (replace GUID with real ID from the list response)
+DELETE {{chatBase}}/api/v1/channel-connections/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+###
+
+
+### ============================================================
+### CHAT SETTINGS
+### ============================================================
+
+### Get current settings (returns defaults if never saved)
+GET {{chatBase}}/api/v1/chat-settings
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### Save chat settings
+PUT {{chatBase}}/api/v1/chat-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "botName":                    "NexConvo Assistant",
+  "welcomeMessage":             "Hi! How can I help you today?",
+  "handoffConfidenceThreshold": 0.65,
+  "escalationTriggerPhrases":   ["speak to a manager", "human agent", "real person"],
+  "isEnabled":                  true
+}
+
+###
+
+
+### ============================================================
+### KNOWLEDGE BASE
+### ============================================================
+
+### List knowledge documents (paginated)
+GET {{chatBase}}/api/v1/knowledge-documents?page=1&pageSize=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### Get a single document (replace GUID with real ID)
+GET {{chatBase}}/api/v1/knowledge-documents/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### Upload a document — use curl (multipart not supported in .http):
+### curl -X POST http://localhost:5132/api/v1/knowledge-documents \
+###   -H "Authorization: Bearer <token>" \
+###   -F "file=@C:/path/to/document.pdf" \
+###   -F "title=Product FAQ" \
+###   -F "sourceType=file"
+
+
+### ============================================================
+### HEALTH CHECKS
+### ============================================================
+
+GET {{chatBase}}/health/live
+###
+GET {{chatBase}}/health/ready
 ###

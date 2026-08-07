@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { usePlaygroundModels } from '@/features/playground/api/use-playground-models';
+import type { ProviderModelDto } from '@/features/playground/model/playground.types';
 import {
   Shield,
   ChevronDown,
@@ -40,9 +43,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
+import { Combobox } from '@/shared/ui/combobox';
 import { cn } from '@/shared/lib/cn';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface DebugChunk {
   rank: number;
@@ -343,52 +346,6 @@ const SCENARIOS: Record<string, PlaygroundMessage[]> = {
   ],
 };
 
-// ─── Mock AI response generator ───────────────────────────────────────────────
-
-let _responseCounter = 0;
-function nextId(): string {
-  _responseCounter += 1;
-  return `mock-${_responseCounter}`;
-}
-
-function generateMockAiResponse(userMessage: string): { body: string; debugData: DebugData } {
-  const isBengali = /[ঀ-৿]/.test(userMessage);
-  const confidence = parseFloat((0.55 + (_responseCounter * 0.07 % 0.4)).toFixed(2));
-  const band: 'High' | 'Medium' | 'Low' =
-    confidence >= 0.8 ? 'High' : confidence >= 0.6 ? 'Medium' : 'Low';
-  const embed = 30 + (_responseCounter * 11 % 30);
-  const retrieval = 60 + (_responseCounter * 17 % 60);
-  const llm = 800 + (_responseCounter * 113 % 800);
-  return {
-    body: isBengali
-      ? 'ধন্যবাদ আপনার প্রশ্নের জন্য। আমি আপনার সমস্যা সমাধান করতে পারব। আপনার অর্ডার নম্বরটি দিন এবং আমি এখনই দেখছি।'
-      : "Thank you for reaching out! I'm here to help. Could you provide more details about your inquiry so I can assist you better?",
-    debugData: {
-      chunks: [
-        {
-          rank: 1,
-          document: 'Product Catalog 2026',
-          preview: 'Our products are available in…',
-          fullText:
-            'Our products are available in a wide range of categories including clothing, accessories, and home goods.',
-          score: parseFloat((0.65 + (_responseCounter * 0.05 % 0.3)).toFixed(2)),
-        },
-      ],
-      confidence,
-      confidenceBand: band,
-      promptTokens: 300 + (_responseCounter * 37 % 200),
-      completionTokens: 40 + (_responseCounter * 13 % 60),
-      totalTokens: 340 + (_responseCounter * 50 % 260),
-      promptPreview: `[System]: You are a customer service AI...\n[User]: ${userMessage.slice(0, 80)}`,
-      rawResponse: JSON.stringify({
-        id: `chatcmpl-${nextId()}`,
-        choices: [{ message: { content: 'AI response here' } }],
-      }),
-      piiDetected: [],
-      timing: { embed, retrieval, llm, total: embed + retrieval + llm },
-    },
-  };
-}
 
 // ─── Confidence helpers ───────────────────────────────────────────────────────
 
@@ -921,35 +878,50 @@ function ComparePaneConfig({
   setProvider,
   model,
   setModel,
+  providers,
 }: {
   paneLabel: string;
   provider: string;
   setProvider: (v: string) => void;
   model: string;
   setModel: (v: string) => void;
+  providers: ProviderModelDto[];
 }) {
+  const currentProvider = providers.find((p) => p.providerId === provider);
+
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border bg-muted/30 px-3 py-2">
       <span className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">
         {paneLabel}
       </span>
-      <Select value={provider} onValueChange={setProvider}>
+      <Select 
+        value={provider} 
+        onValueChange={(v) => {
+          setProvider(v);
+          const p = providers.find(x => x.providerId === v);
+          if (p && p.models && p.models.length > 0) setModel(p.models[0]?.modelId ?? '');
+        }}
+        disabled={providers.length <= 1}
+      >
         <SelectTrigger className="h-7 w-32 text-xs" aria-label={`${paneLabel} provider`}>
-          <SelectValue />
+          <SelectValue placeholder="Provider" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="openrouter">OpenRouter</SelectItem>
-          <SelectItem value="anthropic">Anthropic</SelectItem>
-          <SelectItem value="openai">OpenAI</SelectItem>
-          <SelectItem value="gemini">Google Gemini</SelectItem>
+          {providers.map((p) => (
+            <SelectItem key={p.providerId} value={p.providerId}>{p.providerName}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
-      <Input
-        className="h-7 w-40 text-xs"
-        placeholder="Model"
+      <Combobox
+        className="w-48"
         value={model}
-        onChange={(e) => setModel(e.target.value)}
-        aria-label={`${paneLabel} model name`}
+        onValueChange={setModel}
+        options={(currentProvider?.models ?? []).map((m) => ({ value: m.modelId, label: m.modelName }))}
+        placeholder="Model"
+        searchPlaceholder="Search models…"
+        emptyText="No matching models"
+        triggerAriaLabel={`${paneLabel} model`}
+        disabled={!currentProvider || currentProvider.models.length === 0}
       />
     </div>
   );
@@ -957,41 +929,15 @@ function ComparePaneConfig({
 
 // ─── Empty / welcome state ────────────────────────────────────────────────────
 
-function EmptyState({ onLoadScenario }: { onLoadScenario: (key: string) => void }) {
+function EmptyState({ onLoadScenario: _onLoadScenario }: { onLoadScenario: (key: string) => void }) {
   return (
     <div className="flex flex-col items-center gap-6 px-6 py-12">
       <div className="flex flex-col items-center gap-2 text-center">
         <FlaskConical className="h-10 w-10 text-muted-foreground/30" aria-hidden />
         <h2 className="text-sm font-semibold text-foreground">Test Playground</h2>
         <p className="max-w-xs text-xs text-muted-foreground">
-          Send a message to test the AI chatbot live, or load a scenario below.
+          Send a message to test the AI chatbot live.
         </p>
-      </div>
-
-      <div className="w-full max-w-sm space-y-2">
-        <p className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">
-          Quick Scenarios
-        </p>
-        <div className="grid grid-cols-1 gap-1.5">
-          {SCENARIO_META.map(({ key, label, description, icon: Icon, tag, tagColor }) => (
-            <button
-              key={key}
-              onClick={() => onLoadScenario(key)}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">{label}</span>
-                  <span className={cn('rounded border px-1.5 py-0 text-[0.5rem] font-semibold', tagColor)}>
-                    {tag}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-              </div>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -1041,6 +987,55 @@ function ChatThread({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function PlaygroundPage() {
+  const { data: providers = [] } = usePlaygroundModels();
+  const [connection, setConnection] = useState<HubConnection | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Setup SignalR Connection
+    let hubConnection: HubConnection | undefined;
+    let cancelled = false;
+
+    fetch('/api/bff/auth/ws-ticket')
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data.ticket || !data.url) {
+          throw new Error('No ticket or url returned from ws-ticket endpoint');
+        }
+
+        hubConnection = new HubConnectionBuilder()
+          .withUrl(`${data.url}?access_token=${data.ticket}`)
+          .withAutomaticReconnect()
+          .configureLogging(LogLevel.Information)
+          .build();
+
+        hubConnection.onclose((err) => {
+          setConnection(null);
+          setConnectionError(err ? 'Connection lost. Please refresh.' : null);
+        });
+        hubConnection.onreconnected(() => setConnectionError(null));
+        hubConnection.onreconnecting(() => setConnectionError('Reconnecting…'));
+
+        return hubConnection.start().then(() => {
+          if (cancelled) {
+            hubConnection?.stop();
+            return;
+          }
+          setConnection(hubConnection ?? null);
+          setConnectionError(null);
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to establish playground connection:', err);
+        if (!cancelled) setConnectionError('Could not connect to the AI service. Please refresh.');
+      });
+
+    return () => {
+      cancelled = true;
+      hubConnection?.stop();
+    };
+  }, []);
   const [messages, setMessages] = useState<PlaygroundMessage[]>([]);
   const [compareLeftMessages, setCompareLeftMessages] = useState<PlaygroundMessage[]>([]);
   const [compareRightMessages, setCompareRightMessages] = useState<PlaygroundMessage[]>([]);
@@ -1061,11 +1056,22 @@ export default function PlaygroundPage() {
   const [knowledgeVersion, setKnowledgeVersion] = useState('current');
   const [mcpDryRun, setMcpDryRun] = useState(false);
 
-  // Compare configs
-  const [leftProvider, setLeftProvider] = useState('openrouter');
-  const [leftModel, setLeftModel] = useState('anthropic/claude-3-haiku');
-  const [rightProvider, setRightProvider] = useState('openai');
-  const [rightModel, setRightModel] = useState('gpt-4o-mini');
+  // Compare configs — populated once the tenant's real provider/model list loads (see effect below);
+  // empty until then so we never send a hardcoded provider the tenant hasn't actually configured.
+  const [leftProvider, setLeftProvider] = useState('');
+  const [leftModel, setLeftModel] = useState('');
+  const [rightProvider, setRightProvider] = useState('');
+  const [rightModel, setRightModel] = useState('');
+
+  useEffect(() => {
+    if (providers.length === 0) return;
+    const first = providers[0];
+    if (!first) return;
+    setLeftProvider((prev) => (prev && providers.some((p) => p.providerId === prev) ? prev : first.providerId));
+    setLeftModel((prev) => (prev && first.models.some((m) => m.modelId === prev) ? prev : (first.models[0]?.modelId ?? '')));
+    setRightProvider((prev) => (prev && providers.some((p) => p.providerId === prev) ? prev : first.providerId));
+    setRightModel((prev) => (prev && first.models.some((m) => m.modelId === prev) ? prev : (first.models[0]?.modelId ?? '')));
+  }, [providers]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const leftScrollRef = useRef<HTMLDivElement>(null);
@@ -1125,50 +1131,6 @@ export default function PlaygroundPage() {
     }
   }, []);
 
-  // Character-by-character streaming simulation
-  function streamText(
-    msgId: string,
-    fullText: string,
-    debugData: DebugData,
-    setter: React.Dispatch<React.SetStateAction<PlaygroundMessage[]>>,
-  ) {
-    const chars = fullText.split('');
-    const charsPerTick = 3; // characters per 30ms tick → ~100 chars/sec
-    const tickMs = 30;
-
-    setIsStreaming(true);
-
-    chars.forEach((_, i) => {
-      if (i % charsPerTick !== 0) return;
-      const partial = fullText.slice(0, i + charsPerTick);
-      const t = setTimeout(() => {
-        setter((prev) =>
-          prev.map((m) =>
-            m.id === msgId
-              ? { ...m, streamedBody: partial }
-              : m,
-          ),
-        );
-      }, i * (tickMs / charsPerTick));
-      streamTimersRef.current.push(t);
-    });
-
-    // Finalize
-    const totalMs = chars.length * (tickMs / charsPerTick) + 50;
-    const finalTimer = setTimeout(() => {
-      setter((prev) =>
-        prev.map((m) =>
-          m.id === msgId
-            ? { ...m, body: fullText, streamedBody: undefined, isStreaming: false, debugData }
-            : m,
-        ),
-      );
-      setCurrentDebugData(debugData);
-      setSelectedDebugId(msgId);
-      setIsStreaming(false);
-    }, totalMs);
-    streamTimersRef.current.push(finalTimer);
-  }
 
   const sendMessage = useCallback(() => {
     const body = inputText.trim();
@@ -1176,13 +1138,13 @@ export default function PlaygroundPage() {
     setInputText('');
 
     const userMsg: PlaygroundMessage = {
-      id: nextId(),
+      id: crypto.randomUUID(),
       role: 'user',
       body,
       sentAt: new Date().toISOString(),
     };
 
-    const aiId = nextId();
+    const aiId = crypto.randomUUID();
     const aiStreamMsg: PlaygroundMessage = {
       id: aiId,
       role: 'ai',
@@ -1193,60 +1155,109 @@ export default function PlaygroundPage() {
 
     if (compareMode) {
       setCompareLeftMessages((prev) => [...prev, userMsg, aiStreamMsg]);
-      const rightAiId = nextId();
+      const rightAiId = crypto.randomUUID();
       setCompareRightMessages((prev) => [
         ...prev,
         userMsg,
         { ...aiStreamMsg, id: rightAiId },
       ]);
-
-      // Simulate retrieval delay then stream left
-      const leftDelay = setTimeout(() => {
-        const { body: aiBody, debugData } = generateMockAiResponse(body);
-        streamText(aiId, aiBody, debugData, setCompareLeftMessages);
-      }, 600);
-      streamTimersRef.current.push(leftDelay);
-
-      // Slightly different timing for right
-      const rightDelay = setTimeout(() => {
-        const { body: aiBody2, debugData: dd2 } = generateMockAiResponse(body + ' (alt)');
-        streamText(rightAiId, aiBody2, dd2, setCompareRightMessages);
-      }, 900);
-      streamTimersRef.current.push(rightDelay);
-    } else {
-      setMessages((prev) => [...prev, userMsg, aiStreamMsg]);
-
-      const delay = setTimeout(() => {
-        const { body: aiBody, debugData } = generateMockAiResponse(body);
-        streamText(aiId, aiBody, debugData, setMessages);
-      }, 600);
-      streamTimersRef.current.push(delay);
+      setIsStreaming(false); // Compare mode SignalR not fully implemented in this script
+      return;
     }
 
-    inputRef.current?.focus();
-  }, [inputText, isStreaming, compareMode]);
+    setMessages((prev) => [...prev, userMsg, aiStreamMsg]);
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!connection || connection.state !== 'Connected') {
+      console.warn('SignalR not connected');
+      setIsStreaming(false);
+      return;
+    }
+
+    setIsStreaming(true);
+
+    const onToken = (token: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId
+            ? { ...m, body: m.body + token }
+            : m
+        )
+      );
+    };
+
+    const onDebug = (debugData: DebugData) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId ? { ...m, debugData } : m
+        )
+      );
+      setCurrentDebugData(debugData);
+      setSelectedDebugId(aiId);
+    };
+
+    const cleanup = () => {
+      connection.off('ReceiveToken', onToken);
+      connection.off('ReceiveDebugData', onDebug);
+      connection.off('ReceiveCompleted', onCompleted);
+      connection.off('ReceiveError', onError);
+    };
+
+    const onCompleted = () => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId ? { ...m, isStreaming: false } : m
+        )
+      );
+      setIsStreaming(false);
+      cleanup();
+    };
+
+    const onError = (message: string) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiId ? { ...m, isStreaming: false, body: message || 'An error occurred.' } : m
+        )
+      );
+      setIsStreaming(false);
+      cleanup();
+    };
+
+    connection.on('ReceiveToken', onToken);
+    connection.on('ReceiveDebugData', onDebug);
+    connection.on('ReceiveCompleted', onCompleted);
+    connection.on('ReceiveError', onError);
+
+    connection.invoke('ExecuteScenarioAsync', {
+      UserMessage: body,
+      ProviderId: leftProvider,
+      ModelId: leftModel,
+      SystemPrompt: sysPromptOn ? sysPrompt : null
+    }).catch(err => {
+      console.error('SignalR Invoke Error:', err);
+      setIsStreaming(false);
+      cleanup();
+    });
+  }, [inputText, isStreaming, compareMode, connection, leftProvider, leftModel, sysPromptOn, sysPrompt, setMessages, setCompareLeftMessages, setCompareRightMessages, setCurrentDebugData, setSelectedDebugId, setIsStreaming]);
+
+  const sessionMsgCount = compareMode ? compareLeftMessages.length : messages.length;
+  const totalTokens = (compareMode ? compareLeftMessages : messages)
+    .reduce((acc, m) => acc + (m.debugData?.totalTokens || 0), 0);
+
+  const handleSelectDebug = useCallback((id: string) => {
+    setSelectedDebugId(id);
+    const msg = [...messages, ...compareLeftMessages, ...compareRightMessages].find(m => m.id === id);
+    if (msg?.debugData) {
+      setCurrentDebugData(msg.debugData);
+      setDebugOpen(true);
+    }
+  }, [messages, compareLeftMessages, compareRightMessages]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
-  }
-
-  const handleSelectDebug = useCallback(
-    (id: string) => {
-      const msg = messages.find((m) => m.id === id);
-      if (msg?.debugData) {
-        setSelectedDebugId(id);
-        setCurrentDebugData(msg.debugData);
-        if (!debugOpen) setDebugOpen(true);
-      }
-    },
-    [messages, debugOpen],
-  );
-
-  const totalTokens = currentDebugData?.totalTokens ?? 0;
-  const sessionMsgCount = messages.filter((m) => m.role !== 'system').length;
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -1257,6 +1268,11 @@ export default function PlaygroundPage() {
           <FlaskConical className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="text-sm font-semibold text-foreground">Test Playground</span>
           <Badge variant="outline" className="shrink-0 text-xs text-muted-foreground">Sandbox</Badge>
+          {connectionError && (
+            <Badge variant="outline" className="shrink-0 text-xs text-destructive border-destructive/30 bg-destructive/5">
+              {connectionError}
+            </Badge>
+          )}
           {sessionMsgCount > 0 && (
             <span className="text-xs text-muted-foreground tabular-nums">
               {sessionMsgCount} msg{sessionMsgCount !== 1 ? 's' : ''}
@@ -1453,6 +1469,7 @@ export default function PlaygroundPage() {
                   setProvider={setLeftProvider}
                   model={leftModel}
                   setModel={setLeftModel}
+                  providers={providers}
                 />
                 <div
                   ref={leftScrollRef}
@@ -1484,6 +1501,7 @@ export default function PlaygroundPage() {
                   setProvider={setRightProvider}
                   model={rightModel}
                   setModel={setRightModel}
+                  providers={providers}
                 />
                 <div
                   ref={rightScrollRef}
@@ -1506,13 +1524,23 @@ export default function PlaygroundPage() {
               </div>
             </div>
           ) : (
-            <ChatThread
-              messages={messages}
-              scrollRef={scrollRef}
-              selectedDebugId={selectedDebugId}
-              onSelectDebug={handleSelectDebug}
-              onLoadScenario={loadScenario}
-            />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <ComparePaneConfig
+                paneLabel="Model Configuration"
+                provider={leftProvider}
+                setProvider={setLeftProvider}
+                model={leftModel}
+                setModel={setLeftModel}
+                providers={providers}
+              />
+              <ChatThread
+                messages={messages}
+                scrollRef={scrollRef}
+                selectedDebugId={selectedDebugId}
+                onSelectDebug={handleSelectDebug}
+                onLoadScenario={loadScenario}
+              />
+            </div>
           )}
 
           {/* ── Input bar ── */}

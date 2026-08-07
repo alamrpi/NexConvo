@@ -2,11 +2,14 @@ using FluentAssertions;
 using MassTransit;
 using MockQueryable.NSubstitute;
 using NSubstitute;
+using NexConvo.BuildingBlocks.Application.Health;
 using NexConvo.BuildingBlocks.Application.Security;
 using NexConvo.BuildingBlocks.Domain;
+using NexConvo.BuildingBlocks.Domain.Health;
 using NexConvo.BuildingBlocks.Multitenancy;
 using NexConvo.Contracts.Enums;
 using NexConvo.Contracts.Events.Integrations;
+using NexConvo.Integrations.Application.Features.AiConfig;
 using NexConvo.Integrations.Application.Features.AiConfig.Commands;
 using NexConvo.Integrations.Domain.Entities;
 using System;
@@ -24,6 +27,7 @@ public class SaveAiConfigCommandHandlerTests
     private readonly ITenantContext _tenantMock = Substitute.For<ITenantContext>();
     private readonly IAesEncryptionService _encryptionServiceMock = Substitute.For<IAesEncryptionService>();
     private readonly IPublishEndpoint _publishEndpointMock = Substitute.For<IPublishEndpoint>();
+    private readonly IConnectionTester<AiTestInput> _testerMock = Substitute.For<IConnectionTester<AiTestInput>>();
     private readonly Microsoft.Extensions.Logging.ILogger<SaveAiConfigCommandHandler> _loggerMock
         = Substitute.For<Microsoft.Extensions.Logging.ILogger<SaveAiConfigCommandHandler>>();
 
@@ -34,11 +38,14 @@ public class SaveAiConfigCommandHandlerTests
     public SaveAiConfigCommandHandlerTests()
     {
         _tenantMock.TenantId.Returns(_tenantId);
+        _testerMock.TestAsync(Arg.Any<AiTestInput>(), Arg.Any<CancellationToken>())
+            .Returns(ConnectionHealth.Healthy("ok", 5));
         _handler = new SaveAiConfigCommandHandler(
             _contextMock,
             _tenantMock,
             _encryptionServiceMock,
             _publishEndpointMock,
+            _testerMock,
             _loggerMock);
     }
 
